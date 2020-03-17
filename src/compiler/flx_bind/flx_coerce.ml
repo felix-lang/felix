@@ -141,7 +141,7 @@ print_endline ("Flx_bind/flx_coerce:coerce] Binding coercion " ^ sbe bsym_table 
     let t' = unfold "flx_coerce1" t' in
     let t'' = unfold "flx_coerce1" t'' in
     begin match t',t'' with
-    | BTYP_inst (i,[],_),t when Flx_btype.islinear_type bsym_table t->
+    | BTYP_inst (i,[],_),t when Flx_btype.islinear_type t->
       let n = Flx_btype.sizeof_linear_type bsym_table  t in
 (*
 print_endline ("Trying to coerce value of type " ^ si i ^ " to linear type " ^ Flx_btype.st t ^ " size " ^ si n);
@@ -185,7 +185,7 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
         ^" to unitsum " ^ si n)
       end
 
-    | t,(BTYP_inst (i,[],_) as inttype) when Flx_btype.islinear_type bsym_table t->
+    | t,(BTYP_inst (i,[],_) as inttype) when Flx_btype.islinear_type t->
       let n = Flx_btype.sizeof_linear_type bsym_table  t in
       begin match hfind "lookup" state.sym_table i with
       | { Flx_sym.id="int";
@@ -215,7 +215,7 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
     (* This isn't really right, but it's safe storage wise *)
     | BTYP_array (lhsv,lhst), BTYP_array (rhsv, rhst) 
       when lhsv = rhsv &&
-      islinear_type bsym_table lhst && islinear_type bsym_table rhst &&
+      islinear_type lhst && islinear_type rhst &&
       sizeof_linear_type bsym_table lhst = sizeof_linear_type bsym_table rhst ->
       bexpr_coerce (x',t'')
 
@@ -223,7 +223,7 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
     | BTYP_ptr (`RW,lhst,[]), BTYP_ptr (`RW,rhst,[])
     | lhst, rhst 
       when 
-      islinear_type bsym_table lhst && islinear_type bsym_table rhst &&
+      islinear_type lhst && islinear_type rhst &&
       sizeof_linear_type bsym_table lhst = sizeof_linear_type bsym_table rhst ->
       bexpr_coerce (x',t'')
 

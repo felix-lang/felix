@@ -573,6 +573,7 @@ assert false
   | `EXPR_rptsum_arg (sr,e) ->
     let (_,t) as e'  = be e in
     begin match t with
+    | BTYP_compactrptsum (n,argt) -> bexpr_rptsum_arg e'
     | BTYP_rptsum (n,argt) -> bexpr_rptsum_arg e'
     | _ -> clierr sr ("Flx_bind_expression: casearg can only be applied to value of repeated sum type (coarray)" ^
       "\ngot: " ^ Flx_btype.st t )
@@ -583,8 +584,10 @@ assert false
     begin match t with
       | BTYP_type_var (_,Flx_kind.KIND_unitsum) 
       | BTYP_unitsum _
+      | BTYP_compactsum _
       | BTYP_sum _
       | BTYP_rptsum _
+      | BTYP_compactrptsum _
       | BTYP_tuple []
       | BTYP_inst (_,_,Flx_kind.KIND_unitsum) -> () 
 
@@ -664,6 +667,7 @@ print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_o
     | BTYP_type_var (_,Flx_kind.KIND_unitsum) ->
       bexpr_const_case (v, t)  (* const ctor *)
 
+    | BTYP_compactsum ls
     | BTYP_sum ls ->
       if v<0 || v>= List.length ls
       then clierrx "[flx_bind/flx_lookup.ml:4270: E188] " sr "Case index out of range of sum"

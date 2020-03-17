@@ -41,7 +41,7 @@ closure forms yet.
 let apply_pointer_prj syms bsym_table ge ge' sr (e,t) (ix:int) target codomain (_,argt as arg) =
 if debug then
 print_endline "Apply pointer projection to pointer";
-  let clt t = islinear_type bsym_table t in
+  let clt t = islinear_type t in
   let ate msg t1desc t2desc ixt expt = ate bsym_table syms.Flx_mtypes2.counter sr msg t1desc t2desc ixt expt in
   let a = arg in
   let at = argt in
@@ -117,7 +117,7 @@ print_endline ("Divisor = " ^ string_of_int divisor);
 let apply_cltpointer_prj syms bsym_table ge ge' sr (e,t) (ix:int) (mach, target) codomain (_,argt as arg) =
 if debug then
 print_endline ("Apply projection to compact linear pointer");
-  let clt t = islinear_type bsym_table t in
+  let clt t = islinear_type t in
   let ate msg t1desc t2desc ixt expt = ate bsym_table syms.Flx_mtypes2.counter sr msg t1desc t2desc ixt expt in
   let a = arg in
   let at = argt in
@@ -159,7 +159,7 @@ let ipow' bsym_table power_table base exp array_len =
 
 (* Application of projection to non pointer value *)
 let apply_value_prj syms bsym_table ge ge' sr (e,t) (ix:int) domain codomain (_,argt as arg) =
-  let clt t = islinear_type bsym_table t in
+  let clt t = islinear_type t in
   let ate msg t1desc t2desc ixt expt = ate bsym_table syms.Flx_mtypes2.counter sr msg t1desc t2desc ixt expt in
   let a = arg in
   let at = argt in
@@ -286,7 +286,7 @@ let apply_prj syms bsym_table ge ge' sr (e,t) (ix:int) domain codomain (argv,arg
 
 let apply_array_prj syms bsym_table ge ge' sr (e,t) ix ixd ixc (_,at as a) =
   let ate msg t1desc t2desc ixt expt = ate bsym_table syms.Flx_mtypes2.counter sr msg t1desc t2desc ixt expt in
-  let clt t = islinear_type bsym_table t in
+  let clt t = islinear_type t in
 
   match at with 
   (* if this is an array projection of a compact linear array *)

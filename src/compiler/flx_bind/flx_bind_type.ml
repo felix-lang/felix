@@ -417,16 +417,16 @@ print_endline ("Flx_bind_type.TYP_typeof fixpoint metatype hack! Expression " ^ 
   | `TYP_array (t1,t2)->
       let t1 = bt t1 in
       let t2 = bt t2 in
-      if not (islinear_type () t2) then 
+      if not (islinear_type t2) then 
         clierr sr ("Flx_bind_type.TYP_array] Array index must be compact linear, got " ^ sbt bsym_table t2);
       btyp_array (t1, t2)
 
   | `TYP_compactarray (t1,t2)->
       let t1 = bt t1 in
       let t2 = bt t2 in
-      if not (islinear_type () t2) then 
+      if not (islinear_type t2) then 
         clierr sr ("Flx_bind_type.TYP_compactarray] Compact Array index must be compact linear, got " ^ sbt bsym_table t2);
-      if not (islinear_type () t1) then 
+      if not (islinear_type t1) then 
         clierr sr ("Flx_bind_type.TYP_compactarray] Compact Array value type must be compact linear, got " ^ sbt bsym_table t1);
       btyp_compactarray (t1, t2)
 

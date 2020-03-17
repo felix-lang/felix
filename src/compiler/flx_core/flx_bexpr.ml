@@ -226,7 +226,7 @@ let bexpr_cltpointer d c p (vs: int list) =
 let bexpr_cltpointer_of_pointer ((_,pt) as p) = 
   match pt with
   | Flx_btype.BTYP_ptr (m,vt,ts) ->
-    if Flx_btype.islinear_type () vt then
+    if Flx_btype.islinear_type vt then
       bexpr_cltpointer vt vt p []
     else
       failwith "cltpointer_of_pointer requires (pointer to) compact linear type as argument"

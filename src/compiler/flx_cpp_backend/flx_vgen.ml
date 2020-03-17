@@ -30,6 +30,7 @@ let gen_get_case_index (ge:Flx_bexpr.t -> cexpr_t) bsym_table array_sum_offset_t
     begin match ut with
     | BTYP_tuple [] -> ce_atom "0"
     | BTYP_unitsum n -> ge e (* circular?? *)
+    | BTYP_compactsum ts 
     | BTYP_sum ts ->  
 (*
 print_endline ("Gen_get_case_index " ^ Flx_print.string_of_bound_expression bsym_table e);
@@ -61,6 +62,7 @@ print_endline ("Gen_get_case_index, rep = " ^ Flx_vrep.string_of_variant_rep rep
 *)
       v
 
+    | BTYP_compactrptsum (rpt,base)
     | BTYP_rptsum (rpt,base) ->
       let size = sizeof_linear_type bsym_table base in
       ce_infix "/" (ge e) (ce_int size)
@@ -81,7 +83,9 @@ print_endline "cal_case_type";
   match unfold "cal_case_type" t with
   | BTYP_unitsum _ -> Flx_btype.btyp_tuple []
   | BTYP_rptsum (_,k) -> k
+  | BTYP_compactrptsum (_,k) -> k
   | BTYP_sum ls -> nth ls n
+  | BTYP_compactsum ls -> nth ls n
   | BTYP_variant ls -> 
     let ct = 
       try 
@@ -119,6 +123,7 @@ let gen_get_arg ge tn bsym_table ct ut (e:Flx_bexpr.t) : cexpr_t =
   | VR_clt ->  
     begin match ut with
     | BTYP_unitsum n -> ce_atom "0" (* unit *)
+    | BTYP_compactsum ts
     | BTYP_sum ts ->  
 (*
 print_endline ("compact linear type] Gen_get_arg value=" ^ sbe bsym_table e);
@@ -149,6 +154,7 @@ print_endline ("compact linear type] Gen_get_arg constructor arg type = " ^ sbt 
       print_endline ("Symbolc value = " ^ string_of_cexpr v);
 *)
       v
+    | BTYP_compactrptsum (_,base)
     | BTYP_rptsum (_,base) -> 
       let size = sizeof_linear_type bsym_table base in
       ce_infix "%" (ge e) (ce_int size)
@@ -190,6 +196,7 @@ let gen_get_case_arg ge tn bsym_table n (e:Flx_bexpr.t) : cexpr_t =
 let gen_get_rptsum_arg ge tn bsym_table (e:Flx_bexpr.t) : cexpr_t =
   let x,ut = e in
   match ut with
+  | BTYP_compactrptsum (_,ct)
   | BTYP_rptsum (_,ct) ->
     gen_get_arg ge tn bsym_table ct ut e 
   | _ -> assert false
@@ -231,12 +238,18 @@ assert false
   | VR_uctor -> ce_atom ("::flx::rtl::_uctor_(" ^ si v ^ ",0)") 
 
   | VR_clt -> 
+(*
 print_endline ("vgen:BEXPR_case: sum type = " ^ sbt bsym_table ut );
 print_endline ("vgen:BEXPR_case: sum value = " ^ sbe bsym_table e);
+*)
     let sidx = Flx_ixgen.cal_symbolic_compact_linear_value bsym_table e in
+(*
 print_endline ("vgen:BEXPR_case: Symbolic sum = " ^ Flx_ixgen.print_index bsym_table sidx );
+*)
     let cidx = Flx_ixgen.render_compact_linear_value bsym_table ge' array_sum_offset_table seq sidx in
+(*
 print_endline ("vgen:BEXPR_case: rendered lineralised index .. C index = " ^ string_of_cexpr cidx);
+*)
     cidx
 
 let gen_make_ctor_arg rep ge tn syms bsym_table shape_map a : cexpr_t =

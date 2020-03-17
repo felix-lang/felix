@@ -212,13 +212,13 @@ print_endline ("Flxg_codegen.codegen_bsyms");
   print_endline "//GENERATING C++: function and procedure classes";
   plh "\n//-----------------------------------------";
   plh  "//DEFINE FUNCTION CLASS NAMES";
-  plh  (Flx_gen.gen_function_names state.syms bsym_table);
+  plh  (Flx_gen_function_names.gen_function_names state.syms bsym_table);
   if debug || state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
   print_endline "//DONE GENERATING C++: function and procedure class names";
 
   plh "\n//-----------------------------------------";
   plh  "//DEFINE FUNCTION CLASSES";
-  plh  (Flx_gen.gen_functions state.syms bsym_table shapes shape_map);
+  plh  (Flx_gen_functions.gen_functions state.syms bsym_table shapes shape_map);
   if state.syms.Flx_mtypes2.compiler_options.Flx_options.print_flag then
   print_endline "//DONE DEFINE FUNCTION CLASSES";
 

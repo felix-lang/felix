@@ -183,7 +183,7 @@ val all_units : t list -> bool
 val is_unitsum : t -> bool
 val ipow : int -> int -> int
 val int_of_linear_type : 'a -> t -> int
-val islinear_type : 'a -> t -> bool
+val islinear_type : t -> bool
 val iscopyable_type : t -> bool
 val sizeof_linear_type : 'a -> t -> int
 val iscompact_linear_product: t -> bool

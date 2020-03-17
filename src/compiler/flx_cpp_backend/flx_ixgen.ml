@@ -88,33 +88,33 @@ print_endline ("Calsym " ^ sbe bsym_table idx^ ", type="^ sbt bsym_table idxt);
 *)
   let cax x = cal_symbolic_compact_linear_value bsym_table x in
   match idx,idxt with
-  | (BEXPR_tuple es,_), BTYP_tuple ts  -> 
+  | (BEXPR_compacttuple es,_), BTYP_compacttuple ts  -> 
     (*  we get  ((0 * sizeof typeof i + i) * sizeof typeof j + j ) * sizeof typeof k + k 
         which is BIG ENDIAN. The sizeof i is eliminated by multiplying by 0.
         Example 3 * 4 * 5, so i:3, j:4, k:5 -> ijk = ((0 * 3 + i) * 4 + j) * 5 + k = 20i + 5j + k
      *)
     List.fold_left (fun acc (elt,t) -> add (mul acc  (`Int (sizeof_linear_type bsym_table t))) (cax elt)) (`Int 0)(List.combine es ts)
 
-  | (BEXPR_tuple es,_), BTYP_array (t, BTYP_unitsum n)  -> 
+  | (BEXPR_compacttuple es,_), BTYP_compactarray (t, BTYP_unitsum n)  -> 
     let sa = `Int (sizeof_linear_type bsym_table t) in
     List.fold_left (fun acc elt -> add (mul acc sa) (cax elt)) (`Int 0) es
 
-  | (BEXPR_tuple es,_), BTYP_array (t, BTYP_tuple [])  -> 
+  | (BEXPR_compacttuple es,_), BTYP_compactarray (t, BTYP_tuple [])  -> 
     let sa = `Int (sizeof_linear_type bsym_table t) in
     List.fold_left (fun acc elt -> add (mul acc sa) (cax elt)) (`Int 0) es
 
-  | (BEXPR_match_case (i,t'),_), BTYP_sum ts ->
+  | (BEXPR_match_case (i,t'),_), BTYP_compactsum ts ->
 print_endline ("Decomposing index of sum type " ^ sbe bsym_table idx ^ " MATCH case tag " ^si i^ "  found");
     assert false;
 
-  | (BEXPR_case_arg (i,t'),_), BTYP_sum ts ->
+  | (BEXPR_case_arg (i,t'),_), BTYP_compactsum ts ->
 print_endline ("Decomposing index of sum type " ^ sbe bsym_table idx ^ " MATCH case tag " ^si i^ "  found");
     assert false;
 
-  | (BEXPR_apply ((BEXPR_prj (i,its,_),t'),(_,bt as b)),_), BTYP_tuple ts -> assert false
+  | (BEXPR_apply ((BEXPR_prj (i,its,_),t'),(_,bt as b)),_), BTYP_compacttuple ts -> assert false
 
   (* I think this cannot happen! *)
-  | (BEXPR_apply ((BEXPR_prj (i,its,_),t'),(_,bt as b)),_), BTYP_sum ts ->
+  | (BEXPR_apply ((BEXPR_prj (i,its,_),t'),(_,bt as b)),_), BTYP_compactsum ts ->
 print_endline ("Decomposing index of sum type " ^ sbe bsym_table idx ^ " APPLY prj"^ si i^" found");
 print_endline ("Top level type is " ^ sbt bsym_table t');
 print_endline ("Argument is " ^ sbe bsym_table b);
@@ -127,7 +127,7 @@ print_endline ("Final index is " ^ print_index bsym_table ix);
 
   (* For an injection, the domain must be the type of one of the summands of a sum *)
   (* So, its would have to be a member of ts *)
-  | (BEXPR_apply ((BEXPR_inj (i,its,_),t'),(_,bt as b)),_), BTYP_sum ts ->
+  | (BEXPR_apply ((BEXPR_inj (i,its,_),t'),(_,bt as b)),_), BTYP_compactsum ts ->
 (*
 print_endline ("Decomposing index of sum type " ^ sbe bsym_table idx ^ " APPLY inj"^ si i^" found");
 print_endline ("Top level type is " ^ sbt bsym_table t');
@@ -142,7 +142,7 @@ print_endline ("Final index is " ^ print_index bsym_table ix);
     ix
 
 
-  | (BEXPR_case (i,t'),_), BTYP_sum ts ->
+  | (BEXPR_case (i,t'),_), BTYP_compactsum ts ->
      let e' = expr idx in
      let caseno = i in 
      let caset = nth ts i in
@@ -156,10 +156,10 @@ print_endline ("Final index is " ^ print_index bsym_table ix);
   (* this doesn't make sense! This is a decode but the
      above thing is an encode .. grrr 
   *)
-  | (BEXPR_case (i,_),_), BTYP_tuple _ ->
+  | (BEXPR_case (i,_),_), BTYP_compacttuple _ ->
     `Int i
 
-  | (BEXPR_case (i,_),_), BTYP_array _ ->
+  | (BEXPR_case (i,_),_), BTYP_compactarray _ ->
     `Int i
 
 
@@ -169,7 +169,7 @@ print_endline ("Final index is " ^ print_index bsym_table ix);
   | e, BTYP_unitsum _ -> 
     expr e
 
-  | e, BTYP_sum ts ->
+  | e, BTYP_compactsum ts ->
 (*
 print_endline ("xDecomposing index of sum type " ^ sbe bsym_table e);
 *)
@@ -190,14 +190,14 @@ print_endline ("xDecomposing index of sum type " ^ sbe bsym_table e);
 
   | e,BTYP_tuple [] -> `Int 0 
 
-  | e,BTYP_tuple _ -> 
+  | e,BTYP_compacttuple _ -> 
 (*
     print_endline ("cal_symbolic_compact_linear_value can't handle expression of tuple type " ^ sbe bsym_table idx);
     print_endline ("Assume already linearised");
 *)
     expr e 
 
-  | e,BTYP_array _ -> 
+  | e,BTYP_compactarray _ -> 
 (*
     print_endline ("cal_symbolic_compact_linear_value can't handle expression of array type " ^ sbe bsym_table idx);
     print_endline ("Assume already linearised");
@@ -335,7 +335,7 @@ print_endline ("proj = " ^ si j^ ", Size of component = " ^ si elt ^ ", size of 
 let projoflinear bsym_table e = match e with
   | BEXPR_apply ((BEXPR_prj _,_),(_,t')),_ 
   | BEXPR_apply ((BEXPR_aprj _,_),(_,t')),_ 
-    when islinear_type bsym_table t' -> true
+    when islinear_type t' -> true
   | _ -> false
 
 
@@ -408,7 +408,7 @@ print_endline ("Array len = " ^ si array_len);
     print_endline "Projection of linear type!";
 *)
     assert (idxt = aixt);
-    assert (islinear_type bsym_table v);
+    assert (islinear_type v);
     let array_value_size = sizeof_linear_type bsym_table v in
 (*
 print_endline ("Array_value_size=" ^ si array_value_size);

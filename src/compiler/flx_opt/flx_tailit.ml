@@ -434,7 +434,7 @@ print_endline ("tailit:asgn2 assign to projection");
 (*
         print_endline ("Maybe can optimise passign, type = " ^ sbt bsym_table t);
 *)
-        if islinear_type bsym_table t then
+        if islinear_type t then
            print_endline "Woops, linear type shouldn't opt?"
         ;
         if can_opt then
@@ -465,7 +465,7 @@ print_endline ("tailit:asgn2 assign to projection");
          type because the packed assignment is just an integer!
          Can't get faster than that!
       *)
-      if islinear_type bsym_table t then
+      if islinear_type t then
         aux tail (h::res)
       else
         cal_par' i t ls h tail 

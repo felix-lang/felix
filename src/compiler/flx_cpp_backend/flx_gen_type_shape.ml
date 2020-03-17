@@ -67,7 +67,7 @@ let rec gen_type_shape module_name s h syms bsym_table need_int primitive_shapes
    in
       
     match btyp' with
-    | _ when islinear_type bsym_table btyp' -> ()
+    | _ when islinear_type btyp' -> ()
 
     | BTYP_function _ -> ()
 

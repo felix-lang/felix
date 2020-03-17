@@ -173,7 +173,7 @@ let rec gen_expr'
   let ge' = gen_expr' syms bsym_table shapes shape_map label_info this this_vs this_ts sr in
   let tsub t = beta_reduce "flx_egen" syms.Flx_mtypes2.counter bsym_table sr (tsubst sr this_vs this_ts t) in
   let tn t = cpp_typename syms bsym_table (tsub t) in
-  let clt t = islinear_type bsym_table t in
+  let clt t = islinear_type t in
   (* NOTE this function does not do a reduce_type *)
   let raw_typename t =
     cpp_typename
@@ -401,6 +401,7 @@ print_endline ("Compact linear tuple " ^ sbt bsym_table t);
     assert (clt at);
     (* should call vgen now! *)
     begin match t with
+    | BTYP_compactsum ts
     | BTYP_sum ts ->
       let get_array_sum_offset_values bsym_table ts =
         let sizes = List.map (sizeof_linear_type bsym_table) ts in
@@ -1065,11 +1066,15 @@ print_endline ("Generating class new for t=" ^ ref_type);
    * particularly enums.
    *)
   | BEXPR_case (v,t') -> (* assert false; *)
+(*
     print_endline ("making constant ctor");
+*)
     let array_sum_offset_table = syms.Flx_mtypes2.array_sum_offset_table in
     let seq = syms.Flx_mtypes2.counter in
     let clv = Flx_vgen.gen_make_const_ctor bsym_table array_sum_offset_table seq ge' (e,t) in
+(*
     print_endline ("vgen:BEXPR_case: rendered lineralised index .. C index = " ^ string_of_cexpr clv);
+*)
     clv
 
 

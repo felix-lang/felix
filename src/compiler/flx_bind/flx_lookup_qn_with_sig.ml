@@ -268,6 +268,7 @@ print_endline ("LOOKUP 1: varname " ^ si index);
             )
       | _ -> clierrx "[flx_bind/flx_lookup.ml:2525: E130] " sr "Case requires exactly one argument"
       end
+    | BTYP_compactsum ls
     | BTYP_sum ls ->
       if v<0 || v >= List.length ls
       then clierrx "[flx_bind/flx_lookup.ml:2529: E131] " sra "Case index out of range of sum"
@@ -288,6 +289,7 @@ print_endline ("LOOKUP 1: varname " ^ si index);
       | _ -> clierrx "[flx_bind/flx_lookup.ml:2544: E133] " sr "Case requires exactly one argument"
       end
 
+    | BTYP_compactrptsum (BTYP_unitsum k, vt)
     | BTYP_rptsum (BTYP_unitsum k, vt) ->
       begin match signs with
       | [argt] -> 

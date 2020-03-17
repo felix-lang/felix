@@ -165,7 +165,7 @@ let rec gen_type_name syms bsym_table (index,typ) =
 
   let t = unfold "flx_tgen: gen_type_name" typ in
   match t with
-  | t when Flx_btype.islinear_type bsym_table t -> 
+  | t when Flx_btype.islinear_type t -> 
 
     (* this is a bit hacked due to bug in naming rules *)
     let cntyp = cn typ in
@@ -371,7 +371,7 @@ let rec gen_type syms bsym_table (index,typ) =
   in
   let t = unfold "flx_tgen: gen_type" typ in
   match t with
-  | _ when islinear_type bsym_table t -> descr
+  | _ when islinear_type t -> descr
   | BTYP_type_var _ -> failwith "[gen_type] can't gen type variable"
   | BTYP_fix _ -> failwith "[gen_type] can't gen type fixpoint"
 

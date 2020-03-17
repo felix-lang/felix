@@ -322,7 +322,7 @@ and str_of_btype typ =
 
 
 (* NOTE: this is a check for compact linear, not LINEAR *)
-let rec islinear_type bsym_table t =
+let rec islinear_type t =
   match t with
   | BTYP_void
   | BTYP_tuple []
@@ -333,6 +333,7 @@ let rec islinear_type bsym_table t =
   | BTYP_compactarray _
     -> true
 
+  | BTYP_inst (_,_,k)
   | BTYP_typeop (_,_,k)
   | BTYP_type_var (_,k) -> kind_ge2 KIND_compactlinear k
 
@@ -489,7 +490,7 @@ let btyp_unitsum n =
   | _ ->  BTYP_unitsum n
 
 let btyp_rptsum (n,t) =
-  assert (islinear_type () n);
+  assert (islinear_type n);
   match n with
   | BTYP_void -> BTYP_void (* 0 *+ t = 0 *)
   | BTYP_tuple [] -> t (* 1 *+ t = t *)
@@ -499,8 +500,8 @@ let btyp_rptsum (n,t) =
     | _ -> BTYP_rptsum (n,t)
 
 let btyp_compactrptsum (n,t) =
-  assert (islinear_type () n);
-  assert (islinear_type () t);
+  assert (islinear_type n);
+  assert (islinear_type t);
   match n with
   | BTYP_void -> BTYP_void (* 0 \*+ t = 0 *)
   | BTYP_tuple [] -> t (* 1 \*+ t = t *)
@@ -535,7 +536,7 @@ let btyp_compactsum ts =
     let n = btyp_unitsum (List.length ts) in
     btyp_compactrptsum (n,first)
   with Not_found -> 
-    List.iter (fun t -> assert (islinear_type () t)) ts;
+    List.iter (fun t -> assert (islinear_type t)) ts;
     BTYP_compactsum ts
   end
 
@@ -551,7 +552,7 @@ let btyp_int () = btyp_inst (Flx_concordance.flx_int, [], Flx_kind.kind_type)
 
 (** Construct a BTYP_array type. *)
 let btyp_array (t, n) =
-  if not (islinear_type () n) then failwith ("Array index must be compact linear, got " ^ st n);
+  if not (islinear_type n) then failwith ("Array index must be compact linear, got " ^ st n);
   match n with
   | BTYP_void -> BTYP_tuple []
 
@@ -567,8 +568,8 @@ let btyp_array (t, n) =
   | _ -> BTYP_array (t, n)
 
 let btyp_compactarray (t, n) =
-  if not (islinear_type () n) then failwith ("Compact Array index must be compact linear, got " ^ st n);
-  if not (islinear_type () t) then failwith ("Compact Array base must be compact linear, got " ^ st t);
+  if not (islinear_type n) then failwith ("Compact Array index must be compact linear, got " ^ st n);
+  if not (islinear_type t) then failwith ("Compact Array base must be compact linear, got " ^ st t);
   match n with
   | BTYP_void -> BTYP_tuple []
 
@@ -604,11 +605,11 @@ let btyp_compacttuple ts =
   | (head :: tail) as ts ->
       (* If all the types are the same, reduce the type to a BTYP_array. *)
       try
-        assert (islinear_type () head);
+        assert (islinear_type head);
         List.iter (fun t -> if t <> head then raise Not_found) tail;
         btyp_compactarray (head, (BTYP_unitsum (List.length ts)))
       with Not_found ->
-        List.iter (fun t -> assert (islinear_type () t)) ts;
+        List.iter (fun t -> assert (islinear_type t)) ts;
        BTYP_compacttuple ts
 
 let btyp_rev t =
@@ -730,7 +731,7 @@ let ismonomorphic t =
 let rec strip_nonclt ts = match ts with
   | [] -> []
   | h :: t  ->
-    if not (islinear_type () h) 
+    if not (islinear_type h) 
     then strip_nonclt t
     else ts
 
@@ -914,7 +915,7 @@ let ncases_of_sum bsym_table t = match t with
 let iscompact_linear_product t =
   match t with
   | BTYP_compacttuple _ 
-  | BTYP_compactarray _ when islinear_type () t -> true
+  | BTYP_compactarray _ when islinear_type t -> true
   | _ -> false
 
 (* -------------------------------------------------------------------------- *)

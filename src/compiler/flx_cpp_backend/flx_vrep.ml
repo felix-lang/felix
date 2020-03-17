@@ -143,7 +143,7 @@ let cal_variant_rep bsym_table t =
     VR_nullptr
   else if weird_unit bsym_table t then
     VR_packed
-  else if Flx_btype.islinear_type bsym_table t then
+  else if Flx_btype.islinear_type t then
     VR_clt
   else
   let n = cal_variant_cases bsym_table t in

@@ -21,7 +21,7 @@ exception Found of Flx_btype.t
 
 let rec shape_of' use_assoc_type syms bsym_table tn t =
   match t with
-  | _ when islinear_type bsym_table t -> "::flx::rtl::cl_t_ptr_map"
+  | _ when islinear_type t -> "::flx::rtl::cl_t_ptr_map"
 
   | BTYP_inst (i,ts,_) ->
     let bsym = Flx_bsym_table.find bsym_table i in
