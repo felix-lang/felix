@@ -609,13 +609,13 @@ end;
       let sr2 = src_of_qualified_name x in
       let entry_kind, ts = lookup_qn_in_env' state bsym_table env rs x in
 (*
-if string_of_qualified_name x = "digraph_t" then begin
+if string_of_qualified_name x = "td[int]" then begin
         print_endline ("bind_type': Type "^string_of_typecode t^"=Qualified name "^string_of_qualified_name x^" lookup finds index " ^
           string_of_bid entry_kind.base_sym);
         print_endline ("Kind=" ^ match t with | `TYP_name (_,s,ts) -> "`TYP_name ("^s^"["^catmap ","string_of_typecode ts^"])" | _ -> "`TYP_*");
         print_endline ("spec_vs=" ^
           catmap ","
-            (fun (s,j)-> s ^ "<" ^ string_of_bid j ^ ">")
+            (fun (s,j,k)-> s ^ "<" ^ string_of_bid j ^ ":" ^ Flx_kind.sk k ^ ">")
             entry_kind.spec_vs);
         print_endline ("sub_ts=" ^
           catmap "," (sbt bsym_table) entry_kind.sub_ts);
@@ -668,6 +668,16 @@ end;
       end;
 
       assert (List.length ts = List.length entry_kind.spec_vs);
+      List.iter2 (fun (s,j,k) t ->   
+        let kot = Flx_btype_kind.metatype sr t in
+        if not (Flx_kind.kind_ge2 k kot) then begin 
+          let sr2 = match hfind "lookup" state.sym_table entry_kind.base_sym with {sr=sr2} -> sr2 in
+          clierr2 sr sr2 ("Kinding error binding type " ^ string_of_qualified_name x ^ "\n" ^
+            "Argument type " ^ sbt bsym_table t ^ " has kind " ^ Flx_kind.sk kot ^ "\n" ^ 
+            "which is not a subkind of required kind " ^ Flx_kind.sk k) 
+         end
+      ) entry_kind.spec_vs ts;
+ 
       let t = tsubst sr entry_kind.spec_vs ts baset in
 (*
 if string_of_qualified_name x = "digraph_t" then begin

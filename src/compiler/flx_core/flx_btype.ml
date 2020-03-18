@@ -562,9 +562,11 @@ let btyp_array (t, n) =
   *)
   | BTYP_tuple [] -> t
 
+(* FIXME: this doesn't work because eq of (unit * unit) can't be found as an instance
+of eq of (T * T) Dang!
   (* NEW: array of units is unit, for any index because 1^N = 1 for all N *)
   | BTYP_unitsum _ when t = BTYP_tuple [] -> BTYP_tuple []
-
+*)
   (* if n isn't a sum type, what happens? Well .. what about
     matrices indexed by a pair?
   *)
