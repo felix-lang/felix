@@ -562,6 +562,9 @@ let btyp_array (t, n) =
   *)
   | BTYP_tuple [] -> t
 
+  (* NEW: array of units is unit, for any index because 1^N = 1 for all N *)
+  | BTYP_unitsum _ when t = BTYP_tuple [] -> BTYP_tuple []
+
   (* if n isn't a sum type, what happens? Well .. what about
     matrices indexed by a pair?
   *)

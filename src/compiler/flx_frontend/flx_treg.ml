@@ -96,14 +96,11 @@ let register_tuple where syms bsym_table t =
   | BTYP_tuple ts -> record_tuple t
 
   | BTYP_array (t',BTYP_unitsum n) ->
+    if t' = btyp_unit () then () else
     let ts = rev_map (fun _ -> t') (nlist n) in
     record_tuple (btyp_tuple ts)
 
-  | BTYP_record (ts) ->
-    begin match t with
-    | BTYP_tuple [] -> ()
-    | _ -> record_tuple t
-    end
+  | BTYP_record (ts) -> record_tuple t
 
   | _ ->
     print_endline ("flx_treg: from " ^ 
