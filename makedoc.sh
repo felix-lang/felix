@@ -1,7 +1,11 @@
 cd docs
-pdflatex -shell-escape ../src/docs/architecture.tex
-pdflatex -shell-escape ../src/docs/architecture.tex
+pdflatex -shell-escape ../src/docs/typesystem.tex
+pdflatex -shell-escape ../src/docs/typesystem.tex
 mv architecture.pdf ../pdfs
+#
+pdflatex -shell-escape ../src/docs/linkagearch.tex
+pdflatex -shell-escape ../src/docs/linkagearch.tex
+mv linkagearch.pdf ../pdfs
 #
 pdflatex -shell-escape ../src/docs/felix-ref.tex
 pdflatex -shell-escape ../src/docs/felix-ref.tex
