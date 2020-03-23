@@ -562,6 +562,7 @@ extern "C" FLX_EXPORT ::flx::rtl::con_t *name##_flx_start(\
 
 namespace flx { namespace rtl {
 
+
 typedef void *void_pointer;
 
 // ********************************************************

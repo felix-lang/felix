@@ -226,7 +226,8 @@ print_endline ("Flxg_codegen.codegen_bsyms");
   let topvars = List.map fst topvars_with_type in
   List.iter plh
   [
-  "struct thread_frame_t {";
+  "struct thread_frame_t : ::flx::run::base_thread_frame_t {";
+(*
   "  int argc;";
   "  char **argv;";
   "  FILE *flx_stdin;";
@@ -234,8 +235,8 @@ print_endline ("Flxg_codegen.codegen_bsyms");
   "  FILE *flx_stderr;";
   "  ::flx::gc::generic::gc_profile_t *gcp;";
   "  ::flx::run::flx_world *world;";
-  "  thread_frame_t(";
-  "  );";
+*)
+  "  thread_frame_t();";
   ]
   ;
   plh (Flx_gen_helper.format_vars state.syms bsym_table topvars []);
@@ -295,36 +296,37 @@ print_endline ("Flxg_codegen.codegen_bsyms");
   (* end; *)
 
 
-  plb "FLX_DEF_THREAD_FRAME";
-  plb "//Thread Frame Constructor";
+  begin
+    plb "FLX_DEF_THREAD_FRAME";
+    plb "//Thread Frame Constructor";
 
-  let sr = Flx_srcref.make_dummy "Thread Frame" in
-  let topfuns = List.filter
-    (fun (_,t) -> Flx_gen_helper.is_gc_pointer state.syms bsym_table sr t)
-    topvars_with_type
-  in
-  let topfuns = List.map fst topfuns in
-  let topinits =
-    [
-      "  gcp(0)";
-    ]
-    @
-    List.map
-    (fun index ->
-      "  " ^
-      Flx_name.cpp_instance_name state.syms bsym_table index [] ^
-      "()" (* used to be (0) but that fails for pointers to compact linear *)
-    )
-    topfuns
-  in
-  let topinits = String.concat ",\n" topinits in
-  List.iter plb
-  [
-  "thread_frame_t::thread_frame_t(";
-  ") :";
-  topinits;
-  "{}"
-  ];
+    let sr = Flx_srcref.make_dummy "Thread Frame" in
+    let topfuns = List.filter
+      (fun (_,t) -> Flx_gen_helper.is_gc_pointer state.syms bsym_table sr t)
+      topvars_with_type
+    in
+    let topfuns = List.map fst topfuns in
+    let topinits =
+      List.map
+      (fun index ->
+        "  " ^
+        Flx_name.cpp_instance_name state.syms bsym_table index [] ^
+        "()" (* used to be (0) but that fails for pointers to compact linear *)
+      )
+      topfuns
+    in
+    if List.length topinits > 0 then 
+      let topinits = String.concat ",\n" topinits in
+      List.iter plb
+      [
+      "thread_frame_t::thread_frame_t() : ";
+      topinits;
+      "{}"
+      ]
+    else
+      plb "thread_frame_t::thread_frame_t(){}"
+    ;
+  end;
 
   begin
     let header_emitted = ref false in

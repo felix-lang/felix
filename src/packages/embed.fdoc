@@ -276,6 +276,16 @@ public:
   sync_sched *get_sync_scheduler()const { return async_scheduler->ss; }
 };
 
+struct base_thread_frame_t {
+  int argc;
+  char **argv;
+  FILE *flx_stdin;
+  FILE *flx_stdout;
+  FILE *flx_stderr;
+  ::flx::gc::generic::gc_profile_t *gcp;
+  flx_world *world;
+};
+
 
 }} // namespaces
 #endif //__flx_world_H_
