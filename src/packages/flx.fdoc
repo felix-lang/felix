@@ -263,7 +263,7 @@ private proc print_help() {
   println "--static             : make standalone statically linked executable";
   println "--staticlib          : make standalone library of static objects";
   println "--nofelix            : do not run felix translator, leave C++ outputs alone";
-  println "--nocc               : do not C/C++ compiler; implies --nolink";
+  println "--nocc               : do not C/C++ compile; implies --nolink";
   println "--nolink             : do not link object files to an executable";
   println "--exe                : link executable";
   println "--run-only           : run program without dependency checking or linking";
@@ -700,7 +700,7 @@ private noinline proc handle_switch
   elif arg == "--help" do
     control.PRINT_HELP <- 1;
 
-  elif arg == "-c" do
+  elif arg == "-c" or arg == "--norun" do
     debugln "Compile program but do not run it";
     control.RUNIT <- 0;
 
@@ -719,7 +719,9 @@ private noinline proc handle_switch
 
   elif arg== "--nolink" do
     debugln "Do not link object code to an executable, just generate and compile the C++ source code; implies -c";
+    control.RUNIT <- 0;
     control.LINKIT <- 0;
+    control.LINKEXE <- 0;
 
   elif arg == "--run-only" do
     debugln "Run the binary executable without any compilation. Must exist!";

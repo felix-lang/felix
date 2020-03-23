@@ -41,79 +41,223 @@ in conjunction with the Felix run time system, which is implemented in C++.
 \section{Kinds of Linkage}
 Most OS provide two kinds of executable binary: 
 \begin{enumerate}
-\item An executable program, often called an EXE.
-\item A shared dynamic link library often called a DLL.
+\item An \textbf{executable program,} often called an EXE.
+\item A shared \textbf{dynamic link library} often called a DLL.
 \end{enumerate}
 
 and three kinds of linkage:
 
 \begin{enumerate}
-\item Static linkage, which produces an executable program
-\item Load time dynamic linkage, in which a program or shared library
+\item \textbf{Static linkage,} which produces an executable program or shared library
+from object files produced by a compiler, 
+\item \textbf{Load time dynamic linkage,} in which a program or shared library
 automatically loads and links dependent shared libaries, transitively, and
-\item Run time dynamic linkage, in which user code loads and links a
+\item \textbf{Run time dynamic linkage,} in which user code loads and links a
 shared library under program control, dependent libraries being
 loaded automatically
 \end{enumerate}
 
 Libraries loaded under program control are sometimes called
-plugins. A symbols in a plugin library must be located and
+{\em plugins}. Symbols in a plugin library must be located and
 linked to by string name by the user code.
 
-Most systems provide for mixed static and load time linkage.
-Felix does not support mixed linkage. However both statically linked
-executables and shared libraries can load plugins.
-
-In addition, some libraries on some systems are always linked at
+Some libraries on some systems are always linked at
 load time, often the system C library cannot be linked statically.
 This is to prevent duplicated static global data in the even
 a program statically linked to the C library also loads a shared
 library statically linked to a distinct copy of the C library,
 leading to unpredictable behaviour.
 
+\section{Symbol Visibility}
+During compilation, symbols may have one of three kinds
+of visibility:
+\begin{enumerate}
+\item Internal linkage, the symbol is visible only at compile time 
+within the current translation unit,
+\item External linkage, the symbol is visible to other translation units 
+during static linkage, and,
+\item Export visibility, the symbol is made visible from
+an executable or shared library.
+Export visibility usually implies external linkage.
+\end{enumerate}
+
 \section{Symbol Tables}
-Statically linked object files use a single global symbol
-table. Behaviour is undefined or system dependent,
-if a symbol is duplicated.
+There are three basic models for making symbols available
+to satisfy requirements:
 
-@tangler cstring.flx = share/lib/std/strings/cstring.flx
-Symbols in plugins are located under program control.
+\begin{enumerate}
+\item A global namespace for all external symbols is used 
+during static linkage. Behaviour is undefined or system dependent,
+if a symbol is duplicated or missing. 
 
-Symbol tables in shared libraries loaded as dependencies
-at the load time of another shared library or executable
-can be shared so they exist in a single flat namespace
-emulating delayed static linkage, or, they can be provide
-to the entity loading the library, this structure
-is called a two level namespace.
+\item A global namespace can also be used for all exported
+symbols during load time dynamic linkage, this is 
+called a {\em flat namespace}.
 
-Felix does not support flat namespaces. External references
-in a library or executable can only be satisfied by 
-that entities direct dependencies, conversely, the symbols
-in the loaded library are available only to the loading
-entity.
+\item A local namespace can be used when an executable or
+shared library loads a dependent shared library.  The exported
+symbols of the loaded library are made available only to
+the loading entity. In other words symbol imports are private.
+\end{enumerate}
 
-The two models Felix supports have distict architectures.
-Although Felix allows transparent selection of either
-dynamic or static linkage, it can only works because the Felix
-run time library (RTL) has been crafted to support both
-models, and if the user requires transparent selection
-of the model, care must be taken to design the linkage
-architecture appropriately.
+Local namespaces follow the library dependency structure
+and form an acyclic graph which disallows mutual dependency.
 
-Unfortunately some systems which one would like to embed
-in Felix use an inappropriate linkage model. In particular
-CPython extensions on Linux typically do not provide dependencies
-on the CPython run time and can only be loaded by an executable
-which includes the run time and exports its symbol table.
-This architecture is incoherent and is not supported by Felix.
-Python is linked using frameworks on MacOS which is the correct
-model.
+Felix supports global namespaces when static linking and
+local namespaces when dynamic linking. Global namespaces
+are not supported when dynamic linking. 
 
+\subsection{Linux Issues}
+Note that some linkers. including GNU ld,
+allow shared libraries to be linked with unsatisfied 
+dependencies. The assumption is the symbols will
+be provided by the executable in a global namespace.
 
+Felix does NOT support such behaviour.
+
+Note this excludes
+the possibility of embedding CPython which tries to load
+extensions with unsatisfied dependencies. Luckily this
+only impact Linux.
+
+\chapter{Linker Target Kinds}
+Felix can direct the system linker to produce
+several different kinds of object:
+
+\begin{enumerate}
+\item Executable (EXE)
+\item Shared Library (DLL)
+\item Object library (LIB) 
+\end{enumerate}
+
+The default is a shared library. 
+
+An object library, called an {\em archive} on Unix 
+systems is a single file just containing a specified
+set of object files. The Felix terminology calls
+these libraries a {\em staticlib}.
+
+The Windows linker does not support dynamic linkage
+directly. Instead, when producing a DLL, and LIB file
+called an {\em import library} is also produced.
+The LIB file is statically linked into executables
+and DLLs that depend on the DLL. In turn, at run time,
+the code in the LIB file causes the DLL to be loaded
+and symbols in the file located. For this to work
+the client code must specify the symbol is either
+\verb$dllexport$ to export the symbol from the DLL,
+or \verb$dllimport$ to import a symbol. 
+
+\chapter{Object Code Models}
+There are two kinds of object file supported by Felix:
+\begin{enumerate}
+\item Position dependent 
+\item Position independent
+\end{enumerate}
+
+On most systems these are identical, however on some Unix systems
+and some processors, they differ. 
+
+During compilation Felix uses the \verb$-fPIC$
+compiler flag to make the C++ compiler produce position independent
+code. On the \verb$x86$ family of processors the system ABI requires position
+independent code to link a shared library. Position independent
+code is less efficient, requires distinct instructions to
+access shared library exports, and requires additional support
+from global offset tables (GOT tables) to access library
+functions.
+
+Position dependent code is the default for static linkage,
+whilst position independent code is used for dynamic linkage.
+
+To ensure the object files are not confused, Felix universally
+addes the suffix \verb$_dynamic$ to object files containing
+position independent code, and \verb$_static$ to object files
+containing position dependent code.
+
+Executables always use position dependent code.
+Shared libraries always used position independent code.
+
+Archives always contains object files which are all either
+postion dependent or positition independent.
 
 \chapter{Shell Commands}
 Felix generates libraries, not programs.
-\section{Dynamic linkage}
+
+\section{Linker Output Name and Location}
+If linkage of object files is required, the linker output
+will be placed in the Felix cache by default.
+
+\subsection{Default Location}
+The default cache location is:
+\begin{minted}{bash}
+$HOME/.felix/cache/binary
+\end{minted}
+
+The absolute pathname of the directory containing
+the primary file is appended. For Felix compiles,
+the primary file is the Felix file, ending with
+extension \verb$.flx$ or \verb$.fdoc$.
+
+The basename of the primary file, that is, the
+name within its containing directory minus
+the extension (including the dot) is then appended.
+
+Finally, an OS specific extenion for the target kind
+is added. 
+
+For example on my Mac:
+\begin{minted}{bash}
+~/felix>pwd
+/Users/skaller/felix
+~/felix>flx hello
+Hello World!
+~/felix>ls /Users/skaller/.felix/cache/binary/Users/skaller/felix/
+build/         hello.dylib    hello.flx.par
+\end{minted}
+(The par file is the parser output of the flx file.)
+
+\subsection{Specified Directory}
+You can specify the directory for the linker output
+using the \verb$-od$ switch followed by a space and the
+directory name. The directory will be created if it does
+not already exist.
+
+For example on my Mac:
+\begin{minted}{bash}
+~/felix>flx -od fout hello.flx
+Hello World!
+~/felix>ls fout
+hello.dylib
+\end{minted}
+
+\subsection{Output Bundle}
+You can also specify all related output goes
+in a specified directory using the \verb$--bundle-dir=$ switch
+followed immediately by a directory name.
+
+\begin{minted}{bash}
+~/felix>flx --bundle-dir=xout hello.flx
+Hello World!
+~/felix>lx xout
+-bash: lx: command not found
+~/felix>ls xout
+hello.cpp        hello.rtti
+hello.ctors_cpp  hello_dynamic.o
+hello.dep        hello_dynamic.o.d
+hello.dylib      hello_static_link_thunk.cpp
+hello.hpp        hello_static_link_thunk_dynamic.o
+hello.includes   hello_static_link_thunk_dynamic.o.d
+hello.resh
+\end{minted}
+
+\subsection{Specified Cache}
+Finally you can also specify the cache location with the
+\verb$--cache-dir=$ switch followed immediately by a
+directory name. 
+
+\section{Linkage Model}
+\subsection{Dynamic Linkage}
 The default is to generate a shared, dynamic link library.
 The command:
 \begin{minted}{bash}
@@ -129,41 +273,67 @@ Instead, the side-effects of the mainline script
 is perceived as the program, although technically it is just
 the initialisation code for the library.
 
-To generate the library without invoking it, use the \verb$-c$ option:
+If you don't want to run the library, use the \verb$-c$ option.
 \begin{minted}{bash}
 flx -c hello.flx
 \end{minted}
+You can also use \verb$-c$ with the other location controls.
 
-The library will be found at:
-\begin{minted}{bash}
-$HOME/.felix/cache/binary/absolute_path_name_of_source
-\end{minted}
-where the source extension is replaced by the extension used
-by the host OS. To change the location of the linrary use:
-
-\begin{minted}{bash}
-flx -c -od directory hello.flx
-\end{minted}
-which will put the library in the specified directory.
-
-The library is generated from a single object file produced
-by the host C++ compiler. The base name of the object file
-is suffixed with \verb$_dynmamic$ and the host OS extensions.
-The object file will use \verb$-fPIC$ on Unix systems to produce
-position independent code. To produce only the object file
-and not perform linkage, use the \verb$--nolink$ option.
+\subsection{Static Linkage}
+\subsubsection{Produce Executable}
+To produce an executable instead of a shared library,
+use the \verb$--static$ option:
 
 \begin{minted}{bash}
-flx -c --nolink hello.flx
-flx -c --nolink -od directory hello.flx
+~/felix>flx --static -od sout hello.flx
+Hello World!
+~/felix>ls sout
+hello
 \end{minted}
-Note that this option simply skips linkage.
+
+This produces a standalone executable instead of a library.
+The object file is produced in position dependent mode,
+and linked with a static link position dependent version
+of \verb$flx_un$ and a special object file called
+a {\em static link thunk}. The thunk has a fixed interface
+required by the static link version of \verb$flx_run$,
+but contains variables whose values are the entry points of the
+generated object file.
+
+\begin{minted}{c++}
+~/felix>cat sout/hello_static_link_thunk.cpp
+extern "C" void hello_create_thread_frame();
+extern "C" void hello_flx_start();
+void* static_create_thread_frame = (void*)hello_create_thread_frame;
+void* static_flx_start = (void*)hello_flx_start;
+\end{minted}
+
+The thing to note is the object file created imports the actual
+use symbols \verb$hello_create_thread_frame$ and \verb$hello_flx_start$
+and exports fixed symbols \verb$static_create_thread_frame$ and
+\verb$static_flx_start$ which name variables containing
+the user symbols. All problems in computer science can be
+solved by introducing an extra level of indirection.
+
+\subsubsection{Produce Object Library}
+You can specify the \verb$--staticlib$ option to produce an 
+object library instead of an executable:
+
+\begin{minted}{bash}
+~/felix>flx --staticlib -od statx hello.flx
+~/felix>ls statx
+hello.a
+~/felix>ar -t statx/hello.a
+__.SYMDEF SORTED
+hello_static.o
+\end{minted}
 
 
 \chapter{Library Model}
 The Felix compiler generates libraries not programs.
 The default library is a system shared library which acts as a plugin
-to a stub loader which loads the library dynamically. Special thunks
+to the stub loader \verb$flx_run$ or \verb$flx_arun$
+which loads the library dynamically. Special thunks
 are generated to also allow static linkage.
 
 In the user program text, top level variables are aggregated in a C++ struct
@@ -173,7 +343,8 @@ constructor code for the user part of the thread frame. The modulename is typica
 file name.
 
 The thread frame also contains a pointer to the garbage collector profile
-object, the command line arguments, and pointers to three C \verb$FILE$ representing standard input,
+object, the command line arguments, and pointers to three C \verb$FILE*$ 
+values representing standard input,
 output, and error, respectively.
 
 The main constructor routine \verb$modulename_start$ is an extern "C" 
@@ -248,7 +419,9 @@ Hello World!
 \subsection{Thread frame creator}
 The thread frame creator accepts a garbage collector profile
 pointer and a pointer to the Felix world object, allocates
-a thread frame and returns a pointer to it.
+a thread frame and returns a pointer to it. The thread
+frame creator is library dependent, because the thread frame
+contains top level variables as well as the standard variables.
 
 \subsubsection{Start routine}
 The start routine accepts the thread frame pointer,
@@ -257,6 +430,7 @@ this data in the thread frame, constructs a suspension
 of the user initialisation routine, and returns it.
 
 The client must run the suspension to complete the initialisation.
+
 If Felix is able to run the routine as a C procedure, the suspension
 may be NULL.
 
