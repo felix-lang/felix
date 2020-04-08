@@ -1,7 +1,7 @@
 cd docs
 pdflatex -shell-escape ../src/docs/typesystem.tex
 pdflatex -shell-escape ../src/docs/typesystem.tex
-mv architecture.pdf ../pdfs
+mv typesystem.pdf ../pdfs
 #
 pdflatex -shell-escape ../src/docs/linkagearch.tex
 pdflatex -shell-escape ../src/docs/linkagearch.tex
@@ -38,12 +38,12 @@ pdflatex -shell-escape ../src/docs/modern_programming.tex
 mv modern_programming.pdf ../pdfs
 
 #
-pdflatex -shell-escape ../src/docs/coprogramming.tex
-pdflatex -shell-escape ../src/docs/coprogramming.tex
-makeindex coprogramming
-makeglossaries coprogramming
-pdflatex -shell-escape ../src/docs/coprogramming.tex
-mv coprogramming.pdf ../pdfs
+#pdflatex -shell-escape ../src/docs/coprogramming.tex
+#pdflatex -shell-escape ../src/docs/coprogramming.tex
+#makeindex coprogramming
+#makeglossaries coprogramming
+#pdflatex -shell-escape ../src/docs/coprogramming.tex
+#mv coprogramming.pdf ../pdfs
 cd ..
 sh parsedoc.sh
 

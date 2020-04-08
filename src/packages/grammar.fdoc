@@ -269,7 +269,7 @@ syntax expressions {
     // SETWISE OPERATORS
     ssetunion_pri <
     ssetintersection_pri <
-    sarrow_pri <
+    sarrow_pri <https://www.worldometers.info/coronavirus/country/us/
     scase_literal_pri <
 
     // BITWISE OPERATORS

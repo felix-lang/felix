@@ -449,7 +449,18 @@ namespace flxusr { namespace hello {
 
 //PURE C PROCEDURE <64762>: _init_ unit -> void
 void _init_();
+struct thread_frame_t : 
+  ::flx::run::base_thread_frame_t 
+{
+  thread_frame_t();
+};
 
+}} // namespace flxusr::hello
+\end{minted}
+
+where
+
+\begin{minted}{c++}
 struct thread_frame_t {
   int argc;
   char **argv;
@@ -458,11 +469,9 @@ struct thread_frame_t {
   FILE *flx_stderr;
   ::flx::gc::generic::gc_profile_t *gcp;
   ::flx::run::flx_world *world;
-  thread_frame_t(
-  );
 
-};
-}} // namespace flxusr::hello
+  thread_frame_t();
+}
 \end{minted}
 \end{figure}
 
@@ -472,7 +481,7 @@ struct thread_frame_t {
 namespace flxusr { namespace hello {
 
 //Thread Frame Constructor
-thread_frame_t::thread_frame_t() : gcp(0) {}
+thread_frame_t::thread_frame_t() {}
 
 //------------------------------
 //C PROC <64762>: _init_
