@@ -8,10 +8,11 @@ Chips to providing parsing functions.
 include "std/control/chips";
 include "std/strings/recognisers";
 include "std/strings/parser_synlib";
+
 class Parsers 
 {
   open Recognisers;
-  open Grammars;
+  open Grammars[Recognisers::recog_t];
    
   variant action_t =  
   | Reduce of string * int

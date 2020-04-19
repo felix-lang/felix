@@ -3,7 +3,7 @@
 @h1 Grammar
 @tangle grammars.flx
 
-class Grammars {
+class Grammars[Terminal_t] {
 
 typedef generic_gramentry_t[T] = string * T;
 typedef generic_gramlib_t[T] = list[generic_gramentry_t[T]];
@@ -38,12 +38,9 @@ fun generic_closure[T]
   | start, lib => generic_cls generic_add lib ([start]) Empty[string]
 ;
 
-// NOTE: this depends on Recognisers, but Recognisers
-// depends on Grammars. BAD BAD.
-
 typedef open_prod_t[T] =
 ( 
-  | `Terminal of string * Recognisers::recog_t
+  | `Terminal of string * Terminal_t
   | `Nonterminal of string
   | `Epsilon
   | `Seq of list[T]

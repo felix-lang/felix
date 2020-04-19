@@ -18,6 +18,7 @@ typedef any = any;
 @tangle typing.flx
 open class Typing
 {
+
   typedef fun dom(t:TYPE):TYPE =>
     typematch t with
     | ?a -> _ => a
@@ -368,6 +369,7 @@ gen iterator[t] (f:1->opt[t]) => f;
 // Normalised form allows negative indices.
 // However out of range indices are trimmed back:
 // the calculation is NOT modular.
+
 
 fun cal_slice (n:int, var b:int, var e:int) = {
   if b<0 do b = b + n; done

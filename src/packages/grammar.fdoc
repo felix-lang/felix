@@ -269,7 +269,7 @@ syntax expressions {
     // SETWISE OPERATORS
     ssetunion_pri <
     ssetintersection_pri <
-    sarrow_pri <https://www.worldometers.info/coronavirus/country/us/
+    sarrow_pri <
     scase_literal_pri <
 
     // BITWISE OPERATORS
@@ -4531,7 +4531,7 @@ syntax requirements {
   //$ This is a special code to make specific
   //$ that a binding is an identity which can
   //$ be optimised away.
-  scode_spec := "ident" =># "'Identity";
+  //scode_spec := "ident" =># "'Identity";
 
   //$ The anonymous requires statement specifies requirements which 
   //$ propagates to all C bindings

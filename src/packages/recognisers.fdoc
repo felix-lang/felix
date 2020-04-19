@@ -715,9 +715,10 @@ class Recognisers
 inherit RecogniserBase;
 open BaseChips;
 
-open Grammars;
-
 typedef ntdef_t = string * recog_t;
+typedef gramlib_t = Grammars[recog_t]::gramlib_t;
+typedef prod_t = Grammars[recog_t]::prod_t;
+typedef grammar_t = Grammars[recog_t]::grammar_t;
 
 fun find (v:varray[ntdef_t]) (nt:string) : size = 
 {
@@ -750,7 +751,7 @@ fun render_prod
 fun recogniser
   (start:string, lib:gramlib_t) : recog_t =
 {
-    var cl = closure (start,lib);
+    var cl = Grammars[recog_t]::closure (start,lib);
 
     // allocate a varray with a slot for each nonterminal
     var n = cl.len;

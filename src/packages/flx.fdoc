@@ -220,6 +220,7 @@ fun dflt_control () =>
     var INDIR = "";
     var INREGEX = "";
     var NONSTOP = 0;
+    var FANCYLOG= 0;
     var OPTIMISE = list[string]$ "-O1";
     var FLXG_OPTIMISE= 0;
   }
@@ -248,6 +249,7 @@ private proc print_help() {
   println "--target=dir         : subdir of install dir containing target configuration (default 'host')";
   println "--target-dir=dir     : dir containing target configuration (default '$FLX_INSTALL_DIR/host')";
   println "--pkgconfig-path+=dir: prepend extra flx_pkgconfig search directory to standard path";
+  println "--pkg=pkg            : Add pkgconfig package to link";
   println "--toolchain=toolchain: pick a non-default C++ compiler toolchain";
   println "--felix=file         : get installation details from file";
   println "--where              : print location of felix installation";
@@ -303,6 +305,7 @@ private proc print_help() {
   println "--indir=dir          : set directory for regexp search, default current directory";
   println "--regex=pattern      : Perl regexp for batch file processing";
   println "--nonstop            : don't stop on error in batch processing";
+  println "--fancy-log          : colour log";
   println "--backup             : backup working source tree to dir 'backup'";
   println "--import=file        : add an import which is prefixed to all files being translated";
   println "--import=@file       : add all the files listed in file as imports (recursive on @)";
@@ -781,6 +784,11 @@ private noinline proc handle_switch
   elif arg == "--nonstop" do
     control.NONSTOP <- 1;
     debugln$ "Set batch processing mode to nonstop " + control*.NONSTOP;
+
+  elif arg == "--fancy-log" do
+    control.FANCYLOG <- 1;
+    debugln$ "Set diagnostics to Fancy log";
+
 
   elif arg == "--c++" do
     control.CXXONLY <- 1;
@@ -2686,7 +2694,12 @@ class Flx
           control.EXPECT <- "";
           control.STDIN <- "";
           var dvars = FlxDepvars::cal_depvars(toolchain_maker,c_compiler_executable, cxx_compiler_executable, *config,control,*loopctl);
-          println$ f"Processing [%02d/%02d]: %S" (i, n, file);
+          if control*.FANCYLOG == 1 do
+            print$ f"Processing [%02d/%02d]: %S\r" (i, n, (file+" "*40).(0..40));
+            fflush stdout;
+          else
+            println$ f"Processing [%02d/%02d]: %S" (i, n, file);
+          done
           var pe = processing_env(toolchain_maker,c_compiler_executable, cxx_compiler_executable, *config,*control,dvars);
           call_with_trap {
             proc ehandler() {
@@ -2878,7 +2891,12 @@ class BootFlx
           control.STDOUT <- "";
           control.EXPECT <- "";
           var dvars = FlxDepvars::cal_depvars(toolchain_maker,c_compiler_executable, cxx_compiler_executable, *config,control,*loopctl);
-          println$ f"Processing [%02d/%02d]: %S" (i, n, file);
+          if control*.FANCYLOG == 1 do
+            print$ f"Processing [%02d/%02d]: %S\r" (i, n, (file+" "*40).(0..40));
+            fflush stdout;
+          else
+            println$ f"Processing [%02d/%02d]: %S" (i, n, file);
+          done
           var pe = processing_env(toolchain_maker,c_compiler_executable, cxx_compiler_executable, *config,*control,dvars);
           result = pe.runit(ehandler);
           if result != 0 goto endoff;

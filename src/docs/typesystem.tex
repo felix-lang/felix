@@ -86,14 +86,15 @@ var u2 : 1 = ();
 
 The unit projection:
 \begin{minted}{felix}
-fun uprj: 1 -> 0
+uprj: 1 -> 0
 \end{minted}
-exists but cannot be applied [NOTE NOT YET IMPLEMENTED, FIXME]
+exists but cannot be applied [NOTE NOT IMPLEMENTED, conflicts with
+a procedure accepting unit]
 
 \subsection{Identity Function}
 A product of one component has the identity function as a projection:
 \begin{minted}{felix}
-ident[T]: T -> T
+ident of T
 \end{minted}
 [FIXME: special form in grammar "ident of texpr", can't use overloading.]
  
@@ -238,14 +239,36 @@ typedef pv = (`A | `B of int);
 fun f() : pv => `B 42; // implicit coercion to pv
 \end{minted}
 Polymorphic variants support open recursion.
-Decoding may require a pattern with a coercion too:
-\begin{minted}{felix}
-\end{minted}
-
 
 \subsection{Pointers}
+Felix has read only, write only, and read-write pointers to any type:
+\begin{minted}{felix}
+var x = 1;
+var rx = &<x; //read only
+var wx = &>x; // write only
+var px = &x; // read-write
+\end{minted}
+
+Note that the pointer formation can only be applied to 
+\verb$var$ variables.
+
 \subsection{Functions}
-\subsection{subtyping}
+Felix has three kinds of functions:
+
+\begin{minted}{felix}
+  D -> C      // standard function
+  D ->. C     // linear function
+  D --> C     // C function
+\end{minted}
+
+Currenty generators use the same type as a standard function.
+Note that the types given above are the types of function values,
+that is, exponentials.
+
+\subsection{Subtyping}
+Felix supports a systematic set of subtyping rules for structural types.
+Monomorphic nominal types can be subtyped as well by providing explicit
+coerions. Nominal subtyping must be transitive and acyclic.
 
 \section{Type Classes}
 \section{Kinds}
