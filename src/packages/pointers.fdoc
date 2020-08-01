@@ -159,6 +159,9 @@ to reserve such carrays for C datatypes.
 
   //$ Store value in array at index position.
   proc set[T] : carray[T] * !ints * T = "$1[$2]=$3;";
+  proc set[T] : carray[T] *  T = "$1[0]=$2;";
+
+  proc storeat[T] (lhs: carray[T], rhs: T) { set (lhs, 0, rhs); }
 
   //$ Get by index using application.
   //$ i x = x . i = get (x,i)
