@@ -11,7 +11,7 @@
 \usepackage{amssymb}
 \usepackage{amscd}
 \usemintedstyle{friendly}
-\setminted{bgcolor=bg,xleftmargin=20pt}
+\setminted{bgcolor=bg,xleftmargin=15pt}
 \usepackage{hyperref}
 \hypersetup{pdftex,colorlinks=true,allcolors=blue}
 \usepackage{hypcap}
@@ -2462,7 +2462,7 @@ constructions of function encodings, provide a suitable programming
 language is available, and given a fixed choice of data types.
 The most important of these tools is {\em functional decomposition}.
 Given two function $f:A \rightarrow B$ and $g:B \rightarrow C$ we can
-construct the composiite $h = f \cdot g$.
+construct the composite $h = f \cdot g$.
 
 Note we use the midposition dot operator for reverse composition,
 meaning the first function written is applied to an argument
@@ -2479,10 +2479,10 @@ the function.
 
 In Felix code:
 
-\begin{minted}{felix}
+\begin{minted}[escapeinside=||]{felix}
 fun f: A -> B;
 fun g: B -> C;
-fun h: A -> C => f \cdot g;
+fun h: A -> C => f |$\cdot$| g; // f \cdot g
 \end{minted}
 
 Another tool is parallel composition:
@@ -2490,7 +2490,7 @@ Another tool is parallel composition:
 \begin{minted}{felix}
 fun f: A -> X;
 fun g: B -> Y;
-fun fg = A * B -> X * Y = f * g;
+fun fg : A * B -> X * Y = \prod (f, g);
 \end{minted}
 
 More of these tools are discussed in the section on Categorical Programming.
@@ -2526,7 +2526,7 @@ fun addup (x: list[int]) =
 {
   fun aux (rest: list[int], acc: int) =>
     match rest with
-    | #Empty => rest
+    | Empty => acc 
     | Cons (head, tail) => aux (tail, acc + head)
     endmatch
   ;
@@ -2548,7 +2548,7 @@ fun fold
 {
   fun aux (rest: list[int], acc: int) =>
     match rest with
-    | #Empty => rest
+    | Empty => rest
     | Cons (head, tail) => aux (tail, binop (acc, head))
     endmatch
   ;
@@ -2559,7 +2559,7 @@ fun fold
 Fold works with any binary operator on \verb%int%. For example:
 
 \begin{minted}{felix}
-lst = list(1,2,3);
+var lst = ([1,2,3]);
 fun addition (x:int, y:int) => x + y;
 assert addup lst == fold (addition, 0, lst);
 \end{minted}
@@ -2612,7 +2612,7 @@ fun fold[V,R]
 {
   fun aux (rest: list[V], acc: R) =>
     match rest with
-    | #Empty => rest
+    | Empty => acc 
     | Cons (head, tail) => aux (tail, binop (acc, head))
     endmatch
   ;
@@ -2628,7 +2628,7 @@ println$
   (
     (fun (acc:int, s:string)=>acc + s.len.int),
     0,
-    (list ("Hello", "World"))
+    (["Hello", "World"])
   )
 ;
 \end{minted}
@@ -2641,7 +2641,7 @@ println$
   (
     (fun (acc:int, s:string)=>acc + s.len.int),
     0,
-    (list ("Hello", "World"))
+    (["Hello", "World"])
   )
 ;
 \end{minted}
@@ -2669,7 +2669,7 @@ fun fold[V,R]
 ) =>
   let fun aux (rest: lst, acc: R) =>
     match rest with
-    | #Empty => rest
+    | Empty => acc 
     | Cons (head, tail) => aux (tail, binop (acc, head))
     endmatch
   in 
@@ -2707,7 +2707,7 @@ fun fold[V,R] (binop: R * V -> R) =
       fun B(lst:list[V]) =>
         let fun aux (rest: list[V], acc: R) =>
           match rest with
-          | #Empty => acc
+          | Empty => acc
           | Cons (head, tail) => aux (tail, binop (acc, head))
           endmatch
         in 
@@ -2741,15 +2741,12 @@ How would we use this? Well:
 \begin{minted}{felix}
 println$ 
   (
-    (
-      (
-         fold 
-           (fun (acc:int, s:string)=>acc + s.len.int))
-      )
-      0
+    ( 
+      fold (fun (acc:int, s:string)=>acc + s.len.int)
     )
-    (list ("Hello", "World"))
+    0
   )
+  (["Hello", "World")
 ;
 \end{minted}
 

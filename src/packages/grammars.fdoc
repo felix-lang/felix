@@ -70,6 +70,17 @@ typedef gramentry_t = open_gramentry_t[prod_t];
 typedef gramlib_t = open_gramlib_t[prod_t];
 typedef grammar_t = open_grammar_t[prod_t];
 
+instance Str[gramentry_t] {
+  fun str (nt: string, p: prod_t) => nt + " ::= " + str p;
+}
+
+instance Str[grammar_t] {
+  fun str (name: string, gramlib: gramlib_t) => "Grammar " + name + "\n  " +
+    List::strcat "\n  " (List::map (str of gramentry_t) gramlib) + "\n"
+  ;
+}
+
+
 @h1 Grammar Operations
 @h2 Closure
 @tangle grammars.flx

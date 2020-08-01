@@ -66,7 +66,14 @@ instance Str[Buffer] {
   fun str (b:Buffer) => "@"+b.pos.str;
 }
 
+fun comparable (a: Buffer, b: Buffer) =>
+  a.sp.stl_begin == b.sp.stl_begin
+; 
+
 // hack, ignore underlying data.. FIXME
+// No, cost. comparable is required but we don't want to
+// pay the cost of invoking it when we actually know
+// in a parser, for example, there's only one buffer
 instance Eq[Buffer] {
   fun == (a:Buffer, b:Buffer) => a.pos == b.pos;
 }
