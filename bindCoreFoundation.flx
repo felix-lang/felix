@@ -1,0 +1,179 @@
+// Binder for Xcode SDKs
+
+fun / (a:string, b:string) => Filename::join (a,b);
+
+var xcode_sdks = 
+  "/Applications/Xcode.app/Contents/Developer/Platforms" / 
+  "MacOSX.platform/Developer/SDKs"
+;
+
+val cf_dev_dir = 
+ xcode_sdks / "MacOSX.sdk"/
+  "/System/Library/Frameworks" / 
+  "CoreFoundation.framework/Headers"
+;
+
+fun dotless (s:string): bool => s not in (".","..");
+
+println$ "DIR: " + cf_dev_dir;
+
+var headers : list[string] = 
+  match Directory::filesin cf_dev_dir with 
+  | None => fun_fail[list[string]] ("NO FILES IN " + cf_dev_dir)
+  | Some s => s
+  endmatch
+;
+
+headers = List::filter dotless headers;
+
+for hdr in headers do
+  println$ "  " + hdr;
+done
+
+proc parse_api(s:string) {
+  var i = 0;
+
+  // get return type
+  var ret = "";
+  while iscidcont(s.i) do
+    ret += s.i;
+    ++i;
+  done
+
+  if ret == "const" goto const_handling;
+
+  // handle _Nullable qualifier
+  if ret == "_Nullable" do
+    // skip spaces
+    while s.i <= char ' ' perform ++i;
+    ret += " ";
+    while iscidcont(s.i) do
+      ret += s.i;
+      ++i;
+    done
+  done
+
+  // skip spaces
+  while s.i <= char ' ' perform ++i;
+
+  // check for pointer
+  if s.i == char '*' do 
+    ret += "*";
+    ++i;
+  done
+
+  // get function name
+  var name = "";
+  while iscidcont (s.i) do
+    name += s.i;
+    ++i;
+  done
+
+  if name == "_Null_unspecified" do
+    ret += " " + name;
+    ret = '';
+    // skip spaces
+    while s.i <= char ' ' perform ++i;
+
+    name = "";
+    while iscidcont(s.i) do
+      name += s.i;
+      ++i;
+    done
+  done
+
+  if name == "long" do
+    ret += " " + name;
+    ret = '';
+    // skip spaces
+    while s.i <= char ' ' perform ++i;
+
+    name = "";
+    while iscidcont(s.i) do
+      name += s.i;
+      ++i;
+    done
+  done
+
+  println$ "    Return type " + ret;
+  println$ "    Function Name " + name;
+
+  // skip spaces
+  while s.i <= char ' ' perform ++i;
+
+  // get (
+  if s.i != char "(" do
+    println$ "!!! Cannot parse '" + s + "'";
+    System::abort;
+  done
+
+
+  return;
+
+const_handling:>
+  println$ "   Constant";
+
+  // skip spaces
+  while s.i <= char ' ' perform ++i;
+
+  // get constant type
+  var ctyp = "";
+  while iscidcont (s.i) do
+    ctyp += s.i;
+    ++i;
+  done
+
+  // skip spaces
+  while s.i <= char ' ' perform ++i;
+
+  name = "";
+  while iscidcont(s.i) do
+    name += s.i;
+    ++i;
+  done
+
+  if name == "_Null_unspecified" do
+    ctyp += " " + name;
+    name = '';
+    // skip spaces
+    while s.i <= char ' ' perform ++i;
+
+    name = "";
+    while iscidcont(s.i) do
+      name += s.i;
+      ++i;
+    done
+  done
+  println$ "    Constant type " + ctyp;
+  println$ "    Constant Name " + name;
+
+  
+
+}
+
+proc process_header (d:string) (h:string) {
+  println$ "*" * 20;
+  println$ "* Header " + h;
+  println$ "*" * 20;
+  println$ "";
+
+  var data = load (d/h);
+  var lines = split (data, char "\n");
+  var count = 1;
+  var api = false;
+  for line in lines do
+    //println$ (f"%3d " count) + line;
+    if api do
+      println$ (f"%3d " count) + "API " + line;
+      parse_api line;
+    done
+    api = line == "CF_EXPORT";
+    ++count;
+  done
+  
+}
+
+
+for hdr in headers do
+  process_header cf_dev_dir hdr;
+done
