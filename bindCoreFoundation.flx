@@ -30,125 +30,235 @@ for hdr in headers do
   println$ "  " + hdr;
 done
 
-proc parse_api(s:string) {
-  var i = 0;
+proc skip_white(p: &(+char)) {
+skipw:>
+  while **p <= char ' ' perform pre_incr p;
+
+  if **p == char "/" and *(*p+1) == char "*" do
+    pre_incr p;
+    pre_incr p;
+skipc:>
+    if **p == char "*" and *(*p+1) == char "/" do
+      pre_incr p;
+      pre_incr p;
+      goto skipw;
+    else
+     pre_incr p;
+     goto skipc;
+    done
+  done
+  return; 
+}
+
+// precondition: starts on non-white
+// postcondition: ends on non-white
+proc get_name(p: &(+char), ps:&string) {
+  var name = "";
+  while iscidcont(**p) do
+    name += **p;
+    pre_incr p;
+  done
+  ps <- *ps + name;
+  skip_white p;
+}
+
+proc get_type(p: &(+char), typ:&string) {
+//  println$ "** get type";
+  skip_white p;
+
+  // ellipsis
+  if **p == char "."  do 
+    if *(*p+1) == char "." do 
+      if *(*p+2) == char "." do
+        typ <- "...";
+        +=(p,3);
+        return;
+      done
+    done
+  done
+
+base:>
+  var name = "";
+  get_name (p,&name);
+// println$ "** base = " + name;
+  skip_white p;
+
+  if name in ("const", "struct") do // KEEP
+    +=(typ,name + " ");
+    goto base;
+  done
+
+  if name in ("_Nullable", "_Null_unspecified") do // DROP
+    goto base;
+  done
+
+  +=(typ,name + " ");
+  
+// at this point we have the base type
+// now look for pointer stuff
+
+// println$ "** Final base = " + *typ;
+
+ptrs:>
+  while **p == "*" do // KEEP
+    += (typ,"*");
+    pre_incr p;
+    skip_white p;
+  done
+
+// look ahead to next symbol
+lookahead:>
+  var q = *p;
+  name = "";
+  get_name(&q, &name);
+// println$ "Lookahead gets "+name;
+  if name in ("char", "short", "int", "long") do
+     +=(typ, " " + name);
+     p <- q;
+     goto ptrs;
+  elif name in ("_Null_unspecified", "_Nullable") do
+    p <- q;
+    goto ptrs; // drop
+  elif name == "const" do
+    += (typ, " const");
+    p <- q;
+    goto ptrs;
+  done
+
+// parameter name, not type, drop for rescan
+// println$ "** Final type = " + *typ;
+  return;
+}
+
+proc get_type_and_name(p: &(+char), typ:&string, name:&string) {
+  get_type (p,typ);
+again:>
+  get_name (p,name);
+
+  if *name == "long" do
+    +=(typ,"long");
+    skip_white p;
+    name <- "";
+    goto again;
+
+  elif *name in ("_Null_unspecified","CF_NOESCAPE", "CF_RELEASES_ARGUMENT", "_Nullable") do // DROP
+    skip_white p;
+    goto again;
+  done
+
+  if **p == char "[" do
+    pre_incr p;
+    if **p != char "]" do
+      println$ "ERROR, expected ']', got '"+*p+"'";
+      System::abort;
+    done
+    pre_incr p;
+    +=(typ,"[]");
+  done
+ 
+// println$ "++ Complete type = " + *typ + ", Param name = " + *name; 
+// println$ " ";
+  return;
+}
+
+proc skip_balanced_parens (p: &(+char)) {
+  var level = 0;
+again:>
+  if **p == char "(" do 
+    pre_incr p;
+    ++level;
+    goto again;
+  elif **p == char ")" do
+    pre_incr p;
+    --level;
+    if level == 0 do 
+      skip_white p;
+      return;
+    done
+    goto again;
+  else
+    pre_incr p;
+    goto again;
+  done
+}
+
+proc parse_params (p: &(+char), ps: &list[string * string]) {
+  var ptyp= "";
+  var pname= "";
+again:>
+  get_type_and_name (p,&ptyp, &pname);
+  ps <- *ps + (ptyp, pname);
+  if **p == char "," do
+    pre_incr p;
+    skip_white p;
+    ptyp, pname = "","";
+    goto again;
+  done
+  return;
+}
+
+enum kind_t = Const_k, Fun_k, Unk_k;
+
+proc parse_api(var s:string) {
+  var p = s&.stl_begin;
 
   // get return type
   var ret = "";
-  while iscidcont(s.i) do
-    ret += s.i;
-    ++i;
-  done
-
-  if ret == "const" goto const_handling;
-
-  // handle _Nullable qualifier
-  if ret == "_Nullable" do
-    // skip spaces
-    while s.i <= char ' ' perform ++i;
-    ret += " ";
-    while iscidcont(s.i) do
-      ret += s.i;
-      ++i;
-    done
-  done
-
-  // skip spaces
-  while s.i <= char ' ' perform ++i;
-
-  // check for pointer
-  if s.i == char '*' do 
-    ret += "*";
-    ++i;
-  done
-
-  // get function name
   var name = "";
-  while iscidcont (s.i) do
-    name += s.i;
-    ++i;
+  var params = Empty[string * string];
+  var kind = Const_k;
+  get_type_and_name (&p, &ret, &name);
+
+  skip_white &p;
+
+fix_kind:>
+
+  if *p == char ";" do
+    match kind with
+    | Unk_k => 
+      println$ "++++ CANNOT PARSE '"+p+"'";
+      System::abort;
+      return;
+
+    | Const_k => 
+      println$ "    Constant type " + ret;
+      println$ "    Constant Name " + name;
+      return;
+
+    | Fun_k =>
+      println$ "    Function type " + ret;
+      println$ "    Function Name " + name;
+      for param in params do
+        var ptyp = param.0;
+        var pname = param.1;
+        println$ "        param= " + ptyp + " " + pname;
+      done 
+    endmatch;
+    return;
   done
 
-  if name == "_Null_unspecified" do
-    ret += " " + name;
-    ret = '';
-    // skip spaces
-    while s.i <= char ' ' perform ++i;
-
-    name = "";
-    while iscidcont(s.i) do
-      name += s.i;
-      ++i;
+  if *p == char "(" do
+    kind = Fun_k;
+    ++p;
+    parse_params (&p, &params);
+    if *p == char ")" do
+      ++p;
+    else
+      println$ "ERROR, expected ')' at '" + p + "'"; 
+      System::abort;
     done
+  else
+    kind = Const_k;
   done
 
-  if name == "long" do
-    ret += " " + name;
-    ret = '';
-    // skip spaces
-    while s.i <= char ' ' perform ++i;
-
-    name = "";
-    while iscidcont(s.i) do
-      name += s.i;
-      ++i;
-    done
+  var api_avail = "";
+  get_name(&p,&api_avail);
+println$ "API AVAILABILITY = '"  + api_avail + "'";
+  if api_avail in ("API_AVAILABLE", "API_UNAVAILABLE", "API_DEPRECATED") do
+    skip_balanced_parens &p;
   done
-
-  println$ "    Return type " + ret;
-  println$ "    Function Name " + name;
-
-  // skip spaces
-  while s.i <= char ' ' perform ++i;
-
-  // get (
-  if s.i != char "(" do
-    println$ "!!! Cannot parse '" + s + "'";
-    System::abort;
-  done
-
-
-  return;
-
-const_handling:>
-  println$ "   Constant";
-
-  // skip spaces
-  while s.i <= char ' ' perform ++i;
-
-  // get constant type
-  var ctyp = "";
-  while iscidcont (s.i) do
-    ctyp += s.i;
-    ++i;
-  done
-
-  // skip spaces
-  while s.i <= char ' ' perform ++i;
-
-  name = "";
-  while iscidcont(s.i) do
-    name += s.i;
-    ++i;
-  done
-
-  if name == "_Null_unspecified" do
-    ctyp += " " + name;
-    name = '';
-    // skip spaces
-    while s.i <= char ' ' perform ++i;
-
-    name = "";
-    while iscidcont(s.i) do
-      name += s.i;
-      ++i;
-    done
-  done
-  println$ "    Constant type " + ctyp;
-  println$ "    Constant Name " + name;
-
+  goto fix_kind; 
   
-
 }
 
 proc process_header (d:string) (h:string) {
