@@ -199,7 +199,13 @@ again:>
 
 enum kind_t = Const_k, Fun_k, Unk_k;
 
-proc parse_api(var s:string) {
+variant sig_t = 
+| Constant of string * string /* name, type */
+| Function of string * string * list[string] /* name, return type, parameter types */
+| Bad of string // the bad line
+;
+ 
+fun parse_api(var s:string) : sig_t {
   var p = s&.stl_begin;
 
   // get return type
@@ -218,23 +224,25 @@ fix_kind:>
     | Unk_k => 
       println$ "++++ CANNOT PARSE '"+p+"'";
       System::abort;
-      return;
+      return Bad s;
 
     | Const_k => 
-      println$ "    Constant type " + ret;
-      println$ "    Constant Name " + name;
-      return;
+//      println$ "    Constant type " + ret;
+//      println$ "    Constant Name " + name;
+      return Constant (name, ret);
 
     | Fun_k =>
       println$ "    Function type " + ret;
       println$ "    Function Name " + name;
+      var psigs = Empty[string];
       for param in params do
         var ptyp = param.0;
         var pname = param.1;
         println$ "        param= " + ptyp + " " + pname;
+        psigs += ptyp;
       done 
     endmatch;
-    return;
+    return Function (name, ret, psigs);
   done
 
   if *p == char "(" do
@@ -253,12 +261,50 @@ fix_kind:>
 
   var api_avail = "";
   get_name(&p,&api_avail);
-println$ "API AVAILABILITY = '"  + api_avail + "'";
+//println$ "API AVAILABILITY = '"  + api_avail + "'";
   if api_avail in ("API_AVAILABLE", "API_UNAVAILABLE", "API_DEPRECATED") do
     skip_balanced_parens &p;
   done
   goto fix_kind; 
   
+}
+
+fun translate_type (t: string) : string {
+  match strip t with
+  | "const char *" => return "+char";
+  | "const void *" => return "address";
+  | "Boolean" => return "bool";
+  | "UInt8" => return "uint8";
+  | t => 
+    var n = t.len.int;
+    if t.(n - 1) == char "*" return "&" + translate_type t.(..<n - 1) ;
+    return t;
+  endmatch;
+}
+
+fun translate_params (ps: list[string]) : string =>
+  match ps with
+  | Empty => "unit"
+  | (["void"]) => "unit"
+  | ps => catmap " * " translate_type ps
+;
+
+proc translate_sig (sig:sig_t) {
+  match sig with
+  | Bad s => 
+    println$ "//#### BAD: " + s;
+
+  | Constant (name, typ) => 
+    println$ "const " + name + ": " + translate_type typ + ";";
+
+  | Function (name, "void ", ps) =>
+    println$ "proc " + name + ": " + catmap " * " translate_type ps + ";";
+
+  | Function (name, ret,ps) =>
+    println$ "fun " + name + ": " + catmap " * " translate_type ps + 
+      " -> " + translate_type ret + ";"
+    ;
+  endmatch;
 }
 
 proc process_header (d:string) (h:string) {
@@ -274,8 +320,9 @@ proc process_header (d:string) (h:string) {
   for line in lines do
     //println$ (f"%3d " count) + line;
     if api do
-      println$ (f"%3d " count) + "API " + line;
-      parse_api line;
+      println$ (f"\n// %3d " count) + "API " + line;
+      var sig = parse_api line;
+      translate_sig sig; // later write to file!
     done
     api = line == "CF_EXPORT";
     ++count;
