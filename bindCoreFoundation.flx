@@ -1,4 +1,5 @@
 // Binder for Xcode SDKs
+var debug = true;
 
 fun / (a:string, b:string) => Filename::join (a,b);
 
@@ -9,7 +10,7 @@ var xcode_sdks =
 
 val cf_dev_dir = 
  xcode_sdks / "MacOSX.sdk"/
-  "/System/Library/Frameworks" / 
+  "System/Library/Frameworks" / 
   "CoreFoundation.framework/Headers"
 ;
 
@@ -227,18 +228,18 @@ fix_kind:>
       return Bad s;
 
     | Const_k => 
-//      println$ "    Constant type " + ret;
-//      println$ "    Constant Name " + name;
+if debug perform println$ "    Constant type " + ret;
+if debug perform println$ "    Constant Name " + name;
       return Constant (name, ret);
 
     | Fun_k =>
-      println$ "    Function type " + ret;
-      println$ "    Function Name " + name;
+if debug perform println$ "    Function type " + ret;
+if debug perform println$ "    Function Name " + name;
       var psigs = Empty[string];
       for param in params do
         var ptyp = param.0;
         var pname = param.1;
-        println$ "        param= " + ptyp + " " + pname;
+if debug perform println$ "        param= '" + ptyp + "' '" + pname+"'";
         psigs += ptyp;
       done 
     endmatch;
@@ -273,8 +274,11 @@ fun translate_type (t: string) : string {
   match strip t with
   | "const char *" => return "+char";
   | "const void *" => return "address";
+  | "void *[]" => return "+address";
   | "Boolean" => return "bool";
   | "UInt8" => return "uint8";
+  | "UInt32" => return "uint32";
+  | "SInt32" => return "int32";
   | t => 
     var n = t.len.int;
     if t.(n - 1) == char "*" return "&" + translate_type t.(..<n - 1) ;
@@ -282,55 +286,71 @@ fun translate_type (t: string) : string {
   endmatch;
 }
 
-fun translate_params (ps: list[string]) : string =>
-  match ps with
+fun translate_params (ps: list[string]) : string {
+if debug perform println$ "translating ps=" + ps.str;
+  return match ps with
   | Empty => "unit"
-  | (["void"]) => "unit"
+  | (["void "]) => "unit"
   | ps => catmap " * " translate_type ps
-;
-
-proc translate_sig (sig:sig_t) {
-  match sig with
-  | Bad s => 
-    println$ "//#### BAD: " + s;
-
-  | Constant (name, typ) => 
-    println$ "const " + name + ": " + translate_type typ + ";";
-
-  | Function (name, "void ", ps) =>
-    println$ "proc " + name + ": " + catmap " * " translate_type ps + ";";
-
-  | Function (name, ret,ps) =>
-    println$ "fun " + name + ": " + catmap " * " translate_type ps + 
-      " -> " + translate_type ret + ";"
-    ;
   endmatch;
 }
 
-proc process_header (d:string) (h:string) {
-  println$ "*" * 20;
-  println$ "* Header " + h;
-  println$ "*" * 20;
-  println$ "";
+fun translate_sig (sig:sig_t) {
+  return match sig with
+  | Bad s => 
+    "  //#### BAD: " + s
+
+  | Constant (name, typ) => 
+    "  const " + name + ": " + translate_type typ + ";"
+
+  | Function (name, "void ", ps) =>
+    "  proc " + name + ": " + translate_params  ps + ";"
+
+  | Function (name, ret,ps) =>
+    "  fun " + name + ": " + translate_params ps + 
+      " -> " + translate_type ret + ";"
+  endmatch;
+}
+
+fun process_header (d:string) (h:string) {
+  var cls = h.(..< h.len.int - 2);
+  var out = Empty[string];
+  proc emit (s:string) { out += s; if debug perform println$ s;}
+  emit$ '//'+ "*"* 20;
+  emit$ "// Header " + d/h;
+  emit$ '//'+"*" * 20;
+  emit$ "";
+  emit$ "open class " + cls + "{";
 
   var data = load (d/h);
   var lines = split (data, char "\n");
   var count = 1;
   var api = false;
   for line in lines do
+    var n = line.len.int;
     //println$ (f"%3d " count) + line;
-    if api do
+    if prefix (line,"#include <CoreFoundation/") do
+      var ihdr = line.(25 ..< n - 3);
+      emit$ '  include "./' + ihdr + '";';
+    elif api do
       println$ (f"\n// %3d " count) + "API " + line;
+      emit$ (f"\n  // %3d " count) + "API " + line;
       var sig = parse_api line;
-      translate_sig sig; // later write to file!
+      emit$ translate_sig sig; // later write to file!
     done
     api = line == "CF_EXPORT";
     ++count;
   done
-  
+  emit$ "} // class " + cls;
+  return out;  
 }
 
 
+FileSystem::rm("CFtmp");
+Directory::mkdirs("CFtmp");
 for hdr in headers do
-  process_header cf_dev_dir hdr;
+println$ "Processing " + hdr;
+  var lines = process_header cf_dev_dir hdr;
+  var cls = hdr.(..< hdr.len.int - 2);
+  save ("CFtmp" / cls + ".flx", lines);
 done

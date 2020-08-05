@@ -416,6 +416,9 @@ class Output_file[output_file]
   //$ Save string to file
   proc save (fn:string, d:string) 
   {
+    if Env::getenv "FLX_FILE_MONITOR" != "" call
+      eprintln$ "[save] " + fn
+    ;
     var f = fopen_output fn;
     write$ f,d;
     fclose f;
@@ -425,6 +428,9 @@ class Output_file[output_file]
   // adds a newline to each string in list
   proc save (fn:string, lines:list[string]) 
   {
+    if Env::getenv "FLX_FILE_MONITOR" != "" call
+      eprintln$ "[save] " + fb
+    ;
     var f = fopen_output fn;
     iter (proc (s:string) { writeln$ f,s; }) lines;
     fclose f;
