@@ -429,7 +429,7 @@ class Output_file[output_file]
   proc save (fn:string, lines:list[string]) 
   {
     if Env::getenv "FLX_FILE_MONITOR" != "" call
-      eprintln$ "[save] " + fb
+      eprintln$ "[save] " + fn
     ;
     var f = fopen_output fn;
     iter (proc (s:string) { writeln$ f,s; }) lines;
