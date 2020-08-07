@@ -989,6 +989,15 @@ noinline proc processing_stage1
     System::exit(0);
   done
 
+  //println$ "AFTER PROCESSING COMMAND LINE SWITCHES, prepend user package dir to flx_pkgconfig search path"; 
+  //println $ "HOME:    Felix home dir is "+config*.FLX_HOME_DIR;
+  //println $ "BASE:    Felix package manager config directories are "+config*.FLX_CONFIG_DIRS.str;
+  //println $ "TARGET:  Felix target subdir  "+control*.FLX_TARGET_SUBDIR;
+var tgt =  control*.FLX_TARGET_SUBDIR;
+tgt = if tgt == "" then "host" else tgt;
+config.FLX_CONFIG_DIRS <- config*.FLX_HOME_DIR / tgt / "config" + config*.FLX_CONFIG_DIRS;
+  //println $ "UPDATED: Felix package manager config directories are "+config*.FLX_CONFIG_DIRS.str;
+
   var xqt = dxqt (control*.ECHO==1 or control*.DEBUG_FLX);
 
   if control*.LINKIT == 0 and control*.STATICLIB == 1 do
