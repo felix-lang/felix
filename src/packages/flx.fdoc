@@ -1889,26 +1889,9 @@ object processing_env(
   gen cxx_compile_dynamic (ehandler:1->0) : int =
   {
     var EXT_SHARED_OBJ = #((toolchain_maker dflt_toolchain_config).dynamic_object_extension);
-/*
-    if
-      control.CXXONLY == 0 and (
-      control.LINKIT == 1 or 
-      control.OUTPUT_FILENAME_SPECIFIED == 0 and
-      control.OUTPUT_FILENAME_WITHOUT_EXTENSION_SPECIFIED == 0)
-    do
-//println$ "Compiling thunk";
-      var result = cxx_compile_dynamic1 ehandler
-      (
-        dvars.cpp_filebase+"_static_link_thunk.cpp",
-        dvars.cpp_filebase+"_static_link_thunk"+EXT_SHARED_OBJ
-      );
-      if result != 0 return result;
-    done
-*/
-
     if control.CXXONLY == 0 do
       if control.LINKIT == 0 do
-        result = cxx_compile_dynamic1 ehandler (dvars.cpp_filebase+".cpp", control.LINKER_OUTPUT_FILENAME);
+        var result = cxx_compile_dynamic1 ehandler (dvars.cpp_filebase+".cpp", control.LINKER_OUTPUT_FILENAME);
         if result != 0 return result;
       else
         result = cxx_compile_dynamic1 ehandler (dvars.cpp_filebase+".cpp", dvars.cpp_filebase+EXT_SHARED_OBJ);
