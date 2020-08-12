@@ -1,0 +1,19 @@
+@tangler corefoundation.fpc = $PWD/src/config/macosx/corefoundation.fpc
+@tangler audiotoolbox.fpc = $PWD/src/config/macosx/audiotoolbox.fpc
+
+@title Apple Specific Config
+@h1 Apple Frameworks
+
+@tangle corefoundation.fpc
+Name: CoreFoundation
+Description: CoreFoundation
+requires_dlibs: ---framework=CoreFoundation
+requires_slibs: ---framework=CoreFoundation
+@
+
+@tangle audiotoolbox.fpc
+Name: AudioToolbox
+Description: AudioToolbox
+requires_dlibs: ---framework=AudioToolbox
+requires_slibs: ---framework=AudioToolbox
+
