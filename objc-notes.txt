@@ -1,0 +1,3 @@
+Objective C notes. I keep getting lost so I'm going to put stuff here.
+
+

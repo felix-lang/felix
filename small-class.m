@@ -35,7 +35,8 @@ int
 main(int argc, char **argv) {
 	SmallClass *s = [[SmallClass alloc] init];
 
-	NSLog(@"get 1977: %i", [s get1977]);
+	//NSLog(@"get 1977: %i", [s get1977]);
+  printf("get 1977: %i\n", [s get1977]);
 
 	return 0;
-}
+}/
