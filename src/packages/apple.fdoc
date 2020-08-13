@@ -1,5 +1,6 @@
-@tangler corefoundation.fpc = $PWD/src/config/macosx/corefoundation.fpc
-@tangler audiotoolbox.fpc = $PWD/src/config/macosx/audiotoolbox.fpc
+@tangler objcruntime.fpc           = $PWD/src/config/macosx/objcruntime.fpc
+@tangler corefoundation.fpc        = $PWD/src/config/macosx/corefoundation.fpc
+@tangler audiotoolbox.fpc          = $PWD/src/config/macosx/audiotoolbox.fpc
 
 @title Apple Specific Config
 @h1 Apple Frameworks
@@ -7,13 +8,23 @@
 @tangle corefoundation.fpc
 Name: CoreFoundation
 Description: CoreFoundation
-requires_dlibs: ---framework=CoreFoundation
-requires_slibs: ---framework=CoreFoundation
+provides_dlib: ---framework=CoreFoundation
+provides_slib: ---framework=CoreFoundation
 @
 
 @tangle audiotoolbox.fpc
 Name: AudioToolbox
 Description: AudioToolbox
-requires_dlibs: ---framework=AudioToolbox
-requires_slibs: ---framework=AudioToolbox
+provides_dlibs: ---framework=AudioToolbox
+provides_slibs: ---framework=AudioToolbox
+@
 
+@tangle objcruntime.fpc
+Name: ObjC Runtime
+Description: run time library for objective C
+provides_dlib: /usr/lib/libobjc.dylib
+provides_slib: /usr/lib/libobjc.dylib
+includes: '#include "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/objc/runtime.h"'
+
+
+ 

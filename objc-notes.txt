@@ -1,3 +1,23 @@
 Objective C notes. I keep getting lost so I'm going to put stuff here.
 
+The main header for the objc run time. There seem to be two copies of it.
+
+
+48 -rw-r--r--  1 root  wheel  80614 27 Sep  2019 /Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk/usr/include/objc/runtime.h
+40 -rw-r--r--  7 root  wheel  80614  4 Sep  2019 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/objc/runtime.h
+
+The objc run time.
+
+0 lrwxr-xr-x  1 root  wheel  15 16 Oct  2019 /usr/lib/libobjc.dylib -> libobjc.A.dylib
+
+Both these things seem not inside any frameworks.
+
+FYI:
+
+~/felix>ls /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib
+ACIPCBTLib.tbd			libcups.tbd			libnetsnmpmibs.tbd
+AppleConvergedTransport.tbd	libcupsimage.2.tbd		libnetsnmptrapd.25.tbd
+.....
+
+It's just a  bunch of tbd files.
 
