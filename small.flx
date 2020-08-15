@@ -1,0 +1,38 @@
+
+header small_class_interface = c"""
+#import <Foundation/Foundation.h>
+@interface SmallClass: NSObject { }
+- (int)get1977;
+@end
+""";
+
+body small_class_implementation = c"""
+@implementation SmallClass
+- (instancetype)init {
+	self = [super init];
+	return self;
+}
+- (int)get1977 {
+	return 1977;
+}
+@end
+""";
+
+type small_class_instance_t = "void*"  requires 
+  small_class_interface, 
+  small_class_implementation,
+  package "objc"
+;
+
+fun make_small_class_instance:
+  1 -> small_class_instance_t 
+= 
+  "[[SmallClass alloc] init]"
+;
+
+fun get1977 : small_class_instance_t -> int = "[$1 get1977]";
+
+var small_class_instance = make_small_class_instance();
+var result = get1977 small_class_instance;
+println$ "Felix ran objc to get " + result.str;
+
