@@ -1,4 +1,4 @@
-@tangler objcruntime.fpc           = $PWD/src/config/macosx/objcruntime.fpc
+@tangler objc.fpc                  = $PWD/src/config/macosx/objc.fpc
 @tangler corefoundation.fpc        = $PWD/src/config/macosx/corefoundation.fpc
 @tangler audiotoolbox.fpc          = $PWD/src/config/macosx/audiotoolbox.fpc
 
@@ -19,12 +19,13 @@ provides_dlibs: ---framework=AudioToolbox
 provides_slibs: ---framework=AudioToolbox
 @
 
-@tangle objcruntime.fpc
+@tangle objc.fpc
 Name: ObjC Runtime
 Description: run time library for objective C
+cflags: -ObjC++
 provides_dlib: /usr/lib/libobjc.dylib
-provides_slib: /usr/lib/libobjc.dylib
-includes: '#include "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/objc/runtime.h"'
+provides_slib: /usr/lib/libobjc.a
+includes: '"/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/objc/runtime.h"'
 
 
  

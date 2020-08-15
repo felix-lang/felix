@@ -18,6 +18,7 @@ open Flx_cexpr
    #0: return type
    @n: shape of n'th argument's type
    @0: shape of return type
+   @@: returns @
 
    $t: pass a tuple argument 'as a tuple'
    $Tn: pass argument n expanded into an argument list (varargs)
@@ -266,6 +267,9 @@ print_endline "";
       | '0' .. '9' ->
         digits := Char.code ch - Char.code '0';
         mode := EarholeDigits
+
+      | '@' ->
+        chcat '@'; mode := Normal
 
       | _ -> serr i "Expected 't' or digit after @"
       end
