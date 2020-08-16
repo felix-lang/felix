@@ -6191,6 +6191,11 @@ syntax listexpr
   satom := "(" "[" expr_comma_list "]" ")" =># 
     '''`(ast_apply ,_sr (,(nos "list") (ast_tuple ,_sr ,_3)))'''
   ; 
+
+  satom := "@[" expr_comma_list  "]" =># 
+    '''`(ast_apply ,_sr (,(nos "NSArray") (ast_tuple ,_sr ,_2)))'''
+  ; 
+
 }
 
 

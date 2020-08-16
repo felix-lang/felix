@@ -50,4 +50,14 @@ proc NSLogStr: NSString = "NSLog($1);";
 NSLogInt (icode, result);
 NSLogStr (s);
 
+type NSObject = "NSObject*";
+type NSArray = "NSArray*";
+ctor[N:UNITSUM] NSArray : NSObject^N = "[NSArray arrayWithObjects:$a,nil]";
+var o = C_hack::cast[NSObject] @"hello";
+
+var x = @[o,o,o];
+proc NSLogArray: NSArray  = 'NSLog(@@"%@@",$1);';
+NSLogArray x;
+
+
 
