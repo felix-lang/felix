@@ -1,9 +1,17 @@
 @tangler objc.fpc                  = $PWD/src/config/macosx/objc.fpc
+@tangler foundation.fpc            = $PWD/src/config/macosx/foundation.fpc
 @tangler corefoundation.fpc        = $PWD/src/config/macosx/corefoundation.fpc
 @tangler audiotoolbox.fpc          = $PWD/src/config/macosx/audiotoolbox.fpc
 
 @title Apple Specific Config
 @h1 Apple Frameworks
+
+@tangle foundation.fpc
+Name: Foundation
+Description: Foundation
+provides_dlib: ---framework=Foundation
+provides_slib: ---framework=Foundation
+@
 
 @tangle corefoundation.fpc
 Name: CoreFoundation

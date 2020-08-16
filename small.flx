@@ -21,7 +21,8 @@ body small_class_implementation = c"""
 type small_class_instance_t = "void*"  requires 
   small_class_interface, 
   small_class_implementation,
-  package "objc"
+  package "objc",
+  package "foundation"
 ;
 
 fun make_small_class_instance:
@@ -35,4 +36,18 @@ fun get1977 : small_class_instance_t -> int = "[$1 get1977]";
 var small_class_instance = make_small_class_instance();
 var result = get1977 small_class_instance;
 println$ "Felix ran objc to get " + result.str;
+
+type NSString = "NSString*";
+
+var s = @"An NS String";
+var icode = @"get 1977 %i";
+
+	//NSLog(@"get 1977: %i", [s get1977]);
+
+proc NSLogInt : NSString * int = "NSLog($1,$2);";
+proc NSLogStr: NSString = "NSLog($1);";
+
+NSLogInt (icode, result);
+NSLogStr (s);
+
 

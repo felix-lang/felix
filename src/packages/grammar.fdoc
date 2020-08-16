@@ -3045,6 +3045,7 @@ SCHEME """
         (n (string-length s))
         (result 
           (cond
+            ((prefix? "@'''" s)(unescape (substring s 4 (- n 3))))
             ((prefix? "w'''" s)(unescape (substring s 4 (- n 3))))
             ((prefix? "W'''" s)(unescape (substring s 4 (- n 3))))
             ((prefix? "c'''" s)(unescape (substring s 4 (- n 3))))
@@ -3061,6 +3062,7 @@ SCHEME """
             ((prefix? "R'''" s)(substring s 4 (- n 3)))
             ((prefix? "'''" s)(unescape (substring s 3 (- n 3))))
 
+            ((prefix? "@\"\"\"" s)(unescape (substring s 4 (- n 3))))
             ((prefix? "w\"\"\"" s)(unescape (substring s 4 (- n 3))))
             ((prefix? "W\"\"\"" s)(unescape (substring s 4 (- n 3))))
             ((prefix? "c\"\"\"" s)(unescape (substring s 4 (- n 3))))
@@ -3077,6 +3079,7 @@ SCHEME """
             ((prefix? "R\"\"\"" s)(substring s 4 (- n 3)))
             ((prefix? "\"\"\"" s)(unescape (substring s 3 (- n 3))))
 
+            ((prefix? "@'" s)(unescape (substring s 2 (- n 1))))
             ((prefix? "w'" s)(unescape (substring s 2 (- n 1))))
             ((prefix? "W'" s)(unescape (substring s 2 (- n 1))))
             ((prefix? "c'" s)(unescape (substring s 2 (- n 1))))
@@ -3093,6 +3096,7 @@ SCHEME """
             ((prefix? "R'" s)(substring s 2 (- n 1)))
             ((prefix? "'" s)(unescape (substring s 1 (- n 1))))
 
+            ((prefix? "@\"" s)(unescape (substring s 2 (- n 1))))
             ((prefix? "w\"" s)(unescape (substring s 2 (- n 1))))
             ((prefix? "W\"" s)(unescape (substring s 2 (- n 1))))
             ((prefix? "c\"" s)(unescape (substring s 2 (- n 1))))
@@ -3260,6 +3264,7 @@ syntax felix_string_lexer {
 
   regdef string_literal = plain_string_literal | qstring | raw_string_literal;
 
+  regdef NSString_literal = '@' plain_string_literal; 
   regdef wstring_literal = ('w' | 'W') plain_string_literal; 
   regdef ustring_literal = ('u' | 'U') plain_string_literal; 
   regdef cstring_literal = ('c' | 'C') plain_string_literal; 
@@ -3297,6 +3302,21 @@ syntax felix_string_lexer {
     )
   """;
   sliteral := String =># "_1";
+
+  // String like literals.
+  regdef NSString = NSString_literal;
+  literal NSString =># """
+    (let*
+      (
+        (ftype "NSString")
+        (iv (decode-string _1))
+        (cv (c-quote-string iv))
+        (cv (string-append "@" cv))
+      )
+      `(ast_literal ,_sr ,ftype ,iv ,cv)
+    )
+  """;
+  sliteral := NSString =># "_1";
 
   regdef Wstring = wstring_literal;
   literal Wstring =># """
