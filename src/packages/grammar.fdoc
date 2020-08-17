@@ -6188,6 +6188,11 @@ syntax listexpr
     '(binop (nos "Snoc") _3 _1)'
   ;
 
+  satom := "@selector(" flx_ident ")" =># 
+    '''
+      `(ast_apply ,_sr (,(nos "selector") ,(stringof _2)))
+    ''';
+
   satom := "(" "[" expr_comma_list "]" ")" =># 
     '''`(ast_apply ,_sr (,(nos "list") (ast_tuple ,_sr ,_3)))'''
   ; 
