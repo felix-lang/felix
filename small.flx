@@ -59,5 +59,13 @@ var x = @[o,o,o];
 proc NSLogArray: NSArray  = 'NSLog(@@"%@@",$1);';
 NSLogArray x;
 
+type SEL = "SEL";
+fun sel_getName : SEL  -> +char = "sel_getName($1)";
 
+instance Str[SEL] {
+  fun str (sel: SEL) : string  => string (sel_getName sel);
+} 
+  
+fun selector : string -> SEL = '@@selector($i)';
+println$ selector "Hello";
 
