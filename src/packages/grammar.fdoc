@@ -359,7 +359,6 @@ syntax expressions {
     """;
 
 
-
   //$ Unterminated match
   x[let_pri] := "let" pattern_match =># "_2"; 
   // below gets confused with statement expression .. :-)
@@ -694,6 +693,11 @@ syntax expressions {
   satom := "{" setform  "}" =># "_2";
   satom := "\{" setform  "\}" =># "_2";
 
+  satom := "@(" sexpr ")" =># 
+    """
+      `(ast_apply ,_sr (,(nos "objc_box") ,_2))
+    """
+  ; 
 
 
 }

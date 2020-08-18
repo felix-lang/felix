@@ -78,3 +78,8 @@ NSLog (y);
 var z = @22u;
 NSLog (z);
 
+fun objc_box[T]: T -> NSObject = "@@($1)";
+
+var a = @(42);
+NSLog a;
+
