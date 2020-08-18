@@ -6021,6 +6021,11 @@ syntax felix_int_lexer {
   )
   """; 
   sliteral := int_lit =># "`(ast_literal ,_sr ,@_1)";
+  sliteral := "@" int_lit =># 
+    """
+      `(ast_literal ,_sr "NSNumber" ,(second _2) ,(string-append "@" (third _2)))
+    """
+  ;
 
   // Typed signed integer constant.
   sintegral := int_lit =># "_1";
@@ -6095,6 +6100,12 @@ syntax felix_float_lexer {
 
   // Floating literal.
   sliteral := sfloat =># "`(ast_literal ,_sr ,@_1)";
+
+  sliteral := "@" sfloat =># 
+    """
+      `(ast_literal ,_sr "NSNumber" ,(second _2) ,(string-append "@" (third _2)))
+    """
+  ;
 
 }
 

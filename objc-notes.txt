@@ -21,3 +21,8 @@ AppleConvergedTransport.tbd	libcupsimage.2.tbd		libnetsnmptrapd.25.tbd
 
 It's just a  bunch of tbd files.
 
+
+Foundation interfaces:
+
+/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Foundation.framework/Versions/C/Headers/
+

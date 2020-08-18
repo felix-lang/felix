@@ -46,6 +46,7 @@ var icode = @"get 1977 %i";
 
 proc NSLogInt : NSString * int = "NSLog($1,$2);";
 proc NSLogStr: NSString = "NSLog($1);";
+proc NSLog[T] : T = 'NSLog(@@"%@@",$1);';
 
 NSLogInt (icode, result);
 NSLogStr (s);
@@ -68,4 +69,12 @@ instance Str[SEL] {
   
 fun selector : string -> SEL = '@@selector($i)';
 println$ @selector(Hello);
+
+type NSNumber = "NSNumber*";;
+
+var y = @1.23;
+NSLog (y);
+
+var z = @22u;
+NSLog (z);
 
