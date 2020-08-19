@@ -15,6 +15,10 @@ body small_class_implementation = c"""
 - (int)get1977 {
 	return 1977;
 }
+- (int)getsum: (int)toadd {
+  return 1977 + toadd;
+}
+
 @end
 """;
 
@@ -82,4 +86,10 @@ fun objc_box[T]: T -> NSObject = "@@($1)";
 
 var a = @(42);
 NSLog a;
+
+// message sending
+
+var result2 = cexpr[int] "[$1 get1977]" small_class_instance endcexpr;
+
+NSLogInt (@"R2 = %i", result2);
 

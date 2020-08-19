@@ -1230,13 +1230,13 @@ syntax cbind {
   //$ This required giving the Felix type of the expression. 
   //$ The expression is contained in the string. For example:
   //$
-  //$ code [double] "sin(0.7)"
+  //$ cexpr [double] "sin(0.7)" endcexpr
   //$
   satom := "cexpr" "[" stypeexpr "]" scode_spec sexpr? "endcexpr" =># "`(ast_expr ,_sr ,_5 ,_3 ,_6)";
 
   //$ A short form embedding for variables.
   //$
-  //$ code [double] M_PI
+  //$ cvar [double] M_PI
   //$
   satom := "cvar" "[" stypeexpr "]" sname =># "`(ast_expr ,_sr (Str ,_5) ,_3 ())";
 
