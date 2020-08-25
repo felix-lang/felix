@@ -1,3 +1,4 @@
+include "std/apple/Foundation";
 
 header small_class_interface = c"""
 #import <Foundation/Foundation.h>
@@ -24,9 +25,7 @@ body small_class_implementation = c"""
 
 type small_class_instance_t = "void*"  requires 
   small_class_interface, 
-  small_class_implementation,
-  package "objc",
-  package "foundation"
+  small_class_implementation
 ;
 
 fun make_small_class_instance:
@@ -41,44 +40,22 @@ var small_class_instance = make_small_class_instance();
 var result = get1977 small_class_instance;
 println$ "Felix ran objc to get " + result.str;
 
-type NSString = "NSString*";
-
 var s = @"An NS String";
 var icode = @"get 1977 %i";
 
-	//NSLog(@"get 1977: %i", [s get1977]);
+NSLog (icode, result);
+NSLog(s);
 
-proc NSLogInt : NSString * int = "NSLog($1,$2);";
-proc NSLogStr: NSString = "NSLog($1);";
-proc NSLog[T] : T = 'NSLog(@@"%@@",$1);';
-
-NSLogInt (icode, result);
-NSLogStr (s);
-
-type NSObject = "NSObject*";
-type NSArray = "NSArray*";
-ctor[N:UNITSUM] NSArray : NSObject^N = "[NSArray arrayWithObjects:$a,nil]";
 var o = C_hack::cast[NSObject] @"hello";
 
 var x = @[o,o,o];
 proc NSLogArray: NSArray  = 'NSLog(@@"%@@",$1);';
 NSLogArray x;
 
-type SEL = "SEL";
-fun sel_getName : SEL  -> +char = "sel_getName($1)";
-
-instance Str[SEL] {
-  fun str (sel: SEL) : string  => string (sel_getName sel);
-} 
-  
-fun selector : string -> SEL = '@@selector($i)';
 println$ @selector(Hello);
-
-type NSNumber = "NSNumber*";;
 
 var y = @1.23;
 NSLog (y);
-
 var z = @22u;
 NSLog (z);
 
@@ -91,5 +68,26 @@ NSLog a;
 
 var result2 = cexpr[int] "[$1 get1977]" small_class_instance endcexpr;
 
-NSLogInt (@"R2 = %i", result2);
+fun thing (x:small_class_instance_t) => 
+  cexpr[int] "[$1 get1977]" x endcexpr;
+;
+
+fun thing2 : small_class_instance_t -> int = "[$1 get1977]";
+
+NSLog (@"R2 = %i", result2);
+NSLog (@"R2 = %i", thing small_class_instance);
+NSLog (@"R2 = %i", thing2 small_class_instance);
+
+var xxx = 11;
+println$ q"$(xxx)";
+
+println$ f"%S == %i" ("hello", 45); 
+
+NSLog(@"%i,%i", 45, 73);
+
+// Subtyping check
+proc hacklog(x: NSObject) => NSLog (@"Object = %@",  x);
+
+hacklog (@"Hello");
+
 

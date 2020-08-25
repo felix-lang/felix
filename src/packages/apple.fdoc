@@ -2,9 +2,49 @@
 @tangler foundation.fpc            = $PWD/src/config/macosx/foundation.fpc
 @tangler corefoundation.fpc        = $PWD/src/config/macosx/corefoundation.fpc
 @tangler audiotoolbox.fpc          = $PWD/src/config/macosx/audiotoolbox.fpc
+@tangler Foundation.flx            = share/lib/std/apple/Foundation.flx
 
 @title Apple Specific Config
 @h1 Apple Frameworks
+
+@tangle Foundation.flx
+open class Foundation
+{
+  requires 
+    package "objc",
+    package "foundation"
+  ;
+
+  // Data types
+  type id = "id";
+
+  type NSObject = "NSObject*";
+  supertype id : NSObject = "$1";
+
+  type NSString = "NSString*";
+  supertype NSObject : NSString = "$1";
+
+  type NSNumber = "NSNumber*";;
+  supertype NSObject : NSNumber = "$1";
+
+
+  type NSArray = "NSArray*";
+  supertype NSObject : NSArray = "$1";
+  ctor[N:UNITSUM] NSArray : NSObject^N = "[NSArray arrayWithObjects:$a,nil]";
+
+  // Selector
+  type SEL = "SEL";
+  fun sel_getName : SEL  -> +char = "sel_getName($1)";
+
+  instance Str[SEL] {
+    fun str (sel: SEL) : string  => string (sel_getName sel);
+  } 
+  fun selector : string -> SEL = '@@selector($i)';
+ 
+  // Debug output
+  proc NSLog : NSString * ... = 'NSLog($a);';
+  proc NSLog[T] : T = 'NSLog(@@"%@@",$1);';
+}
 
 @tangle foundation.fpc
 Name: Foundation
