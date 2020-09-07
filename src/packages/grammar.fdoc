@@ -135,8 +135,8 @@ syntax types {
   t[sprefixed_pri] := "~" t[sprefixed_pri] =># "`(typ_dual ,_sr ,_2)";
 
   t[sprefixed_pri] := "!" t[sprefixed_pri] =># "(tPrefix)";
-  t[sprefixed_pri] := "+" t[sprefixed_pri] =># "(tprefix 'prefix_plus)";
-  t[sprefixed_pri] := "-" t[sprefixed_pri] =># "(tprefix 'neg)";
+  t[sprefixed_pri] := "+" t[sprefixed_pri] =># "(tprefix 'tprefix_plus)";
+  t[sprefixed_pri] := "-" t[sprefixed_pri] =># "(tprefix 'tneg)";
 
 
   //$ Fortran power.

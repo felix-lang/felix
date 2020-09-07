@@ -121,7 +121,7 @@ is an incrementable, non-NULL pointer to a contiguous store.
 
 // For some reason this functor must be in global scope
 //$ Define prefix + notation.
-typedef fun prefix_plus(T:TYPE) : TYPE => Carray::carray[T]; 
+typedef fun tprefix_plus(T:TYPE) : TYPE => Carray::carray[T]; 
 
 //$ A carray[T] = +T is an incrementable, non-NULL, pointer.
 open class Carray
