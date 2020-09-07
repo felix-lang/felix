@@ -1,7 +1,7 @@
 include "std/apple/Foundation";
+include "std/apple/AppKit";
 
 header small_class_interface = c"""
-#import <Foundation/Foundation.h>
 @interface SmallClass: NSObject { }
 - (int)get1977;
 @end
@@ -90,4 +90,6 @@ proc hacklog(x: NSObject) => NSLog (@"Object = %@",  x);
 
 hacklog (@"Hello");
 
-
+var sound = AppKit::loadSound @"../async/felix-audio/testaudio.wav";
+AppKit::play sound;
+Faio::sleep (5.0);
