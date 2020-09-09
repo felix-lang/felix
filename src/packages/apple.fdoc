@@ -1,10 +1,15 @@
 @tangler objc.fpc                  = $PWD/src/config/macosx/objc.fpc
 @tangler foundation.fpc            = $PWD/src/config/macosx/foundation.fpc
 @tangler appkit.fpc                = $PWD/src/config/macosx/appkit.fpc
+@tangler cocoa.fpc                 = $PWD/src/config/macosx/cocoa.fpc
 @tangler corefoundation.fpc        = $PWD/src/config/macosx/corefoundation.fpc
 @tangler audiotoolbox.fpc          = $PWD/src/config/macosx/audiotoolbox.fpc
+
+
 @tangler Foundation.flx            = share/lib/std/apple/Foundation.flx
 @tangler AppKit.flx                = share/lib/std/apple/AppKit.flx
+@tangler Cocoa.flx                 = share/lib/std/apple/Cocoa.flx
+
 
 @title Apple Specific Config
 @h1 Apple Frameworks
@@ -55,6 +60,8 @@ open class AppKit
 {
   requires package "appkit";
   type NSSound = "NSSound*";
+  type NSColor = "NSColor*";
+
   fun loadSound(filename:NSString)=>
     cexpr[NSSound] """
        [
@@ -65,7 +72,30 @@ open class AppKit
   ;
   proc play: NSSound = "[$1 play];";
 }
+@
 
+@tangle Cocoa.flx
+include "std/apple/Foundation";
+open class Cocoa {
+  requires package "cocoa";
+  type NSWindow = "NSWindow*";
+  fun getProcessName: 1 -> NSString = "[[NSProcessInfo processInfo] processName]";
+
+  gen createTitledWindow : NSString * int * int * int * int -> NSWindow = """
+    ([&](){
+        NSWindow *x = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, $4, $5)
+           styleMask:NSTitledWindowMask backing:NSBackingStoreBuffered defer:NO];
+        [x cascadeTopLeftFromPoint:NSMakePoint($2,$3)];
+        [x setTitle: $1];
+        [x makeKeyAndOrderFront:nil];
+        return x;
+        }())
+  """; // Note use of C++ lambda
+
+  // Starts main event loop
+  // do NOT confuse with Felix run procedure which creates a scheduler to run fibres
+  proc run : 1 = "[NSApp run];"; 
+}
 @
 
 @tangle foundation.fpc
@@ -83,6 +113,15 @@ Requires: foundation
 includes: '<AppKit/AppKit.h>'
 provides_dlib: ---framework=AppKit
 provides_slib: ---framework=AppKit
+@
+
+@tangle cocoa.fpc
+Name: Cocoa
+Description: Cocoa
+Requires: foundation
+includes: '<Cocoa/Cocoa.h>'
+provides_dlib: ---framework=Cocoa
+provides_slib: ---framework=Cocoa
 @
 
 
