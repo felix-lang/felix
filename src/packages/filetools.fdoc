@@ -178,7 +178,7 @@ class CopyFiles {
 
      // Create target directories
      match dir, _ in dirs.iterator do
-       if verbose do println$ "mkdir " + dir; done
+       //if verbose do println$ "mkdir " + dir; done
        if live do
          err:=Directory::mkdir(dir);
          if err !=0 do

@@ -638,7 +638,11 @@ include "std/felix/flx_cp";
 class FlxPrepBuild
 {
 
+  val VERSION =  "2020.09.10A";
+
   fun / (x:string,y:string) => Filename::join(x,y);
+
+  var dirsetup_done = false;
 
   proc dirsetup(cmd:cmd_type)
   {
@@ -656,9 +660,12 @@ class FlxPrepBuild
       println$ "Cleaning binaries out of target not implemented";
     done
 
-    C_hack::ignore$ Directory::mkdir(cmd.target_dir);
-    C_hack::ignore$ Directory::mkdir(cmd.target_dir/cmd.target_bin);
-    C_hack::ignore$ Directory::mkdir(cmd.target_dir/cmd.target_bin/'bin');
+    if not dirsetup_done do
+      C_hack::ignore$ Directory::mkdir(cmd.target_dir);
+      C_hack::ignore$ Directory::mkdir(cmd.target_dir/cmd.target_bin);
+      C_hack::ignore$ Directory::mkdir(cmd.target_dir/cmd.target_bin/'bin');
+    done
+    dirsetup_done = true;
 
     // Set up the share subdirectory.
     if cmd.copy_repo do
@@ -731,6 +738,30 @@ class FlxPrepBuild
         System::exit 1;
       done
 
+      println$ 'Copying platform macro ..';
+      for pattern in fmacs perform
+        CopyFiles::copyfiles(cmd.repo/'src'/'config', pattern,
+          cmd.target_dir/cmd.target_bin/'lib'/'plat'/'${1}',true,cmd.debug);
+
+      println$ 'Copying C++ headers ..';
+      for pattern in headers perform
+        CopyFiles::copyfiles(cmd.repo/'src'/'config', pattern,
+          cmd.target_dir/cmd.target_bin/'lib'/'rtl'/'${1}',true,cmd.debug);
+
+      if cmd.c_compiler != "" do begin
+        println$ 'Specifying C compiler executable ' + cmd.c_compiler;
+        var fn = cmd.target_dir/cmd.target_bin/'config'/"toolchain_"+cmd.compiler+"_"+cmd.os+"_c_compiler_executable.fpc";
+        var txt = (["compiler: " + cmd.c_compiler]);
+        save (fn,txt);
+      end done
+
+      if cmd.cxx_compiler != "" do begin
+        println$ 'Specifying C++ compiler executable ' + cmd.cxx_compiler;
+        var fnam = cmd.target_dir/cmd.target_bin/'config'/"toolchain_"+cmd.compiler+"_"+cmd.os+"_cxx_compiler_executable.fpc";
+        var txt = (["compiler: " + cmd.cxx_compiler]);
+        save (fnam,txt);
+      end done
+
       // setup fpc's to copy: ORDER MATTERS!
       var fpcs = ([ '([^/]*\\.fpc)']);
       if cmd.os in ('linux','macosx') do  
@@ -751,32 +782,23 @@ class FlxPrepBuild
       headers += (cmd.os+cmd.bits)/'rtl'/'([^/]*\\.hpp)';
 
       // do the copying
-      println$ 'Copying fpcs ..';
+      println$ 'Copying STANDARD fpcs ..';
       for pattern in fpcs perform
         CopyFiles::copyfiles(cmd.repo/'src'/'config', pattern,
           cmd.target_dir/cmd.target_bin/'config'/'${1}',true,cmd.debug);
-      println$ 'Copying platform macro ..';
-      for pattern in fmacs perform
-        CopyFiles::copyfiles(cmd.repo/'src'/'config', pattern,
-          cmd.target_dir/cmd.target_bin/'lib'/'plat'/'${1}',true,cmd.debug);
-      println$ 'Copying C++ headers ..';
-      for pattern in headers perform
-        CopyFiles::copyfiles(cmd.repo/'src'/'config', pattern,
-          cmd.target_dir/cmd.target_bin/'lib'/'rtl'/'${1}',true,cmd.debug);
 
-      if cmd.c_compiler != "" do begin
-        println$ 'Specifying C compiler executable ' + cmd.c_compiler;
-        var fn = cmd.target_dir/cmd.target_bin/'config'/"toolchain_"+cmd.compiler+"_"+cmd.os+"_c_compiler_executable.fpc";
-        var txt = (["compiler: " + cmd.c_compiler]);
-        save (fn,txt);
-      end done
-
-      if cmd.cxx_compiler != "" do begin
-        println$ 'Specifying C++ compiler executable ' + cmd.cxx_compiler;
-        var fnam = cmd.target_dir/cmd.target_bin/'config'/"toolchain_"+cmd.compiler+"_"+cmd.os+"_cxx_compiler_executable.fpc";
-        var txt = (["compiler: " + cmd.cxx_compiler]);
-        save (fnam,txt);
-      end done
+      var HOME = Env::getenv "HOME";
+      if HOME == "" do
+        println$ "Skipping CUSTOM fpcs, no HOME environment variable set";
+      else
+        var dirspec = HOME/".felix"/'config'/cmd.target_bin/'config';
+        Directory::mkdirs$ dirspec;
+        println$ 'Copying CUSTOM fpcs ..';
+        var pattern = '([^/]*\\.fpc)';
+        println$ "  Checking " + dirspec;
+        CopyFiles::copyfiles(dirspec, pattern,
+         cmd.target_dir/cmd.target_bin/'config'/'${1}',true,cmd.debug);
+      done
     done
 
     if cmd.setup_pkg != "" do
@@ -823,9 +845,10 @@ class FlxPrepBuild
 
   proc print_help()
   {
-    println$ "flx_build_prep v2018.09.22";
+    println$ "flx_build_prep v2020.09.10";
     println$ "Usage: flx_build_prep ";
     println$ "";
+    println$ "--version                     show version and exit";
     println$ "# locations";
     println$ "";
     println$ "  --repo=repo                 default: src";
@@ -965,8 +988,11 @@ class FlxPrepBuild
      );
 
      for arg in args do
+       if prefix(arg, "--version") do
+         println$ "flx_build_prep version " + VERSION;
+         System::exit 0;
        // location options
-       if prefix(arg,"--repo=") do
+       elif prefix(arg,"--repo=") do
          &cmd.repo <- arg.[7 to];
        elif prefix(arg,"--target-dir=") do
          &cmd.target_dir <- arg.[13 to];
@@ -1043,7 +1069,7 @@ class FlxPrepBuild
       System::exit(1);
     done
     var cmd = parse_args (tail xargs);
-    println$ "flx_build_prep v2018.09.22";
+    println$ "flx_build_prep " + VERSION; 
     println$ "  repository       = " + cmd.repo;
     println$ "  target-dir       = " + cmd.target_dir;
     println$ "  target-bin       = " + cmd.target_bin;
