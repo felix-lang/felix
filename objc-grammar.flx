@@ -6,12 +6,12 @@ syntax ObjC {
       ;
  
   class_interface 
-      := "@interface" class_name colon_superclass_name? protocol_reference_list? instance_variables? interface_declaration* "@end"
+      := "@interface" sname (":" sname)? protocol_reference_list? instance_variables? interface_declaration* "@end"
          =># '(display "CLASS INTERFACE\n")' 
       ;
 
   class_implementation
-      := "@implementation" class_name ":" ? instance_variables? implementation_definition* "@end"
+      := "@implementation" sname ":" ? instance_variables? implementation_definition* "@end"
       ;
 
   category_interface
@@ -19,56 +19,73 @@ syntax ObjC {
       ;
 
   category_implementation
-      := "@implementation" class_name "("  category_name ")" implementation_definition* "@end"
+      := "@implementation" sname "("  sname ")" implementation_definition* "@end"
       ;
 
   protocol_declaration
-      := "@protocol" protocol_name protocol_reference_list? protocol_interface_declaration "@end"
+      := "@protocol"sname protocol_name protocol_reference_list? protocol_interface_declaration "@end"
       ;
 
   class_declaration_list
-      := "@class" class_list
-      ;
-
-  class_list
-      := class_name
-      | class_list "," class_name
+      := "@class" snames 
       ;
 
   protocol_reference_list
-      := "<" protocol_list ">"
+      := "<" snames ">"
       ;
 
-  protocol_list
-      := protocol_name
-      | protocol_list "," protocol_name
-      ;
+instance_variables
+    := "{" instance_variable_declaration "}"
+    ;
 
-  class_name
-      := sname
-      ;
+instance_variable_declaration
+    := visibility_specification
+    | struct_declaration
+    | instance_variable_declaration visibility_specification
+    | instance_variable_declaration struct_declaration
+    ;
 
-  superclass_name
-      := sname
-      ;
+visibility_specification
+    := "@private" =># '(display "@private\n")' 
+    | "@protected" =># '(display "@protected\n")'
+    | "@package" =># '(display "@package\n")'
+    | "@public" =># '(display "@public\n")'
+    ;
 
-  colon_superclass_name
-      := ":" superclass_name
-      ;
+struct_declaration
+    := sname sname ";" =># '(begin (display _1)(display " ")(display  _2)(display ";\n"))' // HACK
+    ;
 
-  category_name
-      := sname
-      ;
+interface_declaration
+    := declaration
+    | property_declaration
+    | method_declaration
+    ;
 
-  protocol_name
-      := sname
-      ;
+property_declaration
+    := "@property" property_attributes_declaration? struct_declaration
+    ;
 
+property_attributes_declaration
+    := "(" list::commalist1<property_attribute> ")"
+    ;
+
+property_attribute
+    := "nonatomic"
+    | "readwrite"
+    | "readonly"
+    | "retain"
+    | "assign"
+    | "copy"
+    | "strong"
+    | "weak"
+    | sname "=" sname //  getter ivar
+    | sname "=" sname ":" // setter
+    ;
 
 // TEST HACKS
 
-  instance_variables := "INSTANCE_VARIABLES" =># '(display "INSTANCE VARIABLES\n")';
-  interface_declaration := "INTERFACE_DECLARATION" =># '(display "INTERFACE DECLARATION\n")';
+  method_declaration := "METHOD_DECLARATION" =># '(display "METHOD DECLARATION\n")';
   implementation_definition := "IMPLEMENTATION_DEFINITION";
   protocol_interace_declaration := "PROTOCOL_INTERFACE_DECLARATION";
 } // end syntax ObjC
@@ -76,8 +93,14 @@ syntax ObjC {
 
 open syntax ObjC;
   @interface Sub : Super 
-INSTANCE_VARIABLES
-INTERFACE_DECLARATION
+    {
+      @public NSString s;
+    }
+  @property (weak,readonly) A B;
+  @property (fred = joe) A B;
+  @property (maxine = jean:) D E;
+
+METHOD_DECLARATION
    @end
 
 println$ "Hello World";
