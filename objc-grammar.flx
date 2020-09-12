@@ -1,0 +1,84 @@
+syntax ObjC {
+
+  stmt 
+      := class_interface =># '()' 
+      | class_implementation =># '()'
+      ;
+ 
+  class_interface 
+      := "@interface" class_name colon_superclass_name? protocol_reference_list? instance_variables? interface_declaration* "@end"
+         =># '(display "CLASS INTERFACE\n")' 
+      ;
+
+  class_implementation
+      := "@implementation" class_name ":" ? instance_variables? implementation_definition* "@end"
+      ;
+
+  category_interface
+      := "@interface" class_name "(" category_name? ")" protocol_reference_list? interface_declaration* "@end"
+      ;
+
+  category_implementation
+      := "@implementation" class_name "("  category_name ")" implementation_definition* "@end"
+      ;
+
+  protocol_declaration
+      := "@protocol" protocol_name protocol_reference_list? protocol_interface_declaration "@end"
+      ;
+
+  class_declaration_list
+      := "@class" class_list
+      ;
+
+  class_list
+      := class_name
+      | class_list "," class_name
+      ;
+
+  protocol_reference_list
+      := "<" protocol_list ">"
+      ;
+
+  protocol_list
+      := protocol_name
+      | protocol_list "," protocol_name
+      ;
+
+  class_name
+      := sname
+      ;
+
+  superclass_name
+      := sname
+      ;
+
+  colon_superclass_name
+      := ":" superclass_name
+      ;
+
+  category_name
+      := sname
+      ;
+
+  protocol_name
+      := sname
+      ;
+
+
+// TEST HACKS
+
+  instance_variables := "INSTANCE_VARIABLES" =># '(display "INSTANCE VARIABLES\n")';
+  interface_declaration := "INTERFACE_DECLARATION" =># '(display "INTERFACE DECLARATION\n")';
+  implementation_definition := "IMPLEMENTATION_DEFINITION";
+  protocol_interace_declaration := "PROTOCOL_INTERFACE_DECLARATION";
+} // end syntax ObjC
+
+
+open syntax ObjC;
+  @interface Sub : Super 
+INSTANCE_VARIABLES
+INTERFACE_DECLARATION
+   @end
+
+println$ "Hello World";
+
