@@ -82,10 +82,47 @@ property_attribute
     | sname "=" sname //  getter ivar
     | sname "=" sname ":" // setter
     ;
+method_declaration
+    := class_method_declaration
+    | instance_method_declaration
+    ;
+
+class_method_declaration
+    := "+" method_type? method_selector ";"  
+       =># '(begin(display "CLASS METHOD ")(display _2)(display " ")(display _3)(display ";\n"))'
+    ;
+
+instance_method_declaration
+    := "-" method_type? method_selector ";"
+       =># '(begin(display "INSTANCE METHOD ")(display _2)(display " ")(display _3)(display ";\n"))'
+    ;
+
+method_selector
+    := method_selector_no_list 
+    | keyword_selector "," parameter_type_list // this is correct according to objcbook, but causes conflict if followed by declaration*
+    ;
+
+method_selector_no_list
+    := sname =># '`(objc_method_selector_name  ,_1)'
+    | keyword_selector =># '`(objc_keyword_selector  ,_1)'
+    | keyword_selector "," "..." =># '`(objc_keyword_selector_ellipsis  ,_1)'
+    ;
+
+keyword_selector
+    := keyword_declarator+ =># "`(objc_keyword_selector  ,_1)";
+
+keyword_declarator
+    := sname? ":" method_type? sname =># '`(objc_keyword_declarator  ,_1 ,_3 ,_4)'; 
+
+method_type
+    := "(" type_name_with_unknown_type ")" =># '`(objc_type  ,_2)';
+
+
 
 // TEST HACKS
 
-  method_declaration := "METHOD_DECLARATION" =># '(display "METHOD DECLARATION\n")';
+  type_name_with_unknown_type := "TYPE" =># "'TYPE";
+  parameter_type_list := "PARAMETER_TYPE_LIST";
   implementation_definition := "IMPLEMENTATION_DEFINITION";
   protocol_interace_declaration := "PROTOCOL_INTERFACE_DECLARATION";
 } // end syntax ObjC
@@ -100,8 +137,10 @@ open syntax ObjC;
   @property (fred = joe) A B;
   @property (maxine = jean:) D E;
 
-METHOD_DECLARATION
-   @end
+  + (TYPE) cmeth;
+  - (TYPE) imeth;
+  - (TYPE) xWith: (TYPE)x yWith: (TYPE)y;
+  @end
 
 println$ "Hello World";
 
