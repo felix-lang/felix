@@ -44,22 +44,24 @@
 @tangler bitexpr.fsyn      = share/lib/std/algebra/bitexpr.fsyn
 
 
-@tangler swapop.fsyn  = share/lib/grammar/swapop.fsyn
+@tangler swapop.fsyn        = share/lib/grammar/swapop.fsyn
 
-@tangler int.fsyn        =share/lib/grammar/grammar_int_lexer.fsyn
-@tangler float.fsyn      =share/lib/grammar/grammar_float_lexer.fsyn
+@tangler int.fsyn           = share/lib/grammar/grammar_int_lexer.fsyn
+@tangler float.fsyn         = share/lib/grammar/grammar_float_lexer.fsyn
 @tangler tupleexpr.fsyn     = share/lib/std/datatype/tupleexpr.fsyn
 @tangler debug.fsyn         = share/lib/grammar/debug.fsyn
-@tangler exceptions.fsyn            = share/lib/std/control/exceptions.fsyn
-@tangler spipeexpr.fsyn = share/lib/std/control/spipeexpr.fsyn
-@tangler listexpr.fsyn = share/lib/std/datatype/listexpr.fsyn
+@tangler exceptions.fsyn    = share/lib/std/control/exceptions.fsyn
+@tangler spipeexpr.fsyn     = share/lib/std/control/spipeexpr.fsyn
+@tangler listexpr.fsyn      = share/lib/std/datatype/listexpr.fsyn
 
-@tangler boolexpr.fsyn        = share/lib/std/scalar/boolexpr.fsyn
-@tangler parser_syn.fsyn = share/lib/std/strings/parser_syn.fsyn
-@tangler pfor.fsyn              = share/lib/grammar/pfor.fsyn
+@tangler boolexpr.fsyn      = share/lib/std/scalar/boolexpr.fsyn
+@tangler parser_syn.fsyn    = share/lib/std/strings/parser_syn.fsyn
+@tangler pfor.fsyn          = share/lib/grammar/pfor.fsyn
 
-@tangler regexps.fsyn        = share/lib/std/regex/regexps.fsyn
-@tangler stringexpr.fsyn     = share/lib/std/strings/stringexpr.fsyn
+@tangler regexps.fsyn       = share/lib/std/regex/regexps.fsyn
+@tangler stringexpr.fsyn    = share/lib/std/strings/stringexpr.fsyn
+
+@tangler objc.fsyn          = share/lib/std/objc/objc.fsyn
 
 @h1 Type Grammar
 @tangle types.fsyn
@@ -6504,4 +6506,139 @@ syntax stringexpr
   x[sfactor_pri] := x[sfactor_pri] "." "[" "to" sexpr "]" =># 
    "(binop (noi 'copyto) _1 _5)";
 }
+
+@h1 ObjC Syntax
+@tangle objc.fsyn
+syntax ObjC
+{
+
+  stmt 
+      := "@objc-bind" class_interface =># '`(objc_bind_class_interface ,_sr ,_2)' 
+      | class_implementation =># '()'
+      ;
+ 
+  class_interface 
+      := "@interface" sname (":" sname)? protocol_reference_list? instance_variables? interface_declaration* "@end"
+         =># '`(objc_class_interface ,_2 ,_3 ,_4 ,_5 ,_6)'
+      ;
+
+  class_implementation
+      := "@implementation" sname ":" ? instance_variables? implementation_definition* "@end"
+      ;
+
+  category_interface
+      := "@interface" class_name "(" category_name? ")" protocol_reference_list? interface_declaration* "@end"
+      ;
+
+  category_implementation
+      := "@implementation" sname "("  sname ")" implementation_definition* "@end"
+      ;
+
+  protocol_declaration
+      := "@protocol"sname protocol_name protocol_reference_list? protocol_interface_declaration "@end"
+      ;
+
+  class_declaration_list
+      := "@class" snames =># '_2'
+      ;
+
+  protocol_reference_list
+      := "<" snames ">" =># '_2'
+      ;
+
+  instance_variables
+      := "{" instance_variable_declaration "}" =># '_2'
+      ;
+
+  instance_variable_declaration
+      := visibility_specification =># '`((objc_visibility_specification ,_1))'
+      | struct_declaration =># '`((objc_struct_declaration ,_1))'
+      | instance_variable_declaration visibility_specification =># '(append _1 (list _2))'
+      | instance_variable_declaration struct_declaration =># '(append _1 (list _2))'
+      ;
+
+  visibility_specification
+      := "@private" =># '_1' 
+      | "@protected" =># '_1' 
+      | "@package" =># '_1'
+      | "@public" =># '_1'
+      ;
+
+  struct_declaration
+      := sname sname ";" =># '`(objc_struct_declaration ,_1 ,_2)' // HACK: really a variable declaration
+      ;
+
+  interface_declaration
+      := declaration =># '_1'
+      | property_declaration =># '_1'
+      | method_declaration =># '_1'
+      ;
+
+  property_declaration
+      := "@property" property_attributes_declaration? struct_declaration =># '`(objc_property ,_2 ,_3)'
+      ;
+
+  property_attributes_declaration
+      := "(" list::commalist1<property_attribute> ")" =># '_2'
+      ;
+
+  property_attribute
+      := "nonatomic" =># '_1'
+      | "readwrite" =># '_1'
+      | "readonly" =># '_1'
+      | "retain" =># '_1'
+      | "assign" =># '_1'
+      | "copy" =># '_1'
+      | "strong" =># '_1'
+      | "weak" 
+      | sname "=" sname =># '`(objc_getter_ivar ,_1 ,_3)' //  getter ivar
+      | sname "=" sname ":" =># '`(objc_setter ,_1 ,_3)'  // setter
+      ;
+  method_declaration
+      := class_method_declaration =># '_1'
+      | instance_method_declaration =># '_1'
+      ;
+
+  class_method_declaration
+      := "+" method_type? method_selector ";"  
+         =># '`(objc_class_method_declaration ,_2 ,_3)'
+      ;
+
+  instance_method_declaration
+      := "-" method_type? method_selector ";"
+         =># '`(objc_instance_method_declaration ,_2 ,_3)'
+      ;
+
+  method_selector
+      := method_selector_no_list =># '_1'
+  // this is correct according to objcbook, but causes conflict if followed by declaration*
+        // this is correct according to objcbook, but causes conflict if followed by declaration*
+      | keyword_selector "," parameter_type_list  =># '`(objc_method_selector ,_1 ,_3)'
+      ;
+
+  method_selector_no_list
+      := sname =># '`(objc_method_selector_name  ,_1)'
+      | keyword_selector =># '`(objc_keyword_selector  ,_1)'
+      | keyword_selector "," "..." =># '`(objc_keyword_selector_ellipsis  ,_1)'
+      ;
+
+  keyword_selector
+      := keyword_declarator+ =># "`(objc_keyword_selector  ,_1)";
+
+  keyword_declarator
+      := sname? ":" method_type? sname =># '`(objc_keyword_declarator  ,_1 ,_3 ,_4)'; 
+
+  method_type
+      := "(" type_name_with_unknown_type ")" =># '`(objc_type  ,_2)';
+
+
+
+// TEST HACKS
+
+  type_name_with_unknown_type := "TYPE" =># "'TYPE";
+  parameter_type_list := "PARAMETER_TYPE_LIST" =># "'PARAMETER_TYPE_LIST";
+  implementation_definition := "IMPLEMENTATION_DEFINITION";
+  protocol_interace_declaration := "PROTOCOL_INTERFACE_DECLARATION";
+} // end syntax ObjC
+
 

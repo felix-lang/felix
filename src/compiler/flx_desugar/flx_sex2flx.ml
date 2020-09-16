@@ -1372,6 +1372,46 @@ print_endline ("Argtypes = " ^ Flx_util.catmap ", " Flx_print.string_of_typecode
     )
     (List.tl revlinks)
 
+  | Lst[Id "objc_bind_class_interface"; sr; stuff] -> bind_objc_class_interface sr stuff
+
 
   | x -> err x "statement"
+
+and bind_objc_class_interface sr stuff = match stuff with
+  | Lst [Id "objc_class_interface"; Str name; super; protocol_reference_list; instance_variables; interface_declaration] ->
+    let super = 
+       match super with
+       | Lst [] -> "" 
+       | Lst [Lst [Str ":"; Str name]] -> name
+       | x -> err x "obj super class"
+    in
+    print_endline ("Objc Class " ^ name ^ (if super = "" then "" else ": " ^ super));
+    begin match instance_variables with
+    | Lst [Lst ivspecs] ->
+       print_endline ("Got instance variable spec list");
+       List.iter (fun ivspec -> match ivspec with
+         | Lst [Id "objc_visibility_specification"; Str vis] -> print_endline ("Visibility: " ^ vis)
+         | Lst [Id "objc_struct_declaration"; Str ty; Str var] -> print_endline ("var " ^ var ^ ": " ^ ty )
+         | x -> err x "Objc instance variable spec, expected ivar decl or vis spec"
+       ) 
+       ivspecs
+    | Lst [] -> print_endline "Optional instance variable spec list omitted";
+    | x -> err x "objc instance variables"
+    end;
+    begin match interface_declaration with
+    | Lst [] -> print_endline ("Optional interface spec ommitted")
+    | Lst ifaces ->
+      print_endline ("Got interface spec");
+      List.iter (fun ispec -> match ispec with
+        | Lst [Id "objc_class_method_declaration"; typ; selector] ->  print_endline ("class method declaration")
+        | Lst [Id "objc_instance_method_declaration"; typ; selector ] -> print_endline ("Instance method declaration")
+        | Lst [Id "objc_property"; property_attribues; var] -> print_endline ("Property declaration")
+        | x -> err x "Obj interface element"
+      )
+      ifaces
+    | x -> err x "objc interface"
+    end;
+    STMT_nop (xsr sr, "Objc Gufff")
+
+  | x -> err x "objc bind"
 
