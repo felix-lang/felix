@@ -11,7 +11,7 @@ open syntax ObjC;
 
   + (NSString) cmeth;
   - (int) imeth;
-  - (void) xWith: (TYPE)x yWith: (TYPE)y;
+  - (void) xWith: (int) yWith: (NSthing);
   @end
 
 println$ "Hello World";

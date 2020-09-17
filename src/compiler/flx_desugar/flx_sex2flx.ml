@@ -1379,31 +1379,37 @@ print_endline ("Argtypes = " ^ Flx_util.catmap ", " Flx_print.string_of_typecode
 
 and decode_method_spec sr typ selector =
   let sr = xsr sr in
-  print_endline ("class method declaration");
-  let ftyp = 
-    match typ with
-    | Lst [] -> `TYP_name (sr, "id", []) 
-    | Lst [typ] ->  xtype_t sr typ
-    | x -> err x "Optional method type"
-  in
-  print_endline ("Return type " ^ Flx_print.string_of_typecode ftyp);
+  print_endline ("method declaration");
+
+  let return_type = xtype_t sr typ in 
+  print_endline ("  Return type " ^ Flx_print.string_of_typecode return_type);
+
   begin match selector with
   | Lst [Id "objc_method_selector_name"; Str name] ->
     print_endline ("No argument method named " ^ name)
 
-  | Lst [Id "objc_keyword_selector"; stuff] ->
-    print_endline ("Objc keyword selector ")
+  | Lst [Id "objc_keyword_selector"; Lst kws] ->
+    print_endline ("Objc keyword selector ");
+    let names, types = List.fold_left (fun (names,types) kwp -> match kwp with
+      | Lst [Id "objc_keyword_declarator"; Str name; typ] ->
+        let param_type = xtype_t sr typ in
+        print_endline ("  param=" ^ name ^ ":(" ^ Flx_print.string_of_typecode param_type  ^")");
+        name :: names, param_type :: types
+      | x -> err x "objc keyword param"
+      )
+      ([],[])
+      kws
+    in
+    let name = fold_left (fun name part -> part ^ "'" ^ name) "" names in
+    print_endline ("Method name = " ^ name);
+    let typ = `TYP_tuple (List.rev types) in
+    print_endline ("Method argument type = " ^ Flx_print.string_of_typecode typ)
 
   | Lst [Id "objc_keyword_selector_ellipsis"; stuff] ->
     print_endline ("Objc keyword selector ellipsis")
 
-  | x -> err x "Method Return type"
-  end;
-  match selector with
-  | Lst [Id "objc_method_selector_name"; Str name] ->
-    print_endline ("Objc method no args name = " ^ name)
-
-  | Lst [Id "objc_keyword_selector";  
+  | x -> err x "Method Argument types"
+  end
 
 and bind_objc_class_interface sr stuff = match stuff with
   | Lst [Id "objc_class_interface"; Str name; super; protocol_reference_list; instance_variables; interface_declaration] ->

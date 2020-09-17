@@ -6600,23 +6600,16 @@ syntax ObjC
       ;
 
   class_method_declaration
-      := "+" method_type? method_selector ";"  
+      := "+" method_type method_selector ";"  
          =># '`(objc_class_method_declaration ,_sr ,_2 ,_3)'
       ;
 
   instance_method_declaration
-      := "-" method_type? method_selector ";"
+      := "-" method_type method_selector ";"
          =># '`(objc_instance_method_declaration ,_sr ,_2 ,_3)'
       ;
 
   method_selector
-      := method_selector_no_list =># '_1'
-  // this is correct according to objcbook, but causes conflict if followed by declaration*
-        // this is correct according to objcbook, but causes conflict if followed by declaration*
-      | keyword_selector "," parameter_type_list  =># '`(objc_method_selector ,_1 ,_3)'
-      ;
-
-  method_selector_no_list
       := sname =># '`(objc_method_selector_name  ,_1)'
       | keyword_selector =># '`(objc_keyword_selector  ,_1)'
       | keyword_selector "," "..." =># '`(objc_keyword_selector_ellipsis  ,_1)'
@@ -6626,7 +6619,7 @@ syntax ObjC
       := keyword_declarator+ =># "_1";
 
   keyword_declarator
-      := sname? ":" method_type? sname =># '`(objc_keyword_declarator  ,_1 ,_3 ,_4)'; 
+      := sname ":" method_type =># '`(objc_keyword_declarator  ,_1 ,_3)'; 
 
   method_type
       := "(" stype ")" =># '_2';
@@ -6635,7 +6628,6 @@ syntax ObjC
 
 // TEST HACKS
 
-  parameter_type_list := "PARAMETER_TYPE_LIST" =># "'PARAMETER_TYPE_LIST";
   implementation_definition := "IMPLEMENTATION_DEFINITION";
   protocol_interace_declaration := "PROTOCOL_INTERFACE_DECLARATION";
 } // end syntax ObjC
