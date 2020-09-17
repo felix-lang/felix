@@ -6601,12 +6601,12 @@ syntax ObjC
 
   class_method_declaration
       := "+" method_type? method_selector ";"  
-         =># '`(objc_class_method_declaration ,_2 ,_3)'
+         =># '`(objc_class_method_declaration ,_sr ,_2 ,_3)'
       ;
 
   instance_method_declaration
       := "-" method_type? method_selector ";"
-         =># '`(objc_instance_method_declaration ,_2 ,_3)'
+         =># '`(objc_instance_method_declaration ,_sr ,_2 ,_3)'
       ;
 
   method_selector
@@ -6623,19 +6623,18 @@ syntax ObjC
       ;
 
   keyword_selector
-      := keyword_declarator+ =># "`(objc_keyword_selector  ,_1)";
+      := keyword_declarator+ =># "_1";
 
   keyword_declarator
       := sname? ":" method_type? sname =># '`(objc_keyword_declarator  ,_1 ,_3 ,_4)'; 
 
   method_type
-      := "(" type_name_with_unknown_type ")" =># '`(objc_type  ,_2)';
+      := "(" stype ")" =># '_2';
 
 
 
 // TEST HACKS
 
-  type_name_with_unknown_type := "TYPE" =># "'TYPE";
   parameter_type_list := "PARAMETER_TYPE_LIST" =># "'PARAMETER_TYPE_LIST";
   implementation_definition := "IMPLEMENTATION_DEFINITION";
   protocol_interace_declaration := "PROTOCOL_INTERFACE_DECLARATION";

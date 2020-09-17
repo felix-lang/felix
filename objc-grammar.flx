@@ -9,9 +9,9 @@ open syntax ObjC;
   @property (fred = joe) A B;
   @property (maxine = jean:) D E;
 
-  + (TYPE) cmeth;
-  - (TYPE) imeth;
-  - (TYPE) xWith: (TYPE)x yWith: (TYPE)y;
+  + (NSString) cmeth;
+  - (int) imeth;
+  - (void) xWith: (TYPE)x yWith: (TYPE)y;
   @end
 
 println$ "Hello World";

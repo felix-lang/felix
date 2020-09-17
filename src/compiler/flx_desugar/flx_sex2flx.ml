@@ -1377,6 +1377,34 @@ print_endline ("Argtypes = " ^ Flx_util.catmap ", " Flx_print.string_of_typecode
 
   | x -> err x "statement"
 
+and decode_method_spec sr typ selector =
+  let sr = xsr sr in
+  print_endline ("class method declaration");
+  let ftyp = 
+    match typ with
+    | Lst [] -> `TYP_name (sr, "id", []) 
+    | Lst [typ] ->  xtype_t sr typ
+    | x -> err x "Optional method type"
+  in
+  print_endline ("Return type " ^ Flx_print.string_of_typecode ftyp);
+  begin match selector with
+  | Lst [Id "objc_method_selector_name"; Str name] ->
+    print_endline ("No argument method named " ^ name)
+
+  | Lst [Id "objc_keyword_selector"; stuff] ->
+    print_endline ("Objc keyword selector ")
+
+  | Lst [Id "objc_keyword_selector_ellipsis"; stuff] ->
+    print_endline ("Objc keyword selector ellipsis")
+
+  | x -> err x "Method Return type"
+  end;
+  match selector with
+  | Lst [Id "objc_method_selector_name"; Str name] ->
+    print_endline ("Objc method no args name = " ^ name)
+
+  | Lst [Id "objc_keyword_selector";  
+
 and bind_objc_class_interface sr stuff = match stuff with
   | Lst [Id "objc_class_interface"; Str name; super; protocol_reference_list; instance_variables; interface_declaration] ->
     let super = 
@@ -1403,10 +1431,16 @@ and bind_objc_class_interface sr stuff = match stuff with
     | Lst ifaces ->
       print_endline ("Got interface spec");
       List.iter (fun ispec -> match ispec with
-        | Lst [Id "objc_class_method_declaration"; typ; selector] ->  print_endline ("class method declaration")
-        | Lst [Id "objc_instance_method_declaration"; typ; selector ] -> print_endline ("Instance method declaration")
+        | Lst [Id "objc_class_method_declaration"; sr; typ; selector] ->  
+          print_endline ("Class method declaration");
+          decode_method_spec sr typ selector
+
+        | Lst [Id "objc_instance_method_declaration"; sr; typ; selector ] ->
+          print_endline ("Instance method declaration");
+          decode_method_spec sr typ selector
+
         | Lst [Id "objc_property"; property_attribues; var] -> print_endline ("Property declaration")
-        | x -> err x "Obj interface element"
+        | x -> err x "Objc interface element"
       )
       ifaces
     | x -> err x "objc interface"
