@@ -1469,8 +1469,55 @@ and decode_instance_method_spec objt sr return_spec selector =
   end
 
 and decode_class_method_spec classname sr return_spec selector = 
-  print_endline ("Class methods not implemented yet");
-  STMT_nop (sr, "Class methods not implemented yet") 
+  print_endline ("Class method declaration");
+  let return_type = xtype_t sr return_spec in 
+  print_endline ("  Return type " ^ Flx_print.string_of_typecode return_type);
+
+  begin match selector with
+  | Lst [Id "objc_method_selector_name"; Str name] ->
+    print_endline ("No argument method named " ^ name);
+    let paramspec2 = Slist [] in
+    let paramss = [paramspec2,None] in
+    let obj = `EXPR_name (sr, classname,[]) in
+    let argument =  obj in
+    let code_string = "["^classname ^" "^name^"]" in
+    let code_spec = Flx_code_spec.Str_template code_string in
+    let argument = `EXPR_tuple (sr,[]) in
+    let body = 
+      match return_type with
+      | `TYP_name (_,"void",_) -> [STMT_code (sr, code_spec, argument)]
+      | _ -> [STMT_fun_return (sr,`EXPR_expr (sr, code_spec, return_type, argument))] 
+    in
+    let binding = cal_method_decl sr (classname^"'"^name) paramss return_type body in
+    binding
+
+  | Lst [Id "objc_keyword_selector"; Lst kws] ->
+    let names, name, types, typ = decode_keyword_selector sr kws in
+    let paramspec2 = cal_params sr types in
+
+    let paramss : params_t list = [paramspec2,None] in
+    let obj = `EXPR_name (sr, classname,[]) in
+    let n = List.length names in
+    let argument =  
+      `EXPR_tuple (sr,obj :: List.map (fun i -> `EXPR_name (sr, "_"^ string_of_int (i+1), [])) (Flx_list.nlist n)) 
+    in
+    let code_string = "["^classname^ "'" ^(String.concat "" (List.map2 (fun i kw -> kw^":$" ^ string_of_int (i+1)^" ") (Flx_list.nlist n) names))^ "]" in
+    let code_spec = Flx_code_spec.Str_template code_string in
+    let body = 
+      match return_type with
+      | `TYP_name (_,"void",_) -> [STMT_code (sr, code_spec, argument)]
+      | _ -> [STMT_fun_return (sr,`EXPR_expr (sr, code_spec, return_type, argument))] 
+    in
+    let binding = cal_method_decl sr (classname^"'"^name) paramss return_type body in
+    binding 
+
+  | Lst [Id "objc_keyword_selector_ellipsis"; stuff] as x ->
+    print_endline ("Objc keyword selector ellipsis");
+    err x "Method with ellipsis not implemented yet"
+
+  | x -> err x "Method Argument types"
+  end
+
 
 and bind_objc_class_interface sr stuff :Flx_ast.statement_t = 
   let sr = xsr sr in 

@@ -101,6 +101,7 @@ open class Cocoa {
 @tangle foundation.fpc
 Name: Foundation
 Description: Foundation
+Requires: objc
 includes: '<Foundation/Foundation.h>'
 provides_dlib: ---framework=Foundation
 provides_slib: ---framework=Foundation

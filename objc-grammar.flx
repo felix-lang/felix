@@ -13,6 +13,8 @@ open syntax ObjC;
   + (NSString) cmeth;
 */
 
+  + (Sub) alloc;
+  - (Sub) init;
   - (int) imeth;
   - (void) xWith: (int) yWith: (NSString);
   - (int) xWith: (int) yWith: (NSString) zThing:(double);
@@ -45,6 +47,8 @@ body small_class_implementation = c"""
 requires small_class_interface, small_class_implementation, package "foundation", package "ObjC";
 
  @objc-bind @interface SmallClass
+ +(SmallClass)alloc;
+ -(SmallClass)init;
  -(int)get1977;
  -(int)getsum:(int);
  @end
@@ -52,4 +56,9 @@ requires small_class_interface, small_class_implementation, package "foundation"
 var sc : SmallClass = cexpr[SmallClass] "[[SmallClass alloc] init]" endcexpr;
 println$ "Get: " + (sc.get1977()) . str ;
 println$ "Add: " + (sc.getsum' 42) . str ;
+
+var sc2 : SmallClass = (SmallClass'alloc ()).init ();
+println$ "Get: " + (sc2.get1977()) . str ;
+println$ "Add: " + (sc2.getsum' 42) . str ;
+
 
