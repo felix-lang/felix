@@ -23,6 +23,7 @@ body small_class_implementation = c"""
 @end
 """;
 
+
 type small_class_instance_t = "void*"  requires 
   small_class_interface, 
   small_class_implementation
@@ -93,3 +94,14 @@ hacklog (@"Hello");
 var sound = AppKit::loadSound @"../async/felix-audio/testaudio.wav";
 AppKit::play sound;
 Faio::sleep (5.0);
+
+open syntax ObjC;
+
+begin 
+ @objc-bind @interface small_class 
+ -(int) get1977;
+ -(int) getsum: (int);
+  @end
+
+  println$ "NESTED " + (small_class_instance.getsum' 44).str; 
+end

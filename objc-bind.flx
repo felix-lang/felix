@@ -1,24 +1,6 @@
 include "std/apple/Foundation";
 
 open syntax ObjC;
- @objc-bind
-  @interface Sub // : Super 
-/*    {
-      @public NSString s;
-    }
-  @property (weak,readonly) A B;
-  @property (fred = joe) A B;
-  @property (maxine = jean:) D E;
-
-  + (NSString) cmeth;
-*/
-
-  - (int) imeth;
-  - (void) xWith: (int) yWith: (NSString);
-  - (int) xWith: (int) yWith: (NSString) zThing:(double);
-  @end
-
-println$ "Hello World ";
 
 header small_class_interface = c"""
 @interface SmallClass: NSObject { }
