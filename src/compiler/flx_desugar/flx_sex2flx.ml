@@ -1373,9 +1373,12 @@ print_endline ("Argtypes = " ^ Flx_util.catmap ", " Flx_print.string_of_typecode
     (List.tl revlinks)
 
   | Lst[Id "objc_bind_class_interface"; sr; stuff] -> bind_objc_class_interface sr stuff
+  | Lst[Id "objc_bind_protocol_interface"; sr; stuff] -> bind_objc_protocol_interface sr stuff
 
 
   | x -> err x "statement"
+
+(* ------- OBJC STUFF ------------*)
 
 and decode_keyword_selector sr kws : string list * string * Flx_ast.typecode_t list * Flx_ast.typecode_t =
     print_endline ("Objc keyword selector ");
@@ -1517,6 +1520,16 @@ and decode_class_method_spec classname sr return_spec selector =
   | x -> err x "Method Argument types"
   end
 
+and supertype_specification sr super sub =
+  let fname = "_supertype_"^super in
+  let argt = `TYP_name (sr, sub, []) in
+  let ret = `TYP_name (sr,super,[]) in
+  let body = CS.Str_template "$1" in
+  let reqs = RREQ_atom Subtype_req in
+  let prec = "" in
+  let supercoercion = STMT_fun_decl (sr,fname,dfltvs,[argt],ret,body,reqs,prec) in
+  print_endline ("Supercoercion function = " ^ Flx_print.string_of_statement 0 supercoercion);
+  supercoercion
 
 and bind_objc_class_interface sr stuff :Flx_ast.statement_t = 
   let sr = xsr sr in 
@@ -1530,6 +1543,13 @@ and bind_objc_class_interface sr stuff :Flx_ast.statement_t =
     in
     print_endline ("Objc Class " ^ classname ^ (if super = "" then "" else ": " ^ super));
     let class_type = STMT_abs_decl (sr, classname, Flx_ast.dfltvs, [], Str (classname^ "*"), RREQ_true) in  
+    let protocols = 
+      match protocol_reference_list with
+      | Lst [Lst names] ->
+          List.map (fun super -> let super = xid super in supertype_specification sr super classname ) names
+      | Lst [] -> []
+      | x -> err x "protocol list"
+    in
     begin match instance_variables with
     | Lst [Lst ivspecs] ->
        print_endline ("Got instance variable spec list");
@@ -1570,20 +1590,64 @@ and bind_objc_class_interface sr stuff :Flx_ast.statement_t =
         )
         ifaces
         in
-        (* `(ast_fun_decl ,_sr ,name ,vs ,(mktylist argt) ,ret ,ct ,reqs ,prec) *)
-        let fname = "_supertype_"^super in
-        let argt = `TYP_name (sr, classname, []) in
-        let ret = `TYP_name (sr,super,[]) in
-        let body = CS.Str_template "$1" in
-        let reqs = RREQ_atom Subtype_req in
-        let prec = "" in
-        let supercoercion = STMT_fun_decl (sr,fname,dfltvs,[argt],ret,body,reqs,prec) in
-        print_endline ("Supercoercion function = " ^ Flx_print.string_of_statement 0 supercoercion);
-        STMT_seq (sr,class_type :: supercoercion :: methods)
+        let supercoercion = supertype_specification sr super classname in
+        STMT_seq (sr,class_type :: supercoercion :: protocols @ methods)
 
       | x -> err x "objc interface"
    in
    iface_decl
 
-  | x -> err x "objc bind"
+  | x -> err x "objc bind class interface"
+
+and bind_objc_protocol_interface sr stuff :Flx_ast.statement_t = 
+  let sr = xsr sr in 
+  match stuff with
+  | Lst [Id "objc_protocol_interface"; Str classname; protocol_reference_list; interface_declaration] ->
+    print_endline ("Objc Protocol " ^ classname);
+
+    (* A protocol is an incomplete type, so we just use C struct tag for the binding *)
+    let class_type = STMT_abs_decl (sr, classname, Flx_ast.dfltvs, [], Str ("struct " ^ classname^ "*"), RREQ_true) in  
+    let protocols = 
+      match protocol_reference_list with
+      | Lst [Lst names] ->
+          List.map (fun super -> let super = xid super in supertype_specification sr super classname ) names
+      | Lst [] -> []
+      | x -> err x "protocol list"
+    in
+    let iface_decl = 
+      match interface_declaration with
+      | Lst [] -> 
+        print_endline ("Optional interface spec ommitted");
+        STMT_nop (sr, "Omitted optional interface spec")
+
+      | Lst ifaces ->
+        print_endline ("Got interface spec");
+        let methods = 
+          List.map (fun ispec -> match ispec with
+          | Lst [Id "objc_class_method_declaration"; sr; typ; selector] ->  
+            print_endline ("Class method declaration");
+            let sr = xsr sr in
+            decode_class_method_spec classname sr typ selector
+
+          | Lst [Id "objc_instance_method_declaration"; sr; typ; selector ] ->
+            print_endline ("Instance method declaration");
+            let sr = xsr sr in
+            decode_instance_method_spec classname sr typ selector
+
+          | Lst [Id "objc_property"; property_attribues; var] -> 
+            print_endline ("Property declaration not implemented");
+            STMT_nop (sr, "property decl not implemented yet")
+
+          | x -> err x "Objc interface element"
+        )
+        ifaces
+        in
+        STMT_seq (sr,class_type :: protocols @ methods)
+
+      | x -> err x "objc interface"
+   in
+   iface_decl
+
+  | x -> err x "objc bind protocol interface"
+
 

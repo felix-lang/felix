@@ -6514,7 +6514,7 @@ syntax ObjC
 
   stmt 
       := "@objc-bind" class_interface =># '`(objc_bind_class_interface ,_sr ,_2)' 
-      | class_implementation =># '()'
+      | "@objc-bind" protocol_interface =># '`(objc_bind_protocol_interface ,_sr ,_2)' 
       ;
  
   class_interface 
@@ -6534,8 +6534,9 @@ syntax ObjC
       := "@implementation" sname "("  sname ")" implementation_definition* "@end"
       ;
 
-  protocol_declaration
-      := "@protocol"sname protocol_name protocol_reference_list? protocol_interface_declaration "@end"
+  protocol_interface
+      := "@protocol" sname protocol_reference_list? interface_declaration* "@end"
+         =># '`(objc_protocol_interface ,_2 ,_3 ,_4)'
       ;
 
   class_declaration_list
@@ -6572,6 +6573,10 @@ syntax ObjC
       := declaration =># '_1'
       | property_declaration =># '_1'
       | method_declaration =># '_1'
+      ;
+
+  protocol_interface_declaration 
+      := method_declaration =># "_1"
       ;
 
   property_declaration

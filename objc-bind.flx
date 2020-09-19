@@ -2,6 +2,7 @@ include "std/apple/Foundation";
 
 open syntax ObjC;
 
+// This is required at the moment to declare the class 
 header small_class_interface = c"""
 @interface SmallClass: NSObject { }
 - (int)get1977;
@@ -26,8 +27,14 @@ body small_class_implementation = c"""
 """;
 
 requires small_class_interface, small_class_implementation, package "foundation", package "objc";
+// PROTOCOL
 
- @objc-bind @interface SmallClass
+ @objc-bind @protocol hasDescription
+   -(NSString)description;
+ @end
+
+
+ @objc-bind @interface SmallClass<hasDescription>
  +(SmallClass)alloc;
  -(SmallClass)init;
  -(int)get1977;
@@ -40,9 +47,12 @@ println$ "Add: " + (sc.getsum' 42) . str ;
 
 
 var sc2 : SmallClass = #SmallClass'alloc.init;
-println$ "Get: " + (sc.get1977) . str ;
-println$ "Add: " + (sc.getsum' 42) . str ;
+println$ "Get: " + (sc2.get1977) . str ;
+println$ "Add: " + (sc2.getsum' 42) . str ;
 
 fun require_subtype (x:NSObject) => (x.description).str;
 println$ sc.require_subtype;
+
+fun require_description(x:hasDescription) => (x.description).str;
+println$ sc.require_description;
 
