@@ -20,6 +20,7 @@ body small_class_implementation = c"""
 - (int)getsum: (int)toadd {
   return 1977 + toadd;
 }
+-(NSString*)description { return @"SmallClassInstance"; }
 
 @end
 """;
@@ -34,11 +35,14 @@ requires small_class_interface, small_class_implementation, package "foundation"
  @end
 
 var sc : SmallClass = cexpr[SmallClass] "[[SmallClass alloc] init]" endcexpr;
-println$ "Get: " + (sc.get1977()) . str ;
+println$ "Get: " + (sc.get1977) . str ;
 println$ "Add: " + (sc.getsum' 42) . str ;
 
 
-var sc2 : SmallClass = #(#SmallClass'alloc.init);
-println$ "Get: " + (sc.get1977()) . str ;
+var sc2 : SmallClass = #SmallClass'alloc.init;
+println$ "Get: " + (sc.get1977) . str ;
 println$ "Add: " + (sc.getsum' 42) . str ;
+
+fun require_subtype (x:NSObject) => (x.description).str;
+println$ sc.require_subtype;
 

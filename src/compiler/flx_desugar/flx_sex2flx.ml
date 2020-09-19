@@ -1425,9 +1425,8 @@ and decode_instance_method_spec objt sr return_spec selector =
   begin match selector with
   | Lst [Id "objc_method_selector_name"; Str name] ->
     print_endline ("No argument method named " ^ name);
-    let paramspec2 = Slist [] in
     let paramspec1 : parameter_t sexpr_t = Satom (sr, `PVal, "_1", `TYP_name (sr,objt,[]), None) in 
-    let paramss = [paramspec1, None; paramspec2,None] in
+    let paramss = [paramspec1, None] in
     let obj = `EXPR_name (sr, "_1",[]) in
     let argument =  obj in
     let code_string = "[$1 "^name^"]" in
@@ -1522,15 +1521,15 @@ and decode_class_method_spec classname sr return_spec selector =
 and bind_objc_class_interface sr stuff :Flx_ast.statement_t = 
   let sr = xsr sr in 
   match stuff with
-  | Lst [Id "objc_class_interface"; Str name; super; protocol_reference_list; instance_variables; interface_declaration] ->
+  | Lst [Id "objc_class_interface"; Str classname; super; protocol_reference_list; instance_variables; interface_declaration] ->
     let super = 
        match super with
-       | Lst [] -> "" 
+       | Lst [] -> "NSObject" 
        | Lst [Lst [Str ":"; Str name]] -> name
        | x -> err x "obj super class"
     in
-    print_endline ("Objc Class " ^ name ^ (if super = "" then "" else ": " ^ super));
-    let class_type = STMT_abs_decl (sr, name, Flx_ast.dfltvs, [], Str (name^ "*"), RREQ_true) in  
+    print_endline ("Objc Class " ^ classname ^ (if super = "" then "" else ": " ^ super));
+    let class_type = STMT_abs_decl (sr, classname, Flx_ast.dfltvs, [], Str (classname^ "*"), RREQ_true) in  
     begin match instance_variables with
     | Lst [Lst ivspecs] ->
        print_endline ("Got instance variable spec list");
@@ -1556,12 +1555,12 @@ and bind_objc_class_interface sr stuff :Flx_ast.statement_t =
           | Lst [Id "objc_class_method_declaration"; sr; typ; selector] ->  
             print_endline ("Class method declaration");
             let sr = xsr sr in
-            decode_class_method_spec name sr typ selector
+            decode_class_method_spec classname sr typ selector
 
           | Lst [Id "objc_instance_method_declaration"; sr; typ; selector ] ->
             print_endline ("Instance method declaration");
             let sr = xsr sr in
-            decode_instance_method_spec name sr typ selector
+            decode_instance_method_spec classname sr typ selector
 
           | Lst [Id "objc_property"; property_attribues; var] -> 
             print_endline ("Property declaration not implemented");
@@ -1571,7 +1570,16 @@ and bind_objc_class_interface sr stuff :Flx_ast.statement_t =
         )
         ifaces
         in
-        STMT_seq (sr,class_type :: methods)
+        (* `(ast_fun_decl ,_sr ,name ,vs ,(mktylist argt) ,ret ,ct ,reqs ,prec) *)
+        let fname = "_supertype_"^super in
+        let argt = `TYP_name (sr, classname, []) in
+        let ret = `TYP_name (sr,super,[]) in
+        let body = CS.Str_template "$1" in
+        let reqs = RREQ_atom Subtype_req in
+        let prec = "" in
+        let supercoercion = STMT_fun_decl (sr,fname,dfltvs,[argt],ret,body,reqs,prec) in
+        print_endline ("Supercoercion function = " ^ Flx_print.string_of_statement 0 supercoercion);
+        STMT_seq (sr,class_type :: supercoercion :: methods)
 
       | x -> err x "objc interface"
    in

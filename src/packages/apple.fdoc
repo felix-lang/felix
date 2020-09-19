@@ -27,9 +27,13 @@ open class Foundation
 
   type NSObject = "NSObject*";
   supertype id : NSObject = "$1";
+  fun description : NSObject -> NSString = "[$1 description]";
 
   type NSString = "NSString*";
   supertype NSObject : NSString = "$1";
+  instance Str[NSString] {
+    fun str : NSString -> string = "::std::string([$1 cStringUsingEncoding:NSUTF8StringEncoding])";
+  }
 
   type NSNumber = "NSNumber*";;
   supertype NSObject : NSNumber = "$1";
