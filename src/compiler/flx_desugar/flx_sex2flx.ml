@@ -1536,6 +1536,8 @@ and bind_objc_class_interface sr stuff reqs :Flx_ast.statement_t =
   let reqs = xraw_req_expr_t sr reqs  in
   match stuff with
   | Lst [Id "objc_class_interface"; Str classname; super; protocol_reference_list; instance_variables; interface_declaration] ->
+
+    (* FIND SUPERTYPE *)
     let super = 
        match super with
        | Lst [] -> "NSObject" 
@@ -1543,7 +1545,17 @@ and bind_objc_class_interface sr stuff reqs :Flx_ast.statement_t =
        | x -> err x "obj super class"
     in
     print_endline ("Objc Class " ^ classname ^ (if super = "" then "" else ": " ^ super));
-    let class_type = STMT_abs_decl (sr, classname, Flx_ast.dfltvs, [], Str (classname^ "*"), reqs) in  
+
+    (* BIND CLASS TYPE *)
+    let proxy_name = "_derefproxy_" ^ classname in
+    let class_type = STMT_abs_decl (sr, classname, Flx_ast.dfltvs, [], Str (classname^ "*"), reqs) in 
+
+    (* because stupid Felix gives a typedef .. even though the type is never used .. we give it a real type name *)
+    let derefproxy_type = STMT_abs_decl (sr, proxy_name, Flx_ast.dfltvs, [], Str ("void"), reqs) in 
+
+    (* OVERLOAD DEREF OPERATOR *)
+    let deref_operator = STMT_fun_decl (sr,"deref",dfltvs,[`TYP_name (sr, classname, []) ],`TYP_name (sr, proxy_name,[]),CS.Str_template "$1",reqs,"") in
+
     let protocols = 
       match protocol_reference_list with
       | Lst [Lst names] ->
@@ -1551,18 +1563,44 @@ and bind_objc_class_interface sr stuff reqs :Flx_ast.statement_t =
       | Lst [] -> []
       | x -> err x "protocol list"
     in
-    begin match instance_variables with
-    | Lst [Lst ivspecs] ->
-       print_endline ("Got instance variable spec list");
-       List.iter (fun ivspec -> match ivspec with
-         | Lst [Id "objc_visibility_specification"; Str vis] -> print_endline ("Visibility: " ^ vis)
-         | Lst [Id "objc_struct_declaration"; Str ty; Str var] -> print_endline ("var " ^ var ^ ": " ^ ty )
-         | x -> err x "Objc instance variable spec, expected ivar decl or vis spec"
-       ) 
-       ivspecs
-    | Lst [] -> print_endline "Optional instance variable spec list omitted";
-    | x -> err x "objc instance variables"
-    end;
+
+    (* CONSTRUCT IVAR PROJECTIONS *)
+    let ivar_projections = 
+      match instance_variables with
+      | Lst [Lst ivspecs] ->
+        print_endline ("Got instance variable spec list");
+        List.map (fun ivspec -> match ivspec with
+          | Lst [Id "Pval"; Str ivar; typ] -> 
+            let typ = xtype_t sr typ in
+            print_endline ("Instance variable " ^ ivar ^ ", type=" ^ Flx_print.string_of_typecode typ);
+
+            (* Pointer projection: our type is an abstract pointer! *)
+            let fname = ivar in
+            let argt = `TYP_name (sr, classname, []) in
+            let ret = `TYP_pointer typ in
+            let body = CS.Str_template ("&($1->"^ivar ^")") in (* MACHINE POINTER! *)
+            let reqs = RREQ_true in
+            let prec = "" in
+            let pointer_projection = STMT_fun_decl (sr,fname,dfltvs,[argt],ret,body,reqs,prec) in
+            print_endline ("ivar pointer projection = " ^ Flx_print.string_of_statement 0 pointer_projection);
+
+            (* value projection using phantom proxy type *)
+            let argt = `TYP_name (sr, proxy_name,[]) in
+            let ret =  typ in
+            let body = CS.Str_template ("$1->"^ivar) in
+            let value_projection = STMT_fun_decl (sr,fname,dfltvs,[argt],ret,body,reqs,prec) in
+            print_endline ("ivar value projection = " ^ Flx_print.string_of_statement 0 value_projection);
+            STMT_seq (sr, [value_projection; pointer_projection])
+   
+          | x -> err x "Objc instance variable spec, expected ivar decl or vis spec"
+        ) 
+        ivspecs
+
+      | Lst [] -> print_endline "Optional instance variable spec list omitted"; []
+      | x -> err x "objc instance variables"
+    in
+
+    (* BIND METHODS *)
     let iface_decl = 
       match interface_declaration with
       | Lst [] -> 
@@ -1592,7 +1630,7 @@ and bind_objc_class_interface sr stuff reqs :Flx_ast.statement_t =
         ifaces
         in
         let supercoercion = supertype_specification sr super classname in
-        STMT_seq (sr,class_type :: supercoercion :: protocols @ methods)
+        STMT_seq (sr,class_type :: supercoercion :: derefproxy_type :: deref_operator ::  protocols @ ivar_projections @ methods)
 
       | x -> err x "objc interface"
    in

@@ -6521,7 +6521,7 @@ syntax ObjC
       := "@interface" sname (":" sname)? protocol_reference_list? instance_variables? interface_declaration* "@end"
          =># '`(objc_class_interface ,_2 ,_3 ,_4 ,_5 ,_6)'
       ;
-
+/*
   class_implementation
       := "@implementation" sname ":" ? instance_variables? implementation_definition* "@end"
       ;
@@ -6533,6 +6533,7 @@ syntax ObjC
   category_implementation
       := "@implementation" sname "("  sname ")" implementation_definition* "@end"
       ;
+*/
 
   protocol_interface
       := "@protocol" sname protocol_reference_list? interface_declaration* "@end"
@@ -6548,9 +6549,16 @@ syntax ObjC
       ;
 
   instance_variables
-      := "{" instance_variable_declaration "}" =># '_2'
+      := "{" instance_variable_declaration* "}" =># '_2'
       ;
 
+  instance_variable_declaration
+      := stypeexpr sname ";" =># "`(Pval ,_2 ,_1)" // like C: int x;!
+      | sname ":" stypeexpr ";" =># "`(Pval ,_1 ,_3)"
+      ;
+
+
+/*
   instance_variable_declaration
       := visibility_specification =># '`((objc_visibility_specification ,_1))'
       | struct_declaration =># '`((objc_struct_declaration ,_1))'
@@ -6568,6 +6576,7 @@ syntax ObjC
   struct_declaration
       := sname sname ";" =># '`(objc_struct_declaration ,_1 ,_2)' // HACK: really a variable declaration
       ;
+*/
 
   interface_declaration
       := declaration =># '_1'
