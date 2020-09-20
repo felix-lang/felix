@@ -1424,7 +1424,7 @@ and decode_property_spec classname sr attr var =
   let readonly = 
     match attr with
     | Lst [Lst attrs] -> 
-       List.fold_left (fun result attr -> match attr with | Id "readonly" -> true | _ -> result) false attrs
+       List.fold_left (fun result attr -> match attr with | Str "readonly" -> true | _ -> result) false attrs
     | Lst [] -> false
     | x -> err x "property attributes"
   in

@@ -58,7 +58,7 @@ objc-bind
    -(int)get1977;
    -(int)getsum:(int);
    @property int z;
-   @property (readonly) int q;
+   @property (readonly) q:int;
  @end
  requires small_class_interface, small_class_implementation, package "foundation", package "objc"
 ;
