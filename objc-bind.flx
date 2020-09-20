@@ -5,6 +5,8 @@ open syntax ObjC;
 // This is required at the moment to declare the class 
 header small_class_interface = c"""
 @interface SmallClass: NSObject { 
+  int z;
+  int q;
 @public
   int x; int y;
 }
@@ -18,6 +20,8 @@ body small_class_implementation = c"""
 	self = [super init];
   self->x = 42;
   self->y = 98;
+  self->z = 104;
+  self->q = 33;
 	return self;
 }
 - (int)get1977 {
@@ -26,8 +30,10 @@ body small_class_implementation = c"""
 - (int)getsum: (int)toadd {
   return 1977 + toadd;
 }
+-(int)z { return z; }
+-(int)q { return q; }
+-(void)setz:(int)v { self->z=v; }
 -(NSString*)description { return @"SmallClassInstance"; }
-
 @end
 """;
 
@@ -51,6 +57,8 @@ objc-bind
    -(SmallClass)init;
    -(int)get1977;
    -(int)getsum:(int);
+   @property int z;
+   @property (readonly) int q;
  @end
  requires small_class_interface, small_class_implementation, package "foundation", package "objc"
 ;
@@ -70,4 +78,12 @@ println$ sc.require_description;
 println$ sc->x, sc->y;
 sc . x <- 88;
 println$ sc->x, sc->y;
+
+// properties
+
+println$ "z=" + sc.z.str;
+println$ "q=" + sc.q.str;
+sc.setz' 44;
+// sc.setq' 44; // this should fail
+println$ "z=" + sc.z.str;
 

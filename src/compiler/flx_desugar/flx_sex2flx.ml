@@ -1420,6 +1420,41 @@ and cal_method_decl sr name paramss return_type body =
     print_endline ("  -->> Method binding = " ^ Flx_print.string_of_statement 0 fun_decl);
     fun_decl 
 
+and decode_property_spec classname sr attr var =
+  let readonly = 
+    match attr with
+    | Lst [Lst attrs] -> 
+       List.fold_left (fun result attr -> match attr with | Id "readonly" -> true | _ -> result) false attrs
+    | Lst [] -> false
+    | x -> err x "property attributes"
+  in
+  match var with 
+  | Lst [Id "Pval"; Str name; typ] -> 
+    let typ = xtype_t sr typ in
+
+    (* get method *)
+    let paramspec1 : parameter_t sexpr_t = Satom (sr, `PVal, "_1", `TYP_name (sr,classname,[]), None) in 
+    let paramss = [paramspec1, None] in
+    let obj = `EXPR_name (sr, "_1",[]) in
+    let argument =  obj in
+    let code_string = "[$1 "^name^"]" in
+    let code_spec = Flx_code_spec.Str_template code_string in
+    let body = [STMT_fun_return (sr,`EXPR_expr (sr, code_spec, typ, argument))] in
+    let get_method = cal_method_decl sr name paramss typ body in
+    if readonly then
+      get_method
+    else
+      let paramspec2: parameter_t sexpr_t = Satom (sr, `PVal, "_2", typ, None) in
+      let paramss : params_t list = [paramspec1, None; paramspec2, None] in
+      let argument = `EXPR_tuple (sr, [obj ; `EXPR_name (sr, "_2",[])]) in 
+      let code_string = "[$1 set" ^ name ^ ": $2]" in
+      let code_spec = Flx_code_spec.Str_template code_string in
+      let body = [STMT_code (sr, code_spec, argument)] in
+      let set_method = cal_method_decl sr ("set"^name^"'") paramss (`TYP_void sr) body in
+      STMT_seq (sr, [get_method; set_method])
+
+  | x -> err x "property name and type"
+
 and decode_instance_method_spec objt sr return_spec selector =
   print_endline ("instance method declaration");
   let return_type = xtype_t sr return_spec in 
@@ -1621,9 +1656,9 @@ and bind_objc_class_interface sr stuff reqs :Flx_ast.statement_t =
             let sr = xsr sr in
             decode_instance_method_spec classname sr typ selector
 
-          | Lst [Id "objc_property"; property_attribues; var] -> 
-            print_endline ("Property declaration not implemented");
-            STMT_nop (sr, "property decl not implemented yet")
+          | Lst [Id "objc_property"; sr; property_attributes; var] -> 
+            let sr = xsr sr in
+            decode_property_spec classname sr property_attributes var 
 
           | x -> err x "Objc interface element"
         )

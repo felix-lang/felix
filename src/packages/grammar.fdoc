@@ -6589,7 +6589,7 @@ syntax ObjC
       ;
 
   property_declaration
-      := "@property" property_attributes_declaration? struct_declaration =># '`(objc_property ,_2 ,_3)'
+      := "@property" property_attributes_declaration? instance_variable_declaration=># '`(objc_property ,_sr ,_2 ,_3)'
       ;
 
   property_attributes_declaration
