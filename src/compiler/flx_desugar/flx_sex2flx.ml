@@ -1372,8 +1372,8 @@ print_endline ("Argtypes = " ^ Flx_util.catmap ", " Flx_print.string_of_typecode
     )
     (List.tl revlinks)
 
-  | Lst[Id "objc_bind_class_interface"; sr; stuff] -> bind_objc_class_interface sr stuff
-  | Lst[Id "objc_bind_protocol_interface"; sr; stuff] -> bind_objc_protocol_interface sr stuff
+  | Lst[Id "objc_bind_class_interface"; sr; stuff; reqs] -> bind_objc_class_interface sr stuff reqs
+  | Lst[Id "objc_bind_protocol_interface"; sr; stuff; reqs] -> bind_objc_protocol_interface sr stuff reqs
 
 
   | x -> err x "statement"
@@ -1531,8 +1531,9 @@ and supertype_specification sr super sub =
   print_endline ("Supercoercion function = " ^ Flx_print.string_of_statement 0 supercoercion);
   supercoercion
 
-and bind_objc_class_interface sr stuff :Flx_ast.statement_t = 
+and bind_objc_class_interface sr stuff reqs :Flx_ast.statement_t = 
   let sr = xsr sr in 
+  let reqs = xraw_req_expr_t sr reqs  in
   match stuff with
   | Lst [Id "objc_class_interface"; Str classname; super; protocol_reference_list; instance_variables; interface_declaration] ->
     let super = 
@@ -1542,7 +1543,7 @@ and bind_objc_class_interface sr stuff :Flx_ast.statement_t =
        | x -> err x "obj super class"
     in
     print_endline ("Objc Class " ^ classname ^ (if super = "" then "" else ": " ^ super));
-    let class_type = STMT_abs_decl (sr, classname, Flx_ast.dfltvs, [], Str (classname^ "*"), RREQ_true) in  
+    let class_type = STMT_abs_decl (sr, classname, Flx_ast.dfltvs, [], Str (classname^ "*"), reqs) in  
     let protocols = 
       match protocol_reference_list with
       | Lst [Lst names] ->
@@ -1599,14 +1600,15 @@ and bind_objc_class_interface sr stuff :Flx_ast.statement_t =
 
   | x -> err x "objc bind class interface"
 
-and bind_objc_protocol_interface sr stuff :Flx_ast.statement_t = 
+and bind_objc_protocol_interface sr stuff reqs :Flx_ast.statement_t = 
   let sr = xsr sr in 
+  let reqs = xraw_req_expr_t sr reqs  in
   match stuff with
   | Lst [Id "objc_protocol_interface"; Str classname; protocol_reference_list; interface_declaration] ->
     print_endline ("Objc Protocol " ^ classname);
 
     (* A protocol is an incomplete type, so we just use C struct tag for the binding *)
-    let class_type = STMT_abs_decl (sr, classname, Flx_ast.dfltvs, [], Str ("struct " ^ classname^ "*"), RREQ_true) in  
+    let class_type = STMT_abs_decl (sr, classname, Flx_ast.dfltvs, [], Str ("struct " ^ classname^ "*"), reqs) in  
     let protocols = 
       match protocol_reference_list with
       | Lst [Lst names] ->

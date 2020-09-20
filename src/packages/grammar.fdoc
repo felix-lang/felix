@@ -6513,8 +6513,8 @@ syntax ObjC
 {
 
   stmt 
-      := "@objc-bind" class_interface =># '`(objc_bind_class_interface ,_sr ,_2)' 
-      | "@objc-bind" protocol_interface =># '`(objc_bind_protocol_interface ,_sr ,_2)' 
+      := "objc-bind" class_interface srequires_clause ";" =># '`(objc_bind_class_interface ,_sr ,_2 ,_3)' 
+      | "objc-bind" protocol_interface srequires_clause ";" =># '`(objc_bind_protocol_interface ,_sr ,_2 ,_3)' 
       ;
  
   class_interface 

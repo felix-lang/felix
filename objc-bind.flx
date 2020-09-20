@@ -26,20 +26,25 @@ body small_class_implementation = c"""
 @end
 """;
 
-requires small_class_interface, small_class_implementation, package "foundation", package "objc";
 // PROTOCOL
 
- @objc-bind @protocol hasDescription
+objc-bind 
+  @protocol hasDescription
    -(NSString)description;
- @end
+  @end
+  requires small_class_interface, small_class_implementation, package "foundation", package "objc"
+;
 
 
- @objc-bind @interface SmallClass<hasDescription>
- +(SmallClass)alloc;
- -(SmallClass)init;
- -(int)get1977;
- -(int)getsum:(int);
+objc-bind 
+ @interface SmallClass<hasDescription>
+   +(SmallClass)alloc;
+   -(SmallClass)init;
+   -(int)get1977;
+   -(int)getsum:(int);
  @end
+ requires small_class_interface, small_class_implementation, package "foundation", package "objc"
+;
 
 var sc : SmallClass = cexpr[SmallClass] "[[SmallClass alloc] init]" endcexpr;
 println$ "Get: " + (sc.get1977) . str ;
