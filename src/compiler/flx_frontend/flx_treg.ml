@@ -144,7 +144,7 @@ then
   | BTYP_label -> ()
 
   | BTYP_instancetype _ -> 
-   print_endline ("Flx_treg: Trying to register instancetype"); 
+   (* print_endline ("Flx_treg: Trying to register instancetype");  *)
    (* This should just pass, the type at this stage is legit but should
       be eliminated by the time the registration entry would be needed
    *)

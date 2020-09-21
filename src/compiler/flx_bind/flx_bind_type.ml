@@ -593,7 +593,7 @@ print_endline ("Binding `TYP_name " ^s^ " via params to " ^ sbt bsym_table t);
       end
 
   | `TYP_name (sr,"instancetype",[]) -> 
-     print_endline ("Trying to bind instancetype");
+(* print_endline ("Trying to bind instancetype"); *)
      btyp_instancetype sr
 
   | `TYP_name _

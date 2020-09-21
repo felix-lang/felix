@@ -187,13 +187,17 @@ print_endline ("ABout to bind apply argument type=" ^ sbt bsym_table (snd x2));
   let x = bexpr_apply rest ((be1,t1), x2) in
   let x = match rest with
     | BTYP_instancetype _  ->
+(*
       print_endline ("Expression has instancetype " ^ Flx_print.sbe bsym_table x);
       print_endline ("Argument of application has type " ^ Flx_print.sbt bsym_table original_argtype);
+*)
       bexpr_coerce (x, original_argtype)
       
     | BTYP_function (d,BTYP_instancetype _) ->
+(*
       print_endline ("Expression has function type codomain instancetype " ^ Flx_print.sbe bsym_table x);
       print_endline ("Argument of application has type " ^ Flx_print.sbt bsym_table original_argtype);
+*)
       bexpr_coerce (x, btyp_function (d,original_argtype))
     | _ -> x
   in  
