@@ -60,6 +60,12 @@ let rec get_offsets' syms bsym_table typ : offset_kind_t list =
   | BTYP_typeof _ -> assert false
   | BTYP_rev _ -> assert false
   | BTYP_uniq _ -> assert false
+
+  | BTYP_instancetype _ ->
+    print_endline ("Cal_type_offsets: instancetype");
+    (* this shouldn't happen but somehow it does .. *)
+    [`Ptr "0"]
+
   | BTYP_ptr (_,t,_) -> [`Ptr "0"]
 
 

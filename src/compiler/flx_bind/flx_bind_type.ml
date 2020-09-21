@@ -592,6 +592,10 @@ print_endline ("Binding `TYP_name " ^s^ " via params to " ^ sbt bsym_table t);
           syserr sr ("Synthetic name "^name ^ " is not a nominal type!")
       end
 
+  | `TYP_name (sr,"instancetype",[]) -> 
+     print_endline ("Trying to bind instancetype");
+     btyp_instancetype sr
+
   | `TYP_name _
   | `TYP_case_tag _
   | `TYP_lookup _

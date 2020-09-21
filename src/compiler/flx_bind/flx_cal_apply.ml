@@ -29,6 +29,7 @@ let debug = false
 let cal_apply' 
   build_env
   state bsym_table be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) =
+  let original_argtype = t2 in
 (*
   if t1 <> t1' || t2 <> t2' then begin
 print_endline ("cal_apply' BEFORE NORMALISE, fn = " ^ sbt bsym_table t1' ^ " arg=" ^ sbt bsym_table t2');
@@ -184,6 +185,18 @@ print_endline ("ABout to bind apply function type=" ^ sbt bsym_table t1);
 print_endline ("ABout to bind apply argument type=" ^ sbt bsym_table (snd x2));
 *)
   let x = bexpr_apply rest ((be1,t1), x2) in
+  let x = match rest with
+    | BTYP_instancetype _  ->
+      print_endline ("Expression has instancetype " ^ Flx_print.sbe bsym_table x);
+      print_endline ("Argument of application has type " ^ Flx_print.sbt bsym_table original_argtype);
+      bexpr_coerce (x, original_argtype)
+      
+    | BTYP_function (d,BTYP_instancetype _) ->
+      print_endline ("Expression has function type codomain instancetype " ^ Flx_print.sbe bsym_table x);
+      print_endline ("Argument of application has type " ^ Flx_print.sbt bsym_table original_argtype);
+      bexpr_coerce (x, btyp_function (d,original_argtype))
+    | _ -> x
+  in  
 (*
 print_endline ("Bound apply = " ^ sbe bsym_table x);
 *)

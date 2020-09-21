@@ -61,6 +61,7 @@ let var_occurs bsym_table t =
 
     | BTYP_uniq a -> aux a
 
+    | BTYP_instancetype _
     | BTYP_ellipsis
     | BTYP_label
     | BTYP_unitsum _

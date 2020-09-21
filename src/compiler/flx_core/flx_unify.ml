@@ -226,6 +226,7 @@ let rec solve_subtypes nominal_subtype counter lhs rhs dvars (s:vassign_t option
 
 and solve_subsumption nominal_subtype counter lhs rhs  dvars (s:vassign_t option ref) (add_eqn:reladd_t) =
       begin match lhs,rhs with
+      | BTYP_instancetype _, BTYP_instancetype _ -> () (* weirdo but we have to do it *)
       | BTYP_rev t1, BTYP_rev t2 ->
         add_eqn (t1,t2)
 

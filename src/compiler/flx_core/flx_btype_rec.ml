@@ -38,6 +38,7 @@ let fix i t =
         btyp_fix n mt 
       end
       else t
+    | BTYP_instancetype sr -> btyp_instancetype sr
     | BTYP_inst (k,ts,mt) -> btyp_inst (k, List.map aux ts,mt)
     | BTYP_vinst (k,ts,mt) -> btyp_vinst (k, List.map aux ts,mt)
     | BTYP_tuple ts -> btyp_tuple (List.map aux ts)

@@ -38,6 +38,7 @@ and pvpiece_t = [`Ctor of (string * t) | `Base of t]
 (** general typing *)
 and t = 
   | BBOOL  of bool (* kind BOOL *)
+  | BTYP_instancetype of Flx_srcref.t (* objective C covariant return indicator *)
   | BTYP_ellipsis (* only at end of a tuple, matches rest of argument tuple, for varargs *)
   | BTYP_none
   | BTYP_sum of t list
@@ -107,6 +108,7 @@ let flat_iter
   | BTYP_typeof (i, t) -> f_bid i
   | BTYP_typeop (op, t,k) -> f_btype t
 
+  | BTYP_instancetype sr -> ()
   | BTYP_label -> ()
   | BTYP_none -> ()
   | BTYP_ellipsis -> ()
@@ -251,6 +253,7 @@ and str_of_btype typ =
   | BBOOL b -> "BBOOL(" ^ string_of_bool b ^ ")"
   | BTYP_typeof (i,t) -> "BTYP_typeof(" ^string_of_int i ^ " unrepresentable)"
 
+  | BTYP_instancetype sr -> "BTYP_instancetype"
   | BTYP_none -> "BTYP_none"
   | BTYP_ellipsis -> "BTYP_ellipsis"
   | BTYP_sum ts -> "BTYP_sum(" ^ ss ts ^")"
@@ -459,7 +462,7 @@ let complete_type t =
 (* -------------------------------------------------------------------------- *)
 
 let btyp_typeof (i,e) = BTYP_typeof (i,e)
-
+let btyp_instancetype sr = BTYP_instancetype sr
 
 let btyp_label () = BTYP_label
 
@@ -956,6 +959,7 @@ let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
   | BTYP_typeof (i,t) -> btyp_typeof (f_bid i, t)
   | BTYP_typeop (op,t,k) -> btyp_typeop op (f_btype t) k
 
+  | BTYP_instancetype sr as x -> x
   | BTYP_label as x -> x
   | BTYP_none as x -> x
   | BTYP_ellipsis as x -> x

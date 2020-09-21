@@ -143,6 +143,13 @@ then
   | BTYP_ellipsis
   | BTYP_label -> ()
 
+  | BTYP_instancetype _ -> 
+   print_endline ("Flx_treg: Trying to register instancetype"); 
+   (* This should just pass, the type at this stage is legit but should
+      be eliminated by the time the registration entry would be needed
+   *)
+   ()
+
   (* compact linear types don't need to be registered *)
   | BTYP_void
   | BTYP_tuple [] -> ()

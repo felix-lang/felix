@@ -649,6 +649,7 @@ and sb bsym_table depth fixlist counter prec tc =
     | BTYP_typeof (i,t) -> 0,
       "typeof<context=" ^ string_of_int i ^ ">(" ^ string_of_expr t ^ ")"
 
+    | BTYP_instancetype sr -> 0,"instancetype"
     | BTYP_none -> 0,"none"
     | BTYP_ellipsis -> 0,"..."
     | BTYP_label -> 0,"label"

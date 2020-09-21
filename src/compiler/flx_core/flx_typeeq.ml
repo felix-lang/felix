@@ -34,6 +34,7 @@ let rec type_eq' sbt counter ltrail ldepth rtrail rdepth trail t1 t2 =
   *)
   match t1,t2 with
   | BBOOL a, BBOOL b -> a = b
+  | BTYP_instancetype _, BTYP_instancetype _ -> true
 
   | BTYP_ellipsis, BTYP_ellipsis -> true
 

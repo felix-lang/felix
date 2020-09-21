@@ -42,6 +42,7 @@ let fold (bsym_table: Flx_bsym_table.t) counter t =
     | BTYP_tuple_cons (a,b) -> ax a; ax b
     | BTYP_tuple_snoc (a,b) -> ax a; ax b
 
+    | BTYP_instancetype _
     | BTYP_ellipsis
     | BTYP_label 
     | BTYP_none

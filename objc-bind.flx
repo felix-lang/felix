@@ -11,6 +11,8 @@ header small_class_interface = c"""
   int x; int y;
 }
 - (int)get1977;
+- (instancetype)cpy;
+- (instancetype)cpywithmsg:(NSString*)p;
 @end
 """;
 
@@ -34,6 +36,8 @@ body small_class_implementation = c"""
 -(int)q { return q; }
 -(void)setz:(int)v { self->z=v; }
 -(NSString*)description { return @"SmallClassInstance"; }
+-(instancetype)cpy { return self; }
+-(instancetype)cpywithmsg:(NSString*)s { NSLog(s); return self; }
 @end
 """;
 
@@ -46,15 +50,21 @@ objc-bind
   requires small_class_interface, small_class_implementation, package "foundation", package "objc"
 ;
 
+objc-bind
+  @protocol Cpy
+  -(instancetype)cpy;
+  -(instancetype)cpywithmsg:(NSString);
+  @end
+;
 
 objc-bind 
- @interface SmallClass<hasDescription>
+ @interface SmallClass<hasDescription, Cpy>
   {
      int x;
      y: int;
   }
    +(SmallClass)alloc;
-   -(SmallClass)init;
+   -(instancetype)init;
    -(int)get1977;
    -(int)getsum:(int);
    @property int z;
@@ -86,4 +96,11 @@ println$ "q=" + sc.q.str;
 sc.setz' 44;
 // sc.setq' 44; // this should fail
 println$ "z=" + sc.z.str;
+
+// Covariance
+
+var sc2 : SmallClass = sc.cpy;
+println$ "sc2.z=" + sc2.z.str;
+var sc3 : SmallClass = sc.cpywithmsg' @"Copy with message";
+println$ "sc3.z=" + sc3.z.str;
 
