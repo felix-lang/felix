@@ -625,20 +625,20 @@ open class Functional
   type bproc2[R,P1] = "typename _type2<?1,?2>::bproc";
   type bfun2[R,P1] = "typename _type2<?1,?2>::bfun";
 
-  type cproc3[R,P1] = "typename _type3<?1,?2,?3>::cproc";
-  type cfun3[R,P1] = "typename _type3<?1,?2,?3>::cfun";
-  type bproc3[R,P1] = "typename _type3<?1,?2,?3>::bproc";
-  type bfun3[R,P1] = "typename _type3<?1,?2,?3>::bfun";
+  type cproc3[R,P1,P2] = "typename _type3<?1,?2,?3>::cproc";
+  type cfun3[R,P1,P2] = "typename _type3<?1,?2,?3>::cfun";
+  type bproc3[R,P1,P2] = "typename _type3<?1,?2,?3>::bproc";
+  type bfun3[R,P1,P2] = "typename _type3<?1,?2,?3>::bfun";
 
-  type cproc4[R,P1] = "typename _type4<?1,?2,?3,?4>::cproc";
-  type cfun4[R,P1] = "typename _type4<?1,?2,?3,?4>::cfun";
-  type bproc4[R,P1] = "typename _type4<?1,?2,?3,?4>::bproc";
-  type bfun4[R,P1] = "typename _type4<?1,?2,?3,?4>::bfun";
+  type cproc4[R,P1,P2,P3] = "typename _type4<?1,?2,?3,?4>::cproc";
+  type cfun4[R,P1,P2,P3] = "typename _type4<?1,?2,?3,?4>::cfun";
+  type bproc4[R,P1,P2,P3] = "typename _type4<?1,?2,?3,?4>::bproc";
+  type bfun4[R,P1,P2,P3] = "typename _type4<?1,?2,?3,?4>::bfun";
 
-  type cproc5[R,P1] = "typename _type5<?1,?2,?3,?4,?5>::cproc";
-  type cfun5[R,P1] = "typename _type5<?1,?2,?3,?4,?5>::cfun";
-  type bproc5[R,P1] = "typename _type5<?1,?2,?3,?4,?5>::bproc";
-  type bfun5[R,P1] = "typename _type5<?1,?2,?3,?4,?5>::bfun";
+  type cproc5[R,P1,P2,P3,P4] = "typename _type5<?1,?2,?3,?4,?5>::cproc";
+  type cfun5[R,P1,P2,P3,P4] = "typename _type5<?1,?2,?3,?4,?5>::cfun";
+  type bproc5[R,P1,P2,P3,P4] = "typename _type5<?1,?2,?3,?4,?5>::bproc";
+  type bfun5[R,P1,P2,P3,P4] = "typename _type5<?1,?2,?3,?4,?5>::bfun";
 
 }
 
