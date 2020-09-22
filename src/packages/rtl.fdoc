@@ -108,6 +108,18 @@ def build_runtime(phase):
   #define FLX_KILLPC pc = -1;
 #endif
 
+// THESE ARE NOT CURRENTLY USED
+// The intent is that we can use a consistent name for some structural types
+// across compilation boundaries by using C++ template names.
+// The templates are never defined, just declared.
+// The types are defined with the old way, but as a specialisation
+// of the template. The existing structure names become typedefs
+// to that template. So the body of code is otherwise unchanged,
+// but the C++ mangled name will be the same in all compilations.
+// THE PROBLEM is it only works if the component types do not recursively
+// refer to the whole type, because C++ cannot handle recursive type
+// combinators.
+
 #define t typename
 #define t2 t,t
 #define t3 t,t,t
@@ -261,6 +273,7 @@ public:
 };
 
 
+// special names for tuples with only a few components
 template<typename T0, typename T1> 
 struct _tt2 {
   T0 mem_0;
@@ -304,6 +317,66 @@ struct _tt5 {
     mem_0(_a0), mem_1(_a1),mem_2(_a2), mem_3(_a3), mem_4(_a4)
     {}
 };
+
+//-----------------------------------------
+// C function types
+// Felix cannot handle these in type specifications so we have to give aliases.
+// 
+// Usage is like this:
+// type myfun1[R] = "type1<?1>::cfun"
+//-----------------------------------------
+
+template<class R>
+struct _type1 {
+ typedef R (*cfun)(void);
+ typedef void (*cproc)(R);
+#ifdef __clang__
+ typedef R (^bfun)(void);
+ typedef void (^bproc)(R);
+#endif
+};
+
+template<class R,class P1>
+struct _type2 {
+ typedef R (*cfun)(P1);
+ typedef void (*cproc)(R,P1);
+#ifdef __clang__
+ typedef R (^bfun)(P1);
+ typedef void (^bproc)(R,P1);
+#endif
+};
+
+template<class R,class P1, class P2>
+struct _type3 {
+ typedef R (*cfun)(P1,P2);
+ typedef void (*cproc)(R,P1,P2);
+#ifdef __clang__
+ typedef R (^bfun)(P1,P2);
+ typedef void (^bproc)(R,P1,P2);
+#endif
+};
+
+template<class R,class P1, class P2, class P3>
+struct _type4 {
+ typedef R (*cfun)(P1,P2,P3);
+ typedef void (*cproc)(R,P1,P2,P3);
+#ifdef __clang__
+ typedef R (^bfun)(P1,P2,P3);
+ typedef void (^bproc)(R,P1,P2,P3);
+#endif
+};
+
+template<class R,class P1, class P2, class P3, class P4>
+struct _type5 {
+ typedef R (*cfun)(P1,P2,P3,P4);
+ typedef void (*cproc)(R,P1,P2,P3,P4);
+#ifdef __clang__
+ typedef R (^bfun)(P1,P2,P3,P4);
+ typedef void (^bproc)(R,P1,P2,P3,P4);
+#endif
+};
+
+
 
 
 #define FLX_EXEC_FAILURE(f,op,what) \
