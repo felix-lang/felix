@@ -488,7 +488,6 @@ let rec flatten_intersections (ts:t list): t list =
   []
   ts
 
-let strip_units ts = List.filter (fun t -> match t with BTYP_tuple [] -> false | _ -> true) ts
 let contains_void ts = List.fold_left (fun acc t -> match t with | BTYP_void -> true | _ -> acc) false ts
 
 (* pre-condition: no term contains a nested intersect
@@ -499,10 +498,9 @@ let contains_void ts = List.fold_left (fun acc t -> match t with | BTYP_void -> 
 
 let btyp_intersect ts = 
   let ts = flatten_intersections ts in
-  let ts = strip_units ts in
   if contains_void ts then BTYP_void else
   match ts with
-  | [] -> BTYP_void
+  | [] -> BTYP_fix (0,KIND_type) (* universal type *)
   | [x] -> x
   | _ -> BTYP_intersect ts
 
@@ -647,6 +645,12 @@ let btyp_tuple ts =
         btyp_array (head, (BTYP_unitsum (List.length ts)))
       with Not_found ->
         BTYP_tuple ts
+
+(*
+let btyp_tuple ts =
+  let tss = expand_list_with_intersections ts in
+  btyp_intersect (List.map btyp_tuple' tss)
+*)
 
 let btyp_compacttuple ts =
   match ts with
