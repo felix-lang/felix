@@ -39,6 +39,7 @@ let var_occurs bsym_table t =
     | BTYP_inst (_,ls,_)
     | BTYP_vinst (_,ls,_)
     | BTYP_compacttuple ls 
+    | BTYP_intersect ls
     | BTYP_tuple ls -> List.iter aux ls
 
     | BTYP_record (ls) -> List.iter (fun (s,t) -> aux t) ls

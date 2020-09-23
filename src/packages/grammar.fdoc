@@ -83,12 +83,16 @@ syntax types {
 
   t[stuple_pri] := stypeexpr ("," stypeexpr )+ =># "(chain 'typ_type_tuple _1 _2)";
 
+  // these for type operations on static_bool, they're NOT type combinators
   t[simplies_condition_pri] := t[simplies_condition_pri] "implies" t[>simplies_condition_pri] =># "`(typ_implies ,_sr ,_1 ,_3)";
   t[sor_condition_pri] := t[sor_condition_pri] "or" t[>sor_condition_pri] =># "`(typ_or ,_sr ,_1 ,_3)";
   t[sand_condition_pri] := t[sand_condition_pri]  "and" t[>sand_condition_pri] =># "`(typ_and ,_sr ,_1 ,_3)";
   t[snot_condition_pri] := "not" t[snot_condition_pri]  =># "`(typ_not ,_sr ,_2)";
   t[satomic_pri] := "true"  =># "`(typ_true,_sr)";
   t[satomic_pri] := "false"  =># "`(typ_false ,_sr)";
+
+  // this is the intersection combinator
+  t[sproduct_pri] := t[sproduct_pri]  "&" t[>sproduct_pri] =># '`(typ_intersect ,_sr ,_1 ,_3)';
 
   //$ Ellipsis (for binding C varags functions).
   t[satomic_pri] := "..." =># "`(typ_ellipsis ,_sr)";

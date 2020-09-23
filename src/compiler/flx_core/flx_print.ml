@@ -450,6 +450,13 @@ and st prec tc : string =
       | _ -> 4, cat " * " (map (st 4) ls)
       end
 
+    | `TYP_intersect ls ->
+      begin match ls with
+      | [] -> 0,"unit"
+      | _ -> 4, cat " & " (map (st 4) ls)
+      end
+
+
 
     | `TYP_compacttuple ls ->
       begin match ls with
@@ -724,6 +731,14 @@ and sb bsym_table depth fixlist counter prec tc =
       (if List.length ts = 0 then "" else
       "[" ^cat ", " (map (sbt 9) ts) ^ "]:" ^ sk mt
       )
+
+    | BTYP_intersect ls ->
+      begin match ls with
+      | [] -> 0,"unit"
+      | [x] -> failwith ("UNEXPECTED INTERSECTION OF ONE ARGUMENT " ^ sbt 9 x)
+      | _ -> 4,cat " & " (map (sbt 4) ls)
+      end
+
 
     | BTYP_tuple ls ->
       begin match ls with

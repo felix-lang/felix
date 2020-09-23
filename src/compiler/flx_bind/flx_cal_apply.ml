@@ -29,7 +29,7 @@ let debug = false
 let cal_apply' 
   build_env
   state bsym_table be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) =
-  let original_argtype = t2 in
+  let original_argument_type = t2 in
 (*
   if t1 <> t1' || t2 <> t2' then begin
 print_endline ("cal_apply' BEFORE NORMALISE, fn = " ^ sbt bsym_table t1' ^ " arg=" ^ sbt bsym_table t2');
@@ -37,43 +37,44 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
   end
   ;
 *)
-  let rest,reorder =
-    match unfold "flx_lookup" t1 with
-    | BTYP_lineareffector(argt,_,rest)
-    | BTYP_linearfunction (argt,rest)
-    | BTYP_effector(argt,_,rest)
-    | BTYP_function (argt,rest)
-    | BTYP_cfunction (argt,rest) ->
+  let result_type,reorder =
+    let argt = unfold "flx_cal_apply" t1 in 
+    match argt with
+    | BTYP_lineareffector(paramt,_,result_type)
+    | BTYP_linearfunction (paramt,result_type)
+    | BTYP_effector(paramt,_,result_type)
+    | BTYP_function (paramt,result_type)
+    | BTYP_cfunction (paramt,result_type) ->
       begin
 (*
-      if type_match bsym_table state.counter argt t2
+      if type_match bsym_table state.counter paramt t2
 *)
-      let rel = Flx_unify.compare_sigs bsym_table state.counter argt t2 in
+      let rel = Flx_unify.compare_sigs bsym_table state.counter paramt t2 in
 (*
-      print_endline ("Function domain " ^ sbt bsym_table argt ^ " " ^str_of_cmp rel ^ " argument type " ^ sbt bsym_table t2);
+      print_endline ("Function domain " ^ sbt bsym_table paramt ^ " " ^str_of_cmp rel ^ " argument type " ^ sbt bsym_table t2);
 *)
       match rel with
       | `Equal -> 
 (*
         print_endline "Type of function parameter agrees with type of argument";
 *)
-        rest, `None
+        result_type, `None
       | `Greater ->
 (*
         print_endline "Type of function parameter supertype of argument, add coercion";
 *)
-        rest, `Coerce (t2,argt)
+        result_type, `Coerce (t2,paramt)
       | _ ->
       let reorder = Flx_reorder.reorder state.sym_table sr be tbe1 tbe2 in
 (*
       print_endline "Type of function parameter DOES NOT agree with type of argument";
-      print_endline ("Paramt = " ^ sbt bsym_table argt ^ " argt = " ^ sbt bsym_table t2);
+      print_endline ("Paramt = " ^ sbt bsym_table paramt ^ " paramt = " ^ sbt bsym_table t2);
 *)
       begin match reorder with
       | `None ->
-        clierrx "[flx_bind/flx_lookup.ml:2170: E111] " sr
+        clierrx "[flx_bind/flx_cal_apply.ml:74: E111] " sr
         (
-          "[cal_apply] Function " ^
+          "Function " ^
           sbe bsym_table tbe1 ^
           "\nof type " ^
           sbt bsym_table t1 ^ "=" ^ Flx_btype.st t1 ^
@@ -82,9 +83,9 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
           "\n of type " ^
           sbt bsym_table t2 ^ "=" ^ Flx_btype.st t2 ^
           "\nwhich doesn't agree with parameter type\n" ^
-          sbt bsym_table argt ^ "=" ^ Flx_btype.st argt
+          sbt bsym_table paramt ^ "=" ^ Flx_btype.st paramt
         )
-      | _ -> rest, reorder
+      | _ -> result_type, reorder
       end
     end (* functions *)
 
@@ -121,13 +122,13 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
     "---------------------------------------" ^
     "\nApply type " ^ sbt bsym_table t1 ^
     "\nto argument of type " ^ sbt bsym_table t2 ^
-    "\nresult type is " ^ sbt bsym_table rest ^
+    "\nresult type is " ^ sbt bsym_table result_type ^
     "\n-------------------------------------"
   );
   *)
 
-  let rest = varmap_subst state.varmap rest in
-  if rest = btyp_void () then
+  let result_type = varmap_subst state.varmap result_type in
+  if result_type = btyp_void () then
     clierrx "[flx_bind/flx_lookup.ml:2225: E114] " sr
     (
       "[cal_apply] Function " ^
@@ -150,7 +151,7 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
   eliminated ..
   *)
   (*
-  if var_occurs rest
+  if var_occurs result_type
   then
     clierrx "[flx_bind/flx_lookup.ml:2249: E115] " sr
     (
@@ -180,25 +181,25 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
   let x2 = be2,t2 in
 
 (*
-print_endline ("ABout to bind apply result type=" ^ sbt bsym_table rest);
+print_endline ("ABout to bind apply result type=" ^ sbt bsym_table result_type);
 print_endline ("ABout to bind apply function type=" ^ sbt bsym_table t1);
 print_endline ("ABout to bind apply argument type=" ^ sbt bsym_table (snd x2));
 *)
-  let x = bexpr_apply rest ((be1,t1), x2) in
-  let x = match rest with
+  let x = bexpr_apply result_type ((be1,t1), x2) in
+  let x = match result_type with
     | BTYP_instancetype _  ->
 (*
       print_endline ("Expression has instancetype " ^ Flx_print.sbe bsym_table x);
-      print_endline ("Argument of application has type " ^ Flx_print.sbt bsym_table original_argtype);
+      print_endline ("Argument of application has type " ^ Flx_print.sbt bsym_table original_paramtype);
 *)
-      bexpr_coerce (x, original_argtype)
+      bexpr_coerce (x, original_argument_type)
       
     | BTYP_function (d,BTYP_instancetype _) ->
 (*
       print_endline ("Expression has function type codomain instancetype " ^ Flx_print.sbe bsym_table x);
-      print_endline ("Argument of application has type " ^ Flx_print.sbt bsym_table original_argtype);
+      print_endline ("Argument of application has type " ^ Flx_print.sbt bsym_table original_paramtype);
 *)
-      bexpr_coerce (x, btyp_function (d,original_argtype))
+      bexpr_coerce (x, btyp_function (d,original_argument_type))
     | _ -> x
   in  
 (*

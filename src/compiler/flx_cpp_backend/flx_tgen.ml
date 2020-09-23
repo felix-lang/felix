@@ -183,6 +183,13 @@ let rec gen_type_name syms bsym_table (index,typ) =
     "typedef " ^ tn b ^ " *"^ tn t ^ ";\n"
     *)
 
+  (* maybe this should be a struct tag instead: it's a phantom and at present
+     an incomplete type would do
+  *)
+  | BTYP_intersect _ -> 
+    "// hack for intersection types\n" ^
+    "typedef void *" ^ cn typ ^ ";"
+
   | BTYP_tuple _
   | BTYP_record _
   | BTYP_array _ ->
@@ -435,6 +442,8 @@ let rec gen_type syms bsym_table (index,typ) =
   | BTYP_record (ts) ->
      descr ^
      gen_record (cn typ) tn ts
+
+  | BTYP_intersect _ -> ""
 
   | BTYP_ptr _ ->  ""
     (*

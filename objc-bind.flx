@@ -98,9 +98,13 @@ sc.setz' 44;
 println$ "z=" + sc.z.str;
 
 // Covariance
-
 var sc2 : SmallClass = sc.cpy;
 println$ "sc2.z=" + sc2.z.str;
 var sc3 : SmallClass = sc.cpywithmsg' @"Copy with message";
 println$ "sc3.z=" + sc3.z.str;
+
+// Intersection
+noinline fun dc (x: hasDescription & Cpy) => x.cpy.description.str;
+println$ sc.dc;
+
 

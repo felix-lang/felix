@@ -10,6 +10,23 @@ let rec memq trail (a,b) = match trail with
   | [] -> false
   | (i,j)::t -> i == a && j == b || memq t (a,b)
 
+
+(* NOTE: This routine tests "structural" equality, that is, it checks if
+  two type terms have the same encoding. It does not test semantic equality,
+  for that the more advanced function "ge" in Flx_unify should be used.
+  In particular, this function says two intersection types are equal
+  only if they have the same number of intersectands and they are
+  judged equal in order, however intersection is a symmetric semantically.
+
+  It may be possible to fix this by using a set instead of a list,
+  then just look for matching pairs. However Felix currently has
+  some cases where order matters. In particular although not
+  implemented yet the intersection of two record types with
+  the same field name is allowed, and isn't ambiguous, the
+  because Felix records allow duplicate field names (even with
+  different types!) In this case the record constructed by an
+  intersection is order dependent.
+*)
 let rec type_eq' sbt counter ltrail ldepth rtrail rdepth trail t1 t2 =
   (* print_endline (sbt sym_table t1 ^ " =? " ^ sbt sym_table t2); *)
   if memq trail (t1,t2) then true
@@ -35,6 +52,7 @@ let rec type_eq' sbt counter ltrail ldepth rtrail rdepth trail t1 t2 =
   match t1,t2 with
   | BBOOL a, BBOOL b -> a = b
   | BTYP_instancetype _, BTYP_instancetype _ -> true
+  
 
   | BTYP_ellipsis, BTYP_ellipsis -> true
 
@@ -49,6 +67,27 @@ let rec type_eq' sbt counter ltrail ldepth rtrail rdepth trail t1 t2 =
     true ts1 ts2
 
   | BTYP_unitsum i,BTYP_unitsum j -> i = j
+
+  (* this really isn't correct .. *)
+  | BTYP_intersect ts1, BTYP_intersect ts2 ->
+(* print_endline ("Type_eq of intersections .. "); *)
+    let result =
+    if List.length ts1 = List.length ts2
+    then
+      List.fold_left2
+      (fun tr a b -> tr && te a b)
+      true ts1 ts2
+    else false
+    in
+    (*
+    print_endline ("Tuple/sum compared " ^ (if result then "TRUE" else "FALSE"));
+    if List.length ts1 = List.length ts2 then
+    print_endline ("Args = " ^ catmap "\n  " (fun (t1,t2) ->
+      "lhs=" ^sbt sym_table t1 ^" vs rhs=" ^ sbt sym_table t2)
+     (combine ts1 ts2))
+    else print_endline ("unequal lengths");
+    *)
+    result
 
   | BTYP_sum ts1, BTYP_sum ts2
   | BTYP_compactsum ts1, BTYP_compactsum ts2

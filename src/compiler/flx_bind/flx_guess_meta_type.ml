@@ -100,6 +100,7 @@ print_endline (" ** BOUND mata type is " ^ Flx_kind.sk bmt);
   | `TYP_case_tag _ 
   | `TYP_callback _
   | `TYP_patvar _ 
+  | `TYP_intersect _
   | `TYP_tuple _
   | `TYP_sum _
   | `TYP_compactsum _

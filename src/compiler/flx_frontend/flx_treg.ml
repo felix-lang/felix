@@ -243,6 +243,7 @@ print_endline ("Array type " ^ sbt bsym_table t ^ " base type " ^ sbt bsym_table
 
   | BTYP_compacttuple ps 
   | BTYP_tuple ps -> iter rr ps; rnr t
+  | BTYP_intersect ps -> iter rr ps; rnr t
 
   | BTYP_tuple_cons (t1,t2) ->  assert false
   | BTYP_tuple_snoc (t1,t2) ->  assert false

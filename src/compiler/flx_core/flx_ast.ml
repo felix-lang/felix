@@ -82,6 +82,7 @@ and typecode_t = [
   | `TYP_patvar of Flx_srcref.t * Flx_id.t
   | `TYP_patany of Flx_srcref.t
   | `TYP_tuple of typecode_t list               (** product type *)
+  | `TYP_intersect of typecode_t list               (** intersection  type *)
   | `TYP_compacttuple of typecode_t list               (** product type *)
   | `TYP_unitsum of int                         (** sum of units  *)
   | `TYP_sum of typecode_t list                 (** numbered sum type *)
@@ -778,6 +779,7 @@ let src_of_typecode = function
   | `TYP_label
   | `TYP_compacttuple _
   | `TYP_tuple _
+  | `TYP_intersect _
   | `TYP_unitsum _
   | `TYP_sum _
   | `TYP_compactsum _

@@ -333,6 +333,7 @@ print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
 
 
   | BTYP_tuple ls -> btyp_tuple (List.map br ls)
+  | BTYP_intersect ls -> btyp_intersect (List.map br ls)
   | BTYP_array (i,t) -> btyp_array (br i, br t)
   | BTYP_rptsum (i,t) -> btyp_rptsum (br i, br t)
   | BTYP_sum ls -> btyp_sum (List.map br ls)

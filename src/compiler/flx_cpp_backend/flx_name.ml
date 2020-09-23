@@ -276,6 +276,7 @@ print_endline ("Flx_tgen.cpp_type_classname " ^ sbt bsym_table t);
   | BTYP_cfunction _ -> "_cft" ^ cid_of_bid (tix t)
   | BTYP_array _ -> "_at" ^ cid_of_bid (tix t)
   | BTYP_tuple _ -> "_tt" ^ cid_of_bid (tix t)
+  | BTYP_intersect _ -> "_intersection" ^ cid_of_bid (tix t)
   | BTYP_tuple_cons _ -> "_tt" ^ cid_of_bid (tix t)
   | BTYP_tuple_snoc _ -> "_tt" ^ cid_of_bid (tix t)
 (*  | BTYP_tuple ts -> "_tt"^string_of_int (List.length ts)^"<" ^ catmap "," tn ts ^ ">"  *)
@@ -451,6 +452,9 @@ and cpp_structure_name syms bsym_table t =
 
   | BTYP_tuple ts -> "_tt"^string_of_int (List.length ts)^"<" ^ catmap "," tn ts ^ ">" 
   | BTYP_record _  -> "_art" ^ cid_of_bid (tix t)
+ 
+  (* will work with ObjC protocols, but probably should be a C union of the intersectees .. *)
+  | BTYP_intersect _ -> "void*" 
 
   | BTYP_variant _ -> "::flx::rtl::_uctor_"
 

@@ -115,6 +115,7 @@ print_endline ("Flx_btype_kind.metatype' case type_apply: " ^ Flx_btype.st typ);
 
   | BTYP_label
 
+  | BTYP_intersect _
   | BTYP_polyrecord (_, _, _)
   | BTYP_tuple_cons (_, _)
   | BTYP_tuple_snoc (_, _)

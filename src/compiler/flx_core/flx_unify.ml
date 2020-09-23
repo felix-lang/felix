@@ -76,6 +76,22 @@ let rec solve_subtypes nominal_subtype counter lhs rhs dvars (s:vassign_t option
   (* here we throw away uniq part of argument type passing a value *)
   | t1, BTYP_uniq t2 -> add_ge (t1,t2)
 
+  (* argument type t must be a subtype of each type of the intersection parameter *)
+  | BTYP_intersect ts, t ->
+    (* print_endline ("Flx_unify: Argument as subtype of intersection parameter, must be subtype of each intersectand"); *)
+    List.iter (fun p -> add_ge (p, t)) ts
+
+  (* this is not right, we can certainly judge this, but we cannot construct
+     an MGU because it involves alternatives, unless there is exactly one match.
+     This is known, principal typing is lost. 
+
+     The correct judgement should be made in the routine "ge" which is not 
+     looking for an MGU
+  *)
+  | t,BTYP_intersect ts -> 
+    (* print_endline ("intersection as subtype of some type "^Flx_btype.st t^ " not implemented yet"); *)
+    raise Not_found
+
   (* arrays and tuples, must be the same length, covariant by element *)
   | BTYP_tuple ls, BTYP_tuple rs ->
     (* special hack: parameter with trailing ellipsis matchs argument if the 
@@ -670,11 +686,34 @@ let unifies bsym_table counter t1 t2 =
   | None -> false
   | Some _ -> true
 
+let ge' bsym_table counter a b : bool =
+  let eqns = [a,b] in
+  let l,_ = find_vars_eqns eqns in
+  match maybe_specialisation bsym_table counter eqns with
+  | None -> false
+  | Some mgu -> true
+
+(* This adds a judgment that unification can't do because of loss of principal typing:
+
+  if A < X then A & B < X
+
+  In other words, if A is a subtype of X, then adding an extra constraint doesn't hurt.
+
+  For an intersection argument, we try this for each component, in other words
+  if any one of the components is a subtype, the whole intersection is.
+*)
+
+let try_intersection bsym_table counter a b =
+  match b with
+  | BTYP_intersect bs ->
+    List.fold_left (fun acc b -> acc || ge' bsym_table counter a b) false bs
+  | _ -> false
+ 
 let ge bsym_table counter a b : bool =
   let eqns = [a,b] in
   let l,_ = find_vars_eqns eqns in
   match maybe_specialisation bsym_table counter eqns with
-  | None -> (* print_endline "    ** false"; *) false
+  | None -> try_intersection bsym_table counter a b 
   | Some mgu ->
     true
 

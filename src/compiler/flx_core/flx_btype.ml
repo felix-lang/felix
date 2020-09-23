@@ -46,6 +46,7 @@ and t =
   | BTYP_unitsum of int
   | BTYP_inst of bid_t * t list * Flx_kind.kind
   | BTYP_vinst of bid_t * t list * Flx_kind.kind
+  | BTYP_intersect of t list
   | BTYP_tuple of t list
   | BTYP_compacttuple of t list
   | BTYP_array of t * t
@@ -117,9 +118,7 @@ let flat_iter
   | BTYP_unitsum k ->
       let unitrep = BTYP_tuple [] in
       for i = 1 to k do f_btype unitrep done
-(*
   | BTYP_intersect ts -> List.iter f_btype ts
-*)
   | BTYP_inst (i,ts,mt) -> f_bid i; List.iter f_btype ts
   | BTYP_vinst (i,ts,mt) -> f_bid i; List.iter f_btype ts
   | BTYP_tuple ts -> List.iter f_btype ts
@@ -176,6 +175,20 @@ let flat_iter
   | BTYP_type_set_union ts -> List.iter f_btype ts
   | BTYP_type_set_intersection ts -> List.iter f_btype ts
 
+
+let expand_list_with_intersections (ts:t list): t list list = 
+  (* remove top level intersection types by duplication *)
+  let xpand1 t = match t with
+    | BTYP_intersect ts -> ts
+    | x -> [x]
+  in
+  (* hd is a list of single items which each of which is prefixed to all the lsts *)
+  let add (hds:'a list) (lsts: 'a list list) : 'a list list = 
+    let prefix1 h  = List.map (fun lst -> h :: lst) lsts in
+    List.concat (List.map prefix1 hds)
+  in
+  let xsufs = List.fold_right (fun term res -> add (xpand1 term) res) ts [[]] in
+  xsufs
 
 (** Recursively iterate over each bound type and call the function on it. *)
 let rec iter
@@ -262,6 +275,7 @@ and str_of_btype typ =
   | BTYP_inst (i,ts,mt) -> "BTYP_inst("^string_of_int i^"["^ss ts^"]:"^Flx_kind.sk mt^")"
   | BTYP_vinst (i,ts,mt) -> "BTYP_vinst("^string_of_int i^"["^ss ts^"]:"^Flx_kind.sk mt^")"
   | BTYP_tuple ts -> "BTYP_tuple(" ^ ss ts ^ ")"
+  | BTYP_intersect ts -> "BTYP_intersect(" ^ ss ts ^ ")"
   | BTYP_compacttuple ts -> "BTYP_compacttuple(" ^ ss ts ^ ")"
   | BTYP_array (b,x) -> "BTYP_array(" ^ s b ^"," ^s x^")"
   | BTYP_compactarray (b,x) -> "BTYP_compactarray(" ^ s b ^"," ^s x^")"
@@ -463,6 +477,34 @@ let complete_type t =
 
 let btyp_typeof (i,e) = BTYP_typeof (i,e)
 let btyp_instancetype sr = BTYP_instancetype sr
+
+(* recusively expand a list of intersectands *)
+let rec flatten_intersections (ts:t list): t list =
+  List.fold_left (fun acc t -> 
+   match t with 
+   | BTYP_intersect ts -> acc @ flatten_intersections ts
+   | x -> acc @ [x]
+  )
+  []
+  ts
+
+let strip_units ts = List.filter (fun t -> match t with BTYP_tuple [] -> false | _ -> true) ts
+let contains_void ts = List.fold_left (fun acc t -> match t with | BTYP_void -> true | _ -> acc) false ts
+
+(* pre-condition: no term contains a nested intersect
+   post-condition: an intersect of at least two non-unit non-intersect non-void terms 
+   or a single non-intersect term 
+   or void
+*)
+
+let btyp_intersect ts = 
+  let ts = flatten_intersections ts in
+  let ts = strip_units ts in
+  if contains_void ts then BTYP_void else
+  match ts with
+  | [] -> BTYP_void
+  | [x] -> x
+  | _ -> BTYP_intersect ts
 
 let btyp_label () = BTYP_label
 
@@ -973,6 +1015,7 @@ let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
     end
   | BTYP_inst (i,ts,mt) -> btyp_inst (f_bid i, List.map f_btype ts,mt)
   | BTYP_vinst (i,ts,mt) -> btyp_vinst (f_bid i, List.map f_btype ts,mt)
+  | BTYP_intersect ts -> btyp_intersect (List.map f_btype ts)
   | BTYP_tuple ts -> btyp_tuple (List.map f_btype ts)
   | BTYP_compacttuple ts -> btyp_compacttuple (List.map f_btype ts)
   | BTYP_array (t1,t2) -> btyp_array (f_btype t1, f_btype t2)

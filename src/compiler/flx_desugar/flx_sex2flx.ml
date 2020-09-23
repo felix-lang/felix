@@ -127,6 +127,7 @@ print_endline ("sex2flx:type] " ^ Sex_print.string_of_sex x);
  | Lst [Id "typ_true"; sr; t] -> `TYP_typeop (xsr sr, "_staticbool_true", `TYP_type_tuple [], KND_bool)
  | Lst [Id "typ_false"; sr; t] -> `TYP_typeop (xsr sr, "_staticbool_false", `TYP_type_tuple [], KND_bool)
 
+
  (* special constant folding here just to clean up common cases *)
  | Lst [Id "typ_andchain"; Lst es] -> 
   (* print_endline ("sex2flx makes staticbool_and from typ_andchain"); *)
@@ -204,6 +205,7 @@ print_endline ("sex2flx:type] " ^ Sex_print.string_of_sex x);
  | Lst [Id "typ_array"; t1; t2] -> `TYP_array (ti t1, ti t2)
  | Lst [Id "typ_compactarray"; t1; t2] -> `TYP_compactarray (ti t1, ti t2)
  | Lst [Id "typ_tuple"; sr; Lst es] -> `TYP_tuple (map ti es)
+ | Lst [Id "typ_intersect"; sr; t1; t2] -> `TYP_intersect [ti t1; ti t2]
  | Lst [Id "typ_compacttuple"; sr; Lst es] -> `TYP_compacttuple (map ti es)
  | Lst [Id "typ_sum";  sr; Lst es] -> `TYP_sum (map ti es)
  | Lst [Id "typ_compactsum";  sr; Lst es] -> `TYP_compactsum (map ti es)

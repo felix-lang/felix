@@ -27,6 +27,7 @@ and t = private
   | BTYP_unitsum of int
   | BTYP_inst of bid_t * t list * Flx_kind.kind
   | BTYP_vinst of bid_t * t list * Flx_kind.kind
+  | BTYP_intersect of t list
   | BTYP_tuple of t list
   | BTYP_compacttuple of t list
   | BTYP_array of t * t
@@ -127,6 +128,7 @@ val btyp_compactsum : t list -> t
 val btyp_unitsum : int -> t
 val btyp_inst : bid_t * t list * kind -> t
 val btyp_vinst : bid_t * t list * kind -> t
+val btyp_intersect : t list -> t
 val btyp_tuple : t list -> t
 val btyp_compacttuple : t list -> t
 val btyp_rev : t -> t

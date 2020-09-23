@@ -15,6 +15,7 @@ let fold (bsym_table: Flx_bsym_table.t) counter t =
     | BTYP_vinst (_,ls,_)
     | BTYP_compacttuple ls
     | BTYP_tuple ls -> List.iter ax ls
+    | BTYP_intersect ls -> List.iter ax ls
     | BTYP_record (ls) -> List.iter (fun (s,t) -> ax t) ls
     | BTYP_polyrecord (ls,s,v) -> List.iter (fun (s,t) -> ax t) ls; ax v
     | BTYP_variant ls -> List.iter (fun (s,t) -> ax t) ls

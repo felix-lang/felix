@@ -902,7 +902,7 @@ if name = debugid then
       None
 
 
-let overload
+let overload'
   counter
   sym_table
   bsym_table
@@ -919,17 +919,6 @@ let overload
 :
   overload_result option
 =
-if name = debugid then
-begin
-  print_endline ("");
-  print_endline ("############## start overload ########################################");
-  print_endline ("Overload " ^ name);
-  print_endline ("Argument sigs are " ^ catmap ", " (sbt bsym_table) sufs);
-  print_endline (string_of_int (List.length fs) ^ 
-     " initial Candidates are:\n" ^ 
-    catmap ",\n" (full_string_of_entry_kind sym_table bsym_table) fs ^ "\n");
-  print_endline ("Input ts = " ^ catmap ", " (sbt bsym_table) ts);
-end;
   let ls =   (List.map
 
       (fun (ix,id,_,_,con) -> 
@@ -1161,4 +1150,67 @@ in a deeper scope: then if there is a conflict between signatures
 (equal or unordered) the closest is taken if that resolves the
 conflict
 *)
+
+let overload
+  counter
+  sym_table
+  bsym_table
+  env
+  rs
+  bt
+  be
+  luqn2
+  call_sr
+  fs
+  name
+  sufs
+  ts
+:
+  overload_result option
+=
+if name = debugid then
+begin
+  print_endline ("");
+  print_endline ("############## start overload ########################################");
+  print_endline ("Overload " ^ name);
+  print_endline ("Argument sigs are " ^ catmap ", " (sbt bsym_table) sufs);
+  print_endline (string_of_int (List.length fs) ^ 
+     " initial Candidates are:\n" ^ 
+    catmap ",\n" (full_string_of_entry_kind sym_table bsym_table) fs ^ "\n");
+  print_endline ("Input ts = " ^ catmap ", " (sbt bsym_table) ts);
+end;
+  let ov sufs = overload' counter sym_table bsym_table env
+    rs bt be luqn2 call_sr fs name sufs ts
+  in
+  (* remove top level intersection types by duplication *)
+  let xpand1 t = match t with
+    | BTYP_intersect ts -> ts
+    | x -> [x]
+  in
+  (* hd is a list of single items which each of which is prefixed to all the lsts *)
+  let add (hds:'a list) (lsts: 'a list list) : 'a list list = 
+    let prefix1 h  = List.map (fun lst -> h :: lst) lsts in
+    List.concat (List.map prefix1 hds)
+  in
+
+if name = debugid then
+  print_endline ("Original Argument sigs are " ^ catmap ", " (sbt bsym_table) sufs);
+
+  let xsufs = List.fold_right (fun term res -> add (xpand1 term) res) sufs [[]] in
+if name = debugid then begin
+  print_endline ("Expanded argument sig list lists are:");
+  List.iter (fun sufs -> print_endline ("  " ^ catmap ", " (sbt bsym_table) sufs)) xsufs;
+end;
+
+  (* Overload on each of the suffix lists now *)
+  let results = List.map ov xsufs in
+  (* collect a list of successful overloads *)
+  let results = List.fold_left (fun acc x -> match x with | None -> acc | Some x -> x :: acc) [] results in
+  (* return result now *)
+  match results with
+  | [] -> None (* all failed *)
+  | [x] -> Some x  (* One success *)
+  | h :: t ->
+    print_endline ("WARNING: multiple overload succeed after expanding intersections");
+    Some h
 
