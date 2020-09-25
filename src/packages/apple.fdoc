@@ -66,12 +66,15 @@ open class AppleOS {
   type OSStatus= "OSStatus";
   const noErr: OSStatus = "noErr";
   typedef OSType = uint;
+  instance Eq[OSStatus] { 
+    fun == : OSStatus * OSStatus -> bool = "$1==$2";
+  }
 }
 @
 
 @tangle AudioUnit.flx
 include "std/apple/AppleOS";
-open class AudioUnit {
+open class AudioUnitAPI {
   requires package "audiounit";
 
   // We're not using this here so I'll just provide a binding with no access methods
@@ -125,6 +128,32 @@ open class AudioUnit {
     "AudioComponentFindNext(NULL,$1)"
   ;
   fun isValid: AudioComponent -> bool = "!($1==NULL)";
+
+  ctypes AudioComponentInstance;
+  typedef AudioUnit = AudioComponentInstance;
+
+  // Property IDs
+  typedef AudioUnitPropertyID = uint32;
+  const kAudioUnitProperty_SetRenderCallback : AudioUnitPropertyID;
+  const kAudioOutputUnitProperty_EnableIO : AudioUnitPropertyID;
+  const kAudioUnitProperty_StreamFormat: AudioUnitPropertyID;
+
+  // Scopes
+  typedef AudioUnitScope = uint32;
+  const kAudioUnitScope_Input : AudioUnitScope;
+
+  // Elements
+  typedef AudioUnitElement = uint32;
+  val GlobalElement = 0;
+
+  gen AudioUnitSetProperty:
+    AudioUnit * 
+    AudioUnitPropertyID *
+    AudioUnitScope * 
+    AudioUnitElement *
+    address * uint32 // property data
+    -> OSStatus
+  ;
 
 }
 
