@@ -3,12 +3,15 @@
 @tangler appkit.fpc                = $PWD/src/config/macosx/appkit.fpc
 @tangler cocoa.fpc                 = $PWD/src/config/macosx/cocoa.fpc
 @tangler corefoundation.fpc        = $PWD/src/config/macosx/corefoundation.fpc
+@tangler audiounit.fpc             = $PWD/src/config/macosx/audiounit.fpc
 @tangler audiotoolbox.fpc          = $PWD/src/config/macosx/audiotoolbox.fpc
 
 
+@tangler AppleOS.flx               = share/lib/std/apple/AppleOS.flx
 @tangler Foundation.flx            = share/lib/std/apple/Foundation.flx
 @tangler AppKit.flx                = share/lib/std/apple/AppKit.flx
 @tangler Cocoa.flx                 = share/lib/std/apple/Cocoa.flx
+@tangler AudioUnit.flx             = share/lib/std/apple/AudioUnit.flx
 
 
 @title Apple Specific Config
@@ -57,6 +60,74 @@ open class Foundation
   proc NSLog[T] : T = 'NSLog(@@"%@@",$1);';
 }
 @
+
+@tangle AppleOS.flx
+open class AppleOS {
+  type OSStatus= "OSStatus";
+  const noErr: OSStatus = "noErr";
+  typedef OSType = uint;
+}
+@
+
+@tangle AudioUnit.flx
+include "std/apple/AppleOS";
+open class AudioUnit {
+  requires package "audiounit";
+
+  // We're not using this here so I'll just provide a binding with no access methods
+  type AudioTimeStamp = "AudioTimeStamp";
+
+  // binds to C type of same name, defines
+  // the enumeration constants,
+  // and provides equality (needed for pattern matches)
+  // and also all standard C bitwise operations
+  cflags AudioUnitRenderActionFlags = 
+    kAudioUnitRenderAction_PreRender,
+    kAudioUnitRenderAction_PostRender,
+    kAudioUnitRenderAction_OutputIsSilence,
+    kAudioOfflineUnitRenderAction_Preflight,
+    kAudioOfflineUnitRenderAction_Render,
+    kAudioOfflineUnitRenderAction_Complete,
+    kAudioUnitRenderAction_PostRenderError,
+    kAudioUnitRenderAction_DoNotCheckRenderArgs
+  ;
+   
+
+  // Manually define this structure
+  type AudioBufferList = "AudioBufferList*";
+  fun mNumberBuffers: AudioBufferList -> uint32 = "$1->mNumberBuffers";
+  fun mBuffers: AudioBufferList -> +AudioBuffer = "$1->mBuffers";
+
+  // Manually define this structure too
+  type AudioBuffer = "AudioBuffer*";
+  fun mDataByteSize : AudioBuffer -> uint32 = "$1->mDataByteSize";
+  fun mNumberChannels : AudioBuffer -> uint32 = "$1->mNumberChannels";
+  fun mData : AudioBuffer -> address = "$1->mData";
+
+  // Some core Audio Unit Description parts
+  const kAudioUnitType_Output: OSType;
+  const kAudioUnitSubType_HALOutput: OSType;
+  const kAudioUnitManufacturer_Apple: OSType;
+
+  // Audio Component Descriptor
+  cstruct AudioComponentDescription {
+    componentType: OSType;
+    componentSubType: OSType;
+    componentManufacturer: OSType;
+    componentFlags: uint32;
+    componentFlagsMask: uint32;
+  };
+
+  // Audio Component Locators
+  ctypes AudioComponent;
+  fun AudioComponentFindNext : AudioComponent * &AudioComponentDescription -> AudioComponent;
+  fun AudioComponentFindFirst: &AudioComponentDescription -> AudioComponent =
+    "AudioComponentFindNext(NULL,$1)"
+  ;
+  fun isValid: AudioComponent -> bool = "!($1==NULL)";
+
+}
+
 @tangle AppKit.flx
 include "std/apple/Foundation";
 
@@ -136,6 +207,15 @@ Description: CoreFoundation
 provides_dlib: ---framework=CoreFoundation
 provides_slib: ---framework=CoreFoundation
 @
+
+@tangle audiounit.fpc
+Name: AudioUnit
+Description: AudioUnit C API
+includes: '<AudioUnit/AudioUnit.h>'
+provides_dlib: ---framework=AudioUnit
+provides_slib: ---framework=AudioUnit
+@
+
 
 @tangle audiotoolbox.fpc
 Name: AudioToolbox
