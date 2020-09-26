@@ -246,6 +246,13 @@ open class AudioUnitAPI {
     mReserved : uint32;
     mSampleRate : double;
   };
+
+  gen AudioUnitInitialize: AudioUnit -> OSStatus;
+  gen AudioOutputUnitStart: AudioUnit -> OSStatus;
+  gen AudioOutputUnitStop: AudioUnit -> OSStatus;
+  gen AudioUnitUninitialize: AudioUnit -> OSStatus;
+  gen AudioComponentInstanceDispose: AudioUnit -> OSStatus;
+
 } // class
 @
 
