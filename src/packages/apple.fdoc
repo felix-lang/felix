@@ -235,16 +235,17 @@ open class AudioUnitAPI {
   const kAudioFormatOpus : AudioFormatID;
 
   // Audio Stream
-  cstruct AudioStreamBasicDescription {
-    mBitsPerChannel : uint32;
-    mBytesPerFrame : uint32;
-    mBytesPerPacket : uint32;
-    mChannelsPerFrame : uint32;
-    mFormatFlags :  AudioFormatFlags;
-    mFormatID : AudioFormatID;
-    mFramesPerPacket : uint32; 
-    mReserved : uint32;
-    mSampleRate : double;
+  cstruct AudioStreamBasicDescription
+  {
+      double mSampleRate;
+      AudioFormatID mFormatID;
+      AudioFormatFlags mFormatFlags;
+      uint32 mBytesPerPacket;
+      uint32 mFramesPerPacket;
+      uint32 mBytesPerFrame;
+      uint32 mChannelsPerFrame;
+      uint32 mBitsPerChannel;
+      uint32 mReserved;
   };
 
   gen AudioUnitInitialize: AudioUnit -> OSStatus;
