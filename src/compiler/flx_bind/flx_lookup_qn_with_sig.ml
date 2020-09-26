@@ -94,10 +94,8 @@ in
       | SYMDEF_cstruct _
       | SYMDEF_struct _ ->
         let sign = try List.hd signs with _ -> assert false in
-        (*
         print_endline ("Lookup qn with sig' found a struct "^ id ^
         ", looking for constructor"); 
-        *)
         (* this doesn't work, we need to do overload resolution to
            fix type variables
         let t = type_of_index_with_ts' state bsym_table rs sra index ts in
@@ -327,11 +325,16 @@ print_endline ("lookup_qn_with_sig' [AST_name] " ^ name ^ ", sigs=" ^ catmap ","
     let ts = List.map (bt sr) ts in
     begin
       try
-        lookup_name_with_sig
+        let result = lookup_name_with_sig
           state
           bsym_table
           sra srn
           env env rs name ts signs
+        in
+(*
+        print_endline ("[AST_name] lookup_name_with_sig got type " ^ Flx_print.sbt bsym_table (snd result));
+*)
+        result
       with
       | Free_fixpoint _ as x -> 
 (*

@@ -837,7 +837,7 @@ and lookup_name_with_sig
 : Flx_bexpr.t
 =
 (*
-  print_endline ("[lookup_name_with_sig] " ^ name ^ "[" ^ catmap "," (sbt bsym_table) ts ^ "]" ^
+  print_endline (">>>>>>>>>>[lookup_name_with_sig] " ^ name ^ "[" ^ catmap "," (sbt bsym_table) ts ^ "]" ^
     " of " ^ catmap "," (sbt bsym_table) t2)
   ;
 *)
@@ -996,6 +996,9 @@ assert false;
  match projection with
  | Some p -> p
  | None ->
+(*
+print_endline (">>>>>>> Not a projection");
+*)
  try
  let result = 
   lookup_name_with_sig'

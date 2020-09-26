@@ -11,11 +11,21 @@ let cal_struct_apply
     | { Flx_sym.id=id; vs=vs; symdef=Flx_types.SYMDEF_cstruct (ls,_) } -> id,vs,ls
     | _ -> assert false
   in
+  let cmp (s1,t1) (s2, t2) = compare s1 s2 in
+  let sfls = List.stable_sort cmp fls in
+(*
+print_endline ("Stuct apply, name = " ^ id);
+print_endline ("Struct fields = " ^ Flx_util.catmap "," fst sfls);
+*)
   let _,vs,_  = Flx_generic.find_split_vs state.Flx_lookup_state.sym_table bsym_table i in
   let alst = match ta with
     |BTYP_record (ts) -> ts
     | _ -> assert false
   in
+  let salst = List.stable_sort cmp alst in
+(*
+print_endline ("Record fields = " ^ Flx_util.catmap "," fst salst);
+*)
   let nf = List.length fls in
   let na = List.length alst in
   if nf <> na then Flx_exceptions.clierrx "[flx_bind/flx_struct_apply.ml:20: E252] " sr

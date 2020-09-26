@@ -134,6 +134,15 @@ print_endline ("LOOKUP 3: varname " ^ si index);
     Some (bexpr_varname t (index, ts))
 
 
+(* RULES. 
+  If we find a function set, we do overload resolution using the sig.
+  If we find a non-function, we should return it, the sig is ignored.
+
+  What actually happens is different! The code for non-function if found 
+  in the main table differs from what happens when it is found in the
+  shadow directory.
+*)
+
 let rec lookup_name_in_table_dirs_with_sig
   inner_type_of_index_with_ts
   resolve_overload
@@ -194,14 +203,17 @@ if name = debugid then
   | NonFunctionEntry (index) ->
     begin match get_data state.sym_table (sye index) with
     { Flx_sym.id=id; sr=sr; vs=vs; symdef=entry }->
-if name = debugid then
-    print_endline ("FOUND nonfunction " ^ id);
+    if name = debugid then print_endline ("FOUND nonfunction " ^ id);
     begin match entry with
     | SYMDEF_inherit _ ->
       clierrx "[flx_bind/flx_lookup.ml:3369: E155] " sra "Woops found inherit in lookup_name_in_table_dirs_with_sig"
     | SYMDEF_inherit_fun _ ->
       clierrx "[flx_bind/flx_lookup.ml:3371: E156] " sra "Woops found inherit function in lookup_name_in_table_dirs_with_sig"
 
+
+    (* if its a struct with a record argument we return it without checking if the record
+       matches ..
+    *)
     | (SYMDEF_cstruct _ | SYMDEF_struct _ )
       when
         (match t2 with
@@ -209,28 +221,25 @@ if name = debugid then
         | _ -> false
         )
       ->
-        (*
-        print_endline ("lookup_name_in_table_dirs_with_sig finds struct constructor " ^ id);
-        print_endline ("Record Argument type is " ^ catmap "," (sbt bsym_table) t2);
-        *)
-if debug then
-print_endline ("flx_lookup.SYMDEF_type_alias.bexpr_closure");
+        if id = debugid then begin
+          print_endline ("lookup_name_in_table_dirs_with_sig finds struct constructor " ^ id);
+          print_endline ("Record Argument type is " ^ catmap "," (sbt bsym_table) t2);
+        end;
         Some (bexpr_closure (btyp_inst (sye index,ts,Flx_kind.KIND_type)) (sye index,ts))
         (*
         failwith "NOT IMPLEMENTED YET"
         *)
 
+    (* otherwise we check for a tuple .. *)
     | SYMDEF_struct _
     | SYMDEF_cstruct _
     | SYMDEF_nonconst_ctor _
       ->
-(*
-if name = "EInt" then begin
+if name = debugid then begin
         print_endline ("lookup_name_in_table_dirs_with_sig finds struct constructor " ^ id);
         print_endline ("Argument types are " ^ catmap "," (sbt bsym_table) t2);
         print_endline ("Doing overload resolution");
 end;
-*)
         let ro =
           resolve_overload
           state bsym_table caller_env rs sra [index] name t2 ts
@@ -340,9 +349,7 @@ if name = debugid then
           Some tb
 
       | None ->
-(*
-        if name = "EInt" then print_endline "Can't overload: Trying opens";
-*)
+        if name = debugid then print_endline "%%%%%%%%%%%%% Can't overload: Trying opens";
         let opens : entry_set_t list =
           uniq_cat []
           (
@@ -366,14 +373,12 @@ if name = debugid then
           (
             match get_data state.sym_table (sye i) with
             { Flx_sym.id=id; sr=sr; vs=vs; symdef=entry }->
-            (*
-            print_endline ("FOUND " ^ id);
-            *)
+            if id = debugid then print_endline ("FOUND " ^ id);
             match entry with
             | SYMDEF_abs _
             | SYMDEF_union _ -> true
             | _ -> false
-           ) ->
+          ) ->
             (*
             print_endline "mapping type name to _ctor_type2";
             *)
@@ -383,6 +388,22 @@ if name = debugid then
               table
               dirs
               caller_env env rs sra srn ("_ctor_" ^ name) ts t2
+(* we should handle struct with record argument HERE *)
+        | [NonFunctionEntry i] when
+          (
+            match get_data state.sym_table (sye i) with
+            { Flx_sym.id=id; sr=sr; vs=vs; symdef=entry }->
+            if id = debugid then print_endline ("FOUND " ^ id);
+            match entry with
+            | (SYMDEF_cstruct _ | SYMDEF_struct _ ) ->
+                (match t2 with
+                | [BTYP_record _] -> true
+                | _ -> false
+                )
+            | _ -> false
+          ) ->
+            Some (bexpr_closure (btyp_inst (sye i,ts,Flx_kind.KIND_type)) (sye i,ts))
+
         | _ ->
         let fs =
           match opens with

@@ -203,13 +203,20 @@ let cal_bind_apply
           match Flx_typing2.qualified_name_of_expr f' with
           | Some name ->
 (*
+print_endline ("Checking if " ^ Flx_print.string_of_qualified_name name ^ " is a function");
 if match name with | `AST_name (_,"accumulate",_) -> true | _ -> false then begin
   print_endline "Trying to bind application of accumulate";
 end;
 *)
             let srn = src_of_qualified_name name in
             begin 
-              try  (lookup_qn_with_sig' state bsym_table sr srn env rs name (ta::sigs))
+              try  
+                 let result = (lookup_qn_with_sig' state bsym_table sr srn env rs name (ta::sigs)) in
+(*
+print_endline ("yes, got " ^ Flx_print.sbe bsym_table result);
+print_endline ("  WITH TYPE " ^ Flx_print.sbt bsym_table (snd result));
+*)
+                 result
               with 
               | Not_found -> failwith "lookup_qn_with_sig' threw Not_found"
               | exn -> raise exn 
@@ -222,11 +229,11 @@ end;
               | exn -> raise exn 
             end
         in
-        (*
-            print_endline ("Bound f = " ^ sbe bsym_table f);
-            print_endline ("tf=" ^ sbt bsym_table tf);
-            print_endline ("ta=" ^ sbt bsym_table ta);
-        *)
+(*
+            print_endline ("Bound f = " ^ Flx_print.sbe bsym_table f);
+            print_endline ("tf=" ^ Flx_print.sbt bsym_table tf);
+            print_endline ("ta=" ^ Flx_print.sbt bsym_table ta);
+*)
         begin match tf with
         | BTYP_lineareffector _ 
         | BTYP_effector _ 
@@ -250,7 +257,11 @@ end;
             raise exn
           end
         (* NOTE THIS CASE HASN'T BEEN CHECKED FOR POLYMORPHISM YET *)
-        | BTYP_inst (i,ts',_) when
+        | BTYP_inst (i,ts',_) ->
+(*
+          print_endline (" ** Bound LHS of application and a nominal type");
+*)
+          if 
           (
             match Flx_lookup_state.hfind "flx_bind_apply" state.Flx_lookup_state.sym_table i with
             | { Flx_sym.symdef=Flx_types.SYMDEF_struct _}
@@ -258,10 +269,19 @@ end;
               (match ta with | BTYP_record _ -> true | _ -> false)
             | _ -> false
           )
-          ->
-           Flx_struct_apply.cal_struct_apply 
-           bsym_table state bind_type' mkenv build_env cal_apply
-           rs sr f a i ts'
+          then begin 
+(*
+            print_endline (" ** a struct with a record argument");
+*)
+            Flx_struct_apply.cal_struct_apply 
+            bsym_table state bind_type' mkenv build_env cal_apply
+            rs sr f a i ts'
+          end else begin
+(*
+            print_endline ("  ** Not a struct with a record argument");
+*)
+            raise Flx_dot.OverloadResolutionError
+          end
 
         | _ -> raise Flx_dot.OverloadResolutionError
         end (* tf *)
