@@ -105,7 +105,7 @@ open class AudioUnitAPI {
   type AudioBuffer = "AudioBuffer";
   fun mDataByteSize : AudioBuffer -> uint32 = "$1.mDataByteSize";
   fun mNumberChannels : AudioBuffer -> uint32 = "$1.mNumberChannels";
-  fun mData : AudioBuffer -> address = "&($1.mData)";
+  fun mData : AudioBuffer -> address = "$1.mData";
 
   // Some core Audio Unit Description parts
   const kAudioUnitType_Output: OSType;
