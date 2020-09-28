@@ -49,10 +49,10 @@ print_endline ("Record fields = " ^ Flx_util.catmap "," fst salst);
     let ct = bind_type' state bsym_table env' Flx_lookup_state.rsground sr ct bvs mkenv in
     let ct = tsubst sr vs' ts' ct in
       if Flx_unify.ge bsym_table state.Flx_lookup_state.counter ct t then begin
-        bexpr_get_n t j a
+        bexpr_coerce (bexpr_get_n t j a,ct)
       end else Flx_exceptions.clierrx "[flx_bind/flx_struct_apply.ml:42: E254] " sr ("Component " ^ name ^
         " struct component type " ^ Flx_print.sbt bsym_table ct ^
-        "\ndoesn't match record type " ^ Flx_print.sbt bsym_table t
+        "\ndoesn't match record component type " ^ Flx_print.sbt bsym_table t
       )
     )
     fls
