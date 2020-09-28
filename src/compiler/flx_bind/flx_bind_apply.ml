@@ -273,7 +273,7 @@ print_endline ("  WITH TYPE " ^ Flx_print.sbt bsym_table (snd result));
 (*
             print_endline (" ** a struct with a record argument");
 *)
-            Flx_struct_apply.cal_struct_apply 
+            Flx_struct_apply.cal_struct_apply_to_record
             bsym_table state bind_type' mkenv build_env cal_apply
             rs sr f a i ts'
           end else begin

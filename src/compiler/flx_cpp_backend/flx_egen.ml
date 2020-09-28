@@ -620,9 +620,25 @@ print_endline "Apply struct";
     in
     let ts = map tsub ts in
     begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_cstruct (vs,_,_) ->
+    | BBDCL_cstruct (vs,cts,_) ->
       let name = tn (btyp_inst (index,ts,Flx_kind.KIND_type)) in
-      ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")/* apply cstruct*/")
+      begin match snd a with
+      (* tuple contains initialisers of exact field type of corresponding struct field *)
+      | BTYP_tuple ps ->
+        let struct_field_names = List.map fst cts in
+        let initlist = match fst a with
+        | BEXPR_tuple xs ->
+          let nvlist = List.map2 (fun name value -> name,value) struct_field_names xs in
+          let initlist = Flx_util.catmap ", " (fun (name, value) -> "."^name ^ "=" ^ ge value) nvlist in
+          initlist
+        | _ ->
+          let rhs = "(" ^ ge a ^ ").mem_" in
+          let nvlist = List.map2 (fun name value -> name,value) struct_field_names (nlist (List.length ps)) in
+          let initlist = Flx_util.catmap ", " (fun (name, index) -> "."^name ^ "=" ^ rhs ^ si index) nvlist in
+          initlist
+        in ce_atom (name ^"{" ^ initlist ^ "}/* apply cstruct*/")
+      | _ -> assert false
+      end
 
     | BBDCL_struct (vs,cts) ->
       let name = tn (btyp_inst (index,ts,Flx_kind.KIND_type)) in

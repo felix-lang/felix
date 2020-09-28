@@ -2,7 +2,7 @@ open Flx_btype
 open Flx_bexpr
 open Flx_btype_subst
 
-let cal_struct_apply 
+let cal_struct_apply_to_record 
   bsym_table state bind_type' mkenv build_env cal_apply
   rs sr f (ea, ta as a) i ts' 
 =
@@ -48,7 +48,7 @@ print_endline ("Record fields = " ^ Flx_util.catmap "," fst salst);
       in
     let ct = bind_type' state bsym_table env' Flx_lookup_state.rsground sr ct bvs mkenv in
     let ct = tsubst sr vs' ts' ct in
-      if Flx_unify.type_eq bsym_table state.Flx_lookup_state.counter ct t then begin
+      if Flx_unify.ge bsym_table state.Flx_lookup_state.counter ct t then begin
         bexpr_get_n t j a
       end else Flx_exceptions.clierrx "[flx_bind/flx_struct_apply.ml:42: E254] " sr ("Component " ^ name ^
         " struct component type " ^ Flx_print.sbt bsym_table ct ^
