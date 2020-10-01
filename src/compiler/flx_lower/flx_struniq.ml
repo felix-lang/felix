@@ -26,8 +26,11 @@ let fixtype bsym_table t =
     match t with 
 (* Remove uniqueness types *)
     | BTYP_uniq t -> f_btype t
-(* downgrade read and write pointers to ordinary pointers *)
-    | BTYP_ptr (_,t,ts) -> btyp_ptr `RW (f_btype t) ts 
+(* downgrade write pointers to ordinary pointers *)
+    | BTYP_ptr (`W,t,ts ) -> btyp_ptr `RW (f_btype t) ts
+    | BTYP_ptr (`R,t,ts ) -> btyp_ptr `R (f_btype t) ts
+    | BTYP_ptr (`RW,t,ts) -> btyp_ptr `RW (f_btype t) ts
+
     | t -> Flx_btype.map ~f_btype t
   in
   f_btype t

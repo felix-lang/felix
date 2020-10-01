@@ -234,8 +234,6 @@ print_endline ("Flx_tgen.cpp_type_classname " ^ sbt bsym_table t);
   | BTYP_typeop _ -> assert false
   | BTYP_typeof _ -> assert false
   | BTYP_uniq _ -> assert false
-  | BTYP_ptr (`R,_,_) -> assert false
-  | BTYP_ptr (`W,_,_) -> assert false
   | BTYP_ptr (_,_,(_::_::_)) -> assert false
   | BTYP_ellipsis -> "..."
 
@@ -257,8 +255,15 @@ print_endline ("Flx_tgen.cpp_type_classname " ^ sbt bsym_table t);
   | BTYP_compactrptsum _
   | BTYP_tuple [] -> " ::flx::rtl::cl_t" (* COMPACT LINEAR! *)
 
-  | BTYP_ptr (_,t',[]) -> cpp_type_classname syms bsym_table t' ^ "*"
-  | BTYP_ptr (_,c,[d]) -> "::flx::rtl::clptr_t";
+  | BTYP_ptr (`N,t',[]) -> assert false (* should be NULL .. *)
+  | BTYP_ptr (`RW,t',[]) -> cpp_type_classname syms bsym_table t' ^ "*"
+  | BTYP_ptr (`R,t',[]) -> cpp_type_classname syms bsym_table t' ^ " const*"
+  | BTYP_ptr (`W,t',[]) -> cpp_type_classname syms bsym_table t' ^ " *"
+
+  | BTYP_ptr (`N,c,[d]) -> assert false
+  | BTYP_ptr (`RW,c,[d]) -> "::flx::rtl::clptr_t";
+  | BTYP_ptr (`R,c,[d]) -> "::flx::rtl::const_clptr_t";
+  | BTYP_ptr (`W,c,[d]) -> "::flx::rtl::clptr_t";
 
   | BTYP_lineareffector (d,e,c)
   | BTYP_effector (d,e,c) -> 
@@ -427,7 +432,9 @@ and cpp_structure_name syms bsym_table t =
   | BTYP_void -> print_endline ("WARNING cpp_structure_name of void"); "void" (* failwith "void doesn't have a classname" *)
   | BTYP_tuple [] -> "::flx::rtl::cl_t" (* COMPACT LINEAR! *)
 
-  | BTYP_ptr (_,t',[]) -> cpp_type_classname syms bsym_table t' ^ "*"
+  | BTYP_ptr (`RW,t',[]) -> cpp_type_classname syms bsym_table t' ^ "*"
+  | BTYP_ptr (`R,t',[]) -> cpp_type_classname syms bsym_table t' ^ " const*"
+  | BTYP_ptr (`W,t',[]) -> cpp_type_classname syms bsym_table t' ^ " *"
   | BTYP_ptr (_,c,[d]) -> "::flx::rtl::clptr_t";
  
   | BTYP_effector (d,_,BTYP_void) -> "_pt<" ^tn d ^ ">"
@@ -541,7 +548,9 @@ and cpp_typename syms bsym_table t =
   | BTYP_lineareffector _ -> cpp_type_classname syms bsym_table t ^ "*"
   | BTYP_linearfunction _ -> cpp_type_classname syms bsym_table t ^ "*"
   | BTYP_cfunction _ -> cpp_type_classname syms bsym_table t ^ "*"
-  | BTYP_ptr (_,t,[]) -> cpp_typename syms bsym_table t ^ "*"
+  | BTYP_ptr (`RW,t,[]) -> cpp_typename syms bsym_table t ^ "*"
+  | BTYP_ptr (`R,t,[]) -> cpp_typename syms bsym_table t ^ " const*"
+  | BTYP_ptr (`W,t,[]) -> cpp_typename syms bsym_table t ^ "*"
   | _ -> cpp_type_classname syms bsym_table t
 
 let cpp_ltypename syms bsym_table t = cpp_typename syms bsym_table t

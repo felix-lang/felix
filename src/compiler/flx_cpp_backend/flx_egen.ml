@@ -1,5 +1,4 @@
 open Flx_util
-open Flx_list
 open Flx_types
 open Flx_btype
 open Flx_bexpr
@@ -228,7 +227,7 @@ let rec gen_expr'
         s ^ (if String.length s > 0 then ", " else "") ^ x
       )
       ""
-      (nlist k)
+      (Flx_list.nlist k)
   in
   let our_display = get_display_list bsym_table this in
   let our_level = length our_display in
@@ -251,6 +250,7 @@ let rec gen_expr'
      v is a list of constant projections starting at d and ending with c
   *)
   | BEXPR_cltpointer (d,c,p,v) -> 
+    let mode = match t with | BTYP_ptr (mode,_,_) -> mode | _ -> assert false in
     let n = Flx_btype.sizeof_linear_type () c in
     let rec cal_divisor d v div = 
       match v with 
@@ -272,8 +272,13 @@ let rec gen_expr'
           cal_divisor base tail (div * divisor) 
         | _ -> print_endline ("Flx_egen: Compact Linear Pointer, unimplemented component type " ^ sbt bsym_table d); assert false
     in
+    let ctor = match mode with
+     | `RW ->"::flx::rtl::clptr_t" 
+     | `R ->"::flx::rtl::const_clptr_t" 
+     | _ -> assert false
+    in
     let divisor = cal_divisor d v 1 in
-    ce_call (ce_atom "::flx::rtl::clptr_t") [ge' p; ce_int divisor; ce_int n]
+    ce_call (ce_atom ctor) [ge' p; ce_int divisor; ce_int n]
 
   | BEXPR_cltpointer_prj (d,c,v) -> 
     print_endline ("Flx_egen: Construct compact linear pointer projection");
@@ -622,10 +627,8 @@ print_endline "Apply struct";
     begin match Flx_bsym.bbdcl bsym with
     | BBDCL_cstruct (vs,cts,_) ->
       let name = tn (btyp_inst (index,ts,Flx_kind.KIND_type)) in
-      begin match snd a with
-      (* tuple contains initialisers of exact field type of corresponding struct field *)
-      | BTYP_tuple ps ->
-        let struct_field_names = List.map fst cts in
+      let struct_field_names = List.map fst cts in
+      let handle ps = 
         let initlist = match fst a with
         | BEXPR_tuple xs ->
           let nvlist = List.map2 (fun name value -> name,value) struct_field_names xs in
@@ -633,11 +636,36 @@ print_endline "Apply struct";
           initlist
         | _ ->
           let rhs = "(" ^ ge a ^ ").mem_" in
-          let nvlist = List.map2 (fun name value -> name,value) struct_field_names (nlist (List.length ps)) in
+          let nvlist = List.map2 (fun name value -> name,value) struct_field_names (Flx_list.nlist (List.length ps)) in
           let initlist = Flx_util.catmap ", " (fun (name, index) -> "."^name ^ "=" ^ rhs ^ si index) nvlist in
           initlist
         in ce_atom (name ^"{" ^ initlist ^ "}/* apply cstruct*/")
-      | _ -> assert false
+      in
+
+      begin match snd a with
+      (* tuple contains initialisers of exact field type of corresponding struct field *)
+      | BTYP_tuple ps -> handle ps
+
+      | BTYP_array (v_t,BTYP_unitsum n) ->
+        let elts = 
+          match fst a with
+          | BEXPR_tuple xs -> List.map ge xs
+          | _ -> 
+            let ca = ge a in
+            List.map (fun i -> ca ^".data["^si i^"]" ) (Flx_list.nlist n)
+        in
+        let initlist = String.concat ", " (List.map2 (fun name elt -> "."^name ^ "=" ^ elt) struct_field_names elts) in
+        ce_atom (name ^ "{"^initlist^"}")
+       
+      | t when List.length cts = 1 ->
+        let field_name = fst (List.hd cts) in
+        let initlist =  "."^field_name^"="^ ge a in
+        ce_atom (name ^"{" ^ initlist ^ "}/* apply cstruct*/")
+
+      | x -> 
+        print_endline ("FLx_egen: expected BEXPR_apply_struct with cstruct ctor to have tuple argument, got type " ^
+          Flx_print.sbt bsym_table x);
+        assert false
       end
 
     | BBDCL_struct (vs,cts) ->
@@ -686,7 +714,7 @@ print_endline ("Apply direct ");
       let the_display =
         let d' =
           map begin fun (i,vslen)->
-            "ptr" ^ cpp_instance_name syms bsym_table i (list_prefix ts vslen)
+            "ptr" ^ cpp_instance_name syms bsym_table i (Flx_list.list_prefix ts vslen)
           end (get_display_list bsym_table index)
         in
           if length d' > our_level
@@ -702,7 +730,7 @@ print_endline ("Apply direct ");
         let prjs = Flx_bparams.get_prjs ps in
         let args = List.map (fun (_,prj) -> match prj with
           | None -> a
-          | Some ((_,BTYP_function (_,c)) as prj) -> bexpr_apply c (prj,a) 
+          | Some ((_,BTYP_function (_,c)) as prj) ->  print_endline ("bexpr_apply1"); bexpr_apply c (prj,a) 
           | _ -> assert false
           ) prjs
         in
@@ -749,7 +777,7 @@ print_endline ("Apply stack");
         let prjs = Flx_bparams.get_prjs ps in
         let args = List.map (fun (_,prj) -> match prj with
           | None -> a
-          | Some ((_,BTYP_function (_,c)) as prj) -> bexpr_apply c (prj,a) 
+          | Some ((_,BTYP_function (_,c)) as prj) ->  (* print_endline ("bexpr_apply2"); *) bexpr_apply c (prj,a) 
           | _ -> assert false
           ) prjs
         in
@@ -764,7 +792,7 @@ print_endline ("Apply stack");
       end else
         let the_display =
           let d' =
-            map (fun (i,vslen)-> "ptr"^ cpp_instance_name syms bsym_table i (list_prefix ts vslen))
+            map (fun (i,vslen)-> "ptr"^ cpp_instance_name syms bsym_table i (Flx_list.list_prefix ts vslen))
             display
           in
             if length d' > our_level
@@ -1240,7 +1268,7 @@ print_endline ("Generating class new for t=" ^ ref_type);
       let the_display =
         let d' =
           map begin fun (i,vslen) ->
-            "ptr" ^ cpp_instance_name syms bsym_table i (list_prefix ts vslen)
+            "ptr" ^ cpp_instance_name syms bsym_table i (Flx_list.list_prefix ts vslen)
           end (get_display_list bsym_table index)
         in
           if length d' > our_level
@@ -1326,6 +1354,11 @@ print_endline ("Generating class new for t=" ^ ref_type);
 print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " ===> " ^ sbt bsym_table dstt);
 *)
     begin match srct,dstt with
+
+    (* assume this coercion is implicit in C *)
+    | BTYP_ptr (`RW,t1,_),BTYP_ptr(`R,t2,_) when t1 = t2 -> ce_atom ("static_cast<"^tn dstt^">("^ge srce^")")
+    | BTYP_ptr (`RW,t1,_),BTYP_ptr(`W,t2,_) when t1 = t2 -> ge' srce
+
     | BTYP_variant ls, BTYP_variant rs -> 
       print_endline ("Found variant coercion, should have been be eliminted");
       print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " ===> " ^ sbt bsym_table dstt);
@@ -1566,7 +1599,7 @@ print_endline ("egen:BEXPR_tuple: rendered lineralised index .. C index = " ^ st
 (*
 print_endline "Construct tuple, subkind array";
 *)
-      let t'' = btyp_tuple (map (fun _ -> t') (nlist n)) in
+      let t'' = btyp_tuple (map (fun _ -> t') (Flx_list.nlist n)) in
       let ctyp = raw_typename t'' in
       ce_atom (
         ctyp ^ "(" ^

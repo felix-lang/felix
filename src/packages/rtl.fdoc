@@ -757,6 +757,10 @@ struct RTL_EXTERN _variant_
 */
 
 
+// ===============================================================
+// COMPACT LINEAR STUFF
+// ===============================================================
+
 // ********************************************************
 /// COMPACT LINEAR PROJECTIONS 
 // ********************************************************
@@ -799,20 +803,49 @@ struct RTL_EXTERN clptr_t
   clptr_t (clptr_t _p, cl_t div, cl_t siz) : p(_p.p), divisor (_p.divisor * div), modulus(siz) {}
 };
 
+struct RTL_EXTERN const_clptr_t 
+{
+  cl_t const *p;
+  cl_t divisor;
+  cl_t modulus;
+  const_clptr_t () : p(0), divisor(1),modulus(-1) {}
+  const_clptr_t (cl_t const *_p, cl_t d, cl_t m) : p(_p), divisor(d),modulus(m) {}
+
+  // copy constructors
+  const_clptr_t (const_clptr_t const &x) : p(x.p), divisor(x.divisor), modulus(x.modulus) {}
+  const_clptr_t (clptr_t const &x) : p(x.p), divisor(x.divisor), modulus(x.modulus) {}
+
+  // upgrade from ordinary pointer
+  const_clptr_t (cl_t const *_p, cl_t siz) : p (_p), divisor(1), modulus(siz) {}
+
+  // add projection to existing compact linear pointer
+  const_clptr_t (const_clptr_t _p, cl_t div, cl_t siz) : p(_p.p), divisor (_p.divisor * div), modulus(siz) {}
+};
+
+
 // apply projection to pointer
 inline clptr_t applyprj (clptr_t cp, clprj_t d)  {
   return  clptr_t (cp.p, d.divisor * cp.divisor, d.modulus);
 }
 
+inline const_clptr_t applyprj (const_clptr_t cp, clprj_t d)  {
+  return  const_clptr_t (cp.p, d.divisor * cp.divisor, d.modulus);
+}
+
 // dereference
 inline cl_t clt_deref(clptr_t q) { return *q.p / q.divisor % q.modulus; }
+inline cl_t clt_deref(const_clptr_t q) { return *q.p / q.divisor % q.modulus; }
 
 // storeat
+// NOTE: not available for const version
 inline void storeat (clptr_t q, cl_t v) {
     *q.p = *q.p - (*q.p / q.divisor % q.modulus) * q.divisor + v * q.divisor;
     //*q.p -= ((*q.p / q.divisor % q.modulus) - v) * q.divisor; //???
 }
 
+// ===============================================================
+// TRACE
+// ===============================================================
 struct flx_trace_t
 {
   size_t count;

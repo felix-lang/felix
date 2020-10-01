@@ -273,13 +273,11 @@ print_endline ("ERROR, trying to register uniq type " ^ Flx_btype.st t');
   assert false
 
   | BTYP_ptr (`N,_,_) -> assert false
-  | BTYP_ptr (`R,_,_) -> assert false
-  | BTYP_ptr (`W,_,_) -> assert false
   | BTYP_ptr (_,_,(_::_::_)) -> assert false
 
 
-  | BTYP_ptr (`RW,t',[]) -> add_weak weak t'; rnr t
-  | BTYP_ptr (`RW,c,[d]) -> rr d; rr c; rnr t
+  | BTYP_ptr (_,t',[]) -> add_weak weak t'; rnr t
+  | BTYP_ptr (_,c,[d]) -> rr d; rr c; rnr t
 
   | BTYP_inst (i,ts,_)->
 (*

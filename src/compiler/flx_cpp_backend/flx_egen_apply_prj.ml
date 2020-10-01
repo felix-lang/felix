@@ -48,6 +48,15 @@ print_endline "Apply pointer projection to pointer";
   let ixc = codomain in
   let ixd = target in
   let n = ix in
+  let mode = match argt with
+     | BTYP_ptr (mode,_,_) -> mode 
+     | _ -> assert false
+  in
+  let ctor = match mode with  
+    | `RW | `W -> "::flx::rtl::clptr_t" 
+    | `R -> "::flx::rtl::const_clptr_t"
+    | `N -> assert false 
+  in
   match target with
   (* constant projection on ordinary pointer to compact linear array
      yield compact linear pointer 
@@ -60,7 +69,7 @@ print_endline "Apply pointer projection to pointer";
     let divisor = ipow modulus (n - ix - 1)  in
 if debug then
 print_endline ("Divisor = " ^ string_of_int divisor);
-    ce_call (ce_atom "::flx::rtl::clptr_t") [ge' a; ce_int divisor; ce_int modulus]
+    ce_call (ce_atom ctor) [ge' a; ce_int divisor; ce_int modulus]
 
   (* if this is a constant projection of a pointer to a non-compact linear array *) 
   | (BTYP_array _) ->
@@ -75,7 +84,7 @@ print_endline ("Divisor = " ^ string_of_int divisor);
     in 
     let divisor = aux (List.rev ts) (List.length ts - n - 1) 1 in
     let modulus = sizeof_linear_type bsym_table (List.nth ts n) in
-    ce_call (ce_atom "::flx::rtl::clptr_t") [ge' a; ce_int divisor; ce_int modulus]
+    ce_call (ce_atom ctor) [ge' a; ce_int divisor; ce_int modulus]
 
   (* constant projection of pointer to non-compact linear tuple *)
   | (BTYP_tuple _) ->
@@ -335,7 +344,12 @@ end;
   (* array projection of an ORINDARY pointer to a compact linear array 
     result is a compact linear pointer
   *)
-  | BTYP_ptr (_,(BTYP_compactarray (vt,aixt) as at),[]) -> 
+  | BTYP_ptr (mode,(BTYP_compactarray (vt,aixt) as at),[]) -> 
+    let ctor = match mode with  
+      | `RW | `W -> "::flx::rtl::clptr_t" 
+      | `R -> "::flx::rtl::const_clptr_t"
+      | `N -> assert false 
+    in
 if debug then begin
 print_endline ("Array projection of ordinary pointer to compact linear array type " ^ sbt bsym_table at);
 print_endline ("Array base value type = " ^ sbt bsym_table vt);
@@ -359,13 +373,18 @@ end;
     let exp = ce_sub (ce_int (array_len - 1)) ix in
     let divisor = ipow' bsym_table power_table array_value_size exp array_len in
     let modulus = ce_int array_value_size in
-    ce_call (ce_atom "::flx::rtl::clptr_t") [a; divisor; modulus]
+    ce_call (ce_atom ctor) [a; divisor; modulus]
 
 
   (* array projection of a compact linear pointer to a compact linear array 
      result is a compact linear pointer
   *)
-  | BTYP_ptr (_,BTYP_compactarray (vt,aixt),[mach])  -> 
+  | BTYP_ptr (mode,BTYP_compactarray (vt,aixt),[mach])  -> 
+    let ctor = match mode with  
+      | `RW | `W -> "::flx::rtl::clptr_t" 
+      | `R -> "::flx::rtl::const_clptr_t"
+      | `N -> assert false 
+    in
 (*
     ate "Array projection of compact linear pointer to compact linear array" "index domain" "array type" ixd  at;
     ate "Array projection of compact linear pointer to compact linear array" "index codomain" "array base type" ixc vt;
@@ -386,7 +405,7 @@ end;
     let old_divisor = ce_dot a "divisor" in
     let divisor = ce_infix "*" old_divisor divisor in
     let ptr = ce_dot a "p" in
-    ce_call (ce_atom "::flx::rtl::clptr_t") [ptr; divisor; modulus]
+    ce_call (ce_atom ctor) [ptr; divisor; modulus]
 
   (* if this is an array projection of a POINTER to a non-compact linear array *)
   | BTYP_ptr (_,BTYP_array _,[]) ->

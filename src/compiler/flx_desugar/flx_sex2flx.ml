@@ -1565,7 +1565,7 @@ and supertype_specification sr super sub =
   let reqs = RREQ_atom Subtype_req in
   let prec = "" in
   let supercoercion = STMT_fun_decl (sr,fname,dfltvs,[argt],ret,body,reqs,prec) in
-  (* print_endline ("Supercoercion function = " ^ Flx_print.string_of_statement 0 supercoercion); *)
+  print_endline ("Supercoercion function = " ^ Flx_print.string_of_statement 0 supercoercion);
   supercoercion
 
 and bind_objc_class_interface sr stuff reqs :Flx_ast.statement_t = 
@@ -1680,7 +1680,7 @@ and bind_objc_protocol_interface sr stuff reqs :Flx_ast.statement_t =
   let reqs = xraw_req_expr_t sr reqs  in
   match stuff with
   | Lst [Id "objc_protocol_interface"; Str classname; protocol_reference_list; interface_declaration] ->
-    (* print_endline ("Objc Protocol " ^ classname); *)
+    print_endline ("Objc Protocol " ^ classname);
 
     (* A protocol is an incomplete type, so we just use C struct tag for the binding *)
     let class_type = STMT_abs_decl (sr, classname, Flx_ast.dfltvs, [], Str ("struct " ^ classname^ "*"), reqs) in  
@@ -1693,31 +1693,27 @@ and bind_objc_protocol_interface sr stuff reqs :Flx_ast.statement_t =
     in
     let iface_decl = 
       match interface_declaration with
-      | Lst [] -> 
-        (* print_endline ("Optional interface spec ommitted"); *)
-        STMT_nop (sr, "Omitted optional interface spec")
-
       | Lst ifaces ->
         (* print_endline ("Got interface spec"); *)
         let methods = 
           List.map (fun ispec -> match ispec with
-          | Lst [Id "objc_class_method_declaration"; sr; typ; selector] ->  
-            (* print_endline ("Class method declaration"); *)
-            let sr = xsr sr in
-            decode_class_method_spec classname sr typ selector
+            | Lst [Id "objc_class_method_declaration"; sr; typ; selector] ->  
+              (* print_endline ("Class method declaration"); *)
+              let sr = xsr sr in
+              decode_class_method_spec classname sr typ selector
 
-          | Lst [Id "objc_instance_method_declaration"; sr; typ; selector ] ->
-            (* print_endline ("Instance method declaration"); *)
-            let sr = xsr sr in
-            decode_instance_method_spec classname sr typ selector
+            | Lst [Id "objc_instance_method_declaration"; sr; typ; selector ] ->
+              (* print_endline ("Instance method declaration"); *)
+              let sr = xsr sr in
+              decode_instance_method_spec classname sr typ selector
 
-          | Lst [Id "objc_property"; property_attribues; var] -> 
-            print_endline ("Property declaration not implemented in protocols yet");
-            STMT_nop (sr, "property decl not implemented yet")
+            | Lst [Id "objc_property"; property_attribues; var] -> 
+              print_endline ("Property declaration not implemented in protocols yet");
+              STMT_nop (sr, "property decl not implemented yet")
 
-          | x -> err x "Objc interface element"
-        )
-        ifaces
+            | x -> err x "Objc interface element"
+          )
+          ifaces
         in
         STMT_seq (sr,class_type :: protocols @ methods)
 
