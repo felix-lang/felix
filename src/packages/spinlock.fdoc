@@ -122,10 +122,14 @@ class CWBuf
   typedef cwbuf_t = &_cwbuf_t;
 
   ctor cwbuf_t (n: size) { 
-    var v = varray[address] (n, C_hack::cast[address] 0z);
+    var v = 
+      let m = max (n,16uz) in 
+      varray[address] (m, C_hack::cast[address] 0z)
+    ;
     return 
       let p = v.stl_begin in 
-      new (_cwbuf_t (p, v.stl_end,  Spinlock::spinlock (), p, p, false, true));
+      new (_cwbuf_t (p, v.stl_end,  Spinlock::spinlock (), p, p, false, true))
+    ;
   }
  
   // the latest data wll overwrite the most stale on full
@@ -154,12 +158,15 @@ class CWBuf
   // to avoid reading a stale block
   proc pop_with_null_on_empty (b : cwbuf_t, pp : &address) { 
     (b->s).Spinlock::lock;
-    pp <- if b->empty then C_hack::cast[address] 0z else *(b->r);
-    pre_incr b.r;
-    if b->r == b->nd perform b.r <- b->beg;
-    if b->empty perform b.w <- b->r;
-    b.empty <- b->w == b->r;
-    b.full <- false; // just read so can't be full
+    if b->empty do 
+      pp<- C_hack::cast[address] 0uz; 
+    else 
+      pp <- *(b->r);
+      pre_incr b.r;
+      if b->r == b->nd perform b.r <- b->beg;
+      b.empty <- b->w == b->r;
+      b.full <- false; // just read so can't be full
+    done
     (b->s).Spinlock::unlock;
   }
 }
