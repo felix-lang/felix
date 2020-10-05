@@ -4,6 +4,7 @@
 @tangler flx_spinlock.flx    = share/lib/std/control/spinlock.flx
 @tangler flx_spinlock.fpc    = $PWD/src/config/flx_spinlock.fpc
 @tangler cwbuf.flx           = share/lib/std/datatype/cwbuf.flx
+@tangler poolalloc.flx       = share/lib/std/memory/poolalloc.flx
 
 @h1 Spinlock
 @tangle flx_spinlock.hpp
@@ -170,6 +171,47 @@ class CWBuf
     (b->s).Spinlock::unlock;
   }
 }
+@
+
+@tangle poolalloc.flx
+include "std/control/spinlock";
+include "std/datatype/cwbuf";
+
+class PoolAllocator {
+
+  open CWBuf; 
+
+  chip Pool_Allocator[T] (poolsize: size, alloc: 1 -> T) 
+    connector memory 
+      pin acquire: %>address 
+      pin release: %<address
+  {
+    proc provider () {
+      while true do
+        var p : address = pool.pop;
+        write memory.acquire;
+      done
+    }
+    proc collector () {
+      while true do
+        var p = read memory.release;
+        pool,push p;
+      done
+    }
+
+    proc service () {
+      spawn_fthread provider;
+      spawn_process collector; 
+    }
+
+    var pool = cwbuf_t poolsize; 
+    for i = 0uz ..< poolsize do
+      pool.push #alloc;
+    done 
+    run service;
+  }
+} // Allocator
+
 @
 
 @tangle flx_spinlock.fpc
