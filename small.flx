@@ -98,10 +98,13 @@ Faio::sleep (5.0);
 open syntax ObjC;
 
 begin 
- @objc-bind @interface small_class 
- -(int) get1977;
- -(int) getsum: (int);
-  @end
-
-  println$ "NESTED " + (small_class_instance.getsum' 44).str; 
+  objc-bind 
+    @interface small_class 
+    +(instancetype) alloc;
+    -(instancetype) init;
+    -(int) get1977;
+    -(int) getsum: (int);
+    @end
+  ;
+  println$ "NESTED " + (small_class'alloc.init.getsum' 44).str; 
 end

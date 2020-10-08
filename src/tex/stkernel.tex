@@ -23,6 +23,311 @@
 \tableofcontents
 \part{Subtyping Kernel}
 \chapter{Motivation}
+Felix provides a domain specific sublanguage (DSSL) for binding Objective C APIs.
+Consider the following simple ObjC class:
+\begin{minted}{objc}
+@interface SmallClass: NSObject {}
+- (int)get1977;
+@end
+
+@implementation SmallClass
+- (instancetype)init {
+	self = [super init];
+	return self;
+}
+- (int)get1977 { return 1977; }
+@end
+\end{minted}
+
+To lift this code verbatim into Felix we have to bypass the parser
+by creating text inclusions. These inclusions are emitted verbatim
+inside one or more of the compiler emitted C++ files.
+
+\begin{minted}{felix}
+header small_class_interface = c"""
+@interface SmallClass: NSObject { }
+- (int)get1977;
+@end
+""";
+
+body small_class_implementation = c"""
+@implementation SmallClass
+- (instancetype)init {
+	self = [super init];
+	return self;
+}
+- (int)get1977 {
+	return 1977;
+}
+- (int)getsum: (int)toadd {
+  return 1977 + toadd;
+}
+
+@end
+""";
+\end{minted}
+
+We can now write a binding to lift the API into Felix:
+
+\begin{minted}{felix}
+type small_class_instance_t = "void*"  requires 
+  small_class_interface, 
+  small_class_implementation
+;
+
+fun make_small_class_instance:
+  1 -> small_class_instance_t 
+= 
+  "[[SmallClass alloc] init]"
+;
+
+fun get1977 : small_class_instance_t -> int = "[$1 get1977]";
+
+var small_class_instance = make_small_class_instance();
+var result = get1977 small_class_instance;
+println$ "Felix ran objc to get " + result.str;
+\end{minted}
+
+However this is the hard way! here's the easy way, using the
+objC DSSL:
+
+\begin{minted}{felix}
+  objc-bind 
+    @interface small_class 
+    +(instancetype) alloc;
+    -(instancetype) init;
+    -(int) get1977;
+    -(int) getsum: (int);
+    @end
+  ;
+  println$ "NESTED " + (small_class'alloc.init.getsum' 44).str; 
+\end{minted}
+
+ObjC has a construction which specifies a constraint that an object 
+respond to at least the nominated set of messages. Here is an example:
+
+\begin{minted}{felix}
+objc-bind 
+  @protocol hasDescription
+   -(NSString)description;
+  @end
+;
+\end{minted}
+
+and another:
+
+\begin{minted}{felix}
+objc-bind
+  @protocol Cpy
+  -(instancetype)cpy;
+  -(instancetype)cpywithmsg:(NSString);
+  @end
+;
+\end{minted}
+
+Here is a class interface that uses these protocols:
+
+\begin{minted}{felix}
+objc-bind 
+ @interface SmallClass<hasDescription, Cpy>
+  {
+     int x;
+     y: int;
+  }
+   +(SmallClass)alloc;
+   -(instancetype)init;
+   -(int)get1977;
+   -(int)getsum:(int);
+   @property int z;
+   @property (readonly) q:int;
+ @end
+;
+\end{minted}
+
+I must explain that what you see above is Felix code. In particular,
+the protocols above have nothing to do with any Objective C protocols. 
+
+Sure, they look objective C'ish. But actually Felix makes a 
+monomorphic nominal primitive type for each protocol and does not
+associate it with any methods! Instead, it defines a set of methods
+overloaded on the type of the first argument, which is always present,
+namely a pointer to an object instance.
+
+\begin{minted}{felix}
+type hasDescription = "void*";
+
+fun description: hasDescription -> NSString = "[$1 $2]";
+\end{minted}
+
+and
+
+\begin{minted}{felix}
+type Cpy = "void*";
+
+fun cpy: Cpy -> Cpy = "[$1 cpy]";
+fun cpywithmsg (obj:Cpy) (msg:NSString) => 
+  cexpr "[cpy: $1 msg: $2]" (obj,msg) endcexpr
+; 
+\end{minted}
+
+This means it is possible to now write functions which accept any object
+conforming to a protocol, for example given a pointer to a {\tt SmallClass} instance
+the following function will work correctly:
+
+\begin{minted}{felix}
+fun require_description(x:hasDescription) => (x.description).str;
+println$ sc.require_description;
+\end{minted}
+
+Now, suppose we have a protocol A, and another B, and we want one
+that has all the methods of both:
+
+\begin{minted}{felix}
+objc-bind @protocol C<A,B> @end;
+\end{minted}
+
+The way Felix handles protocols .. and superclasses .. is universally done
+with an opaque type and one more more subtyping coercions. Since ObjC
+objects are universally machine pointers, C \verb+void*+ is a suitable
+representation. Emitted subtyping coercions look like this:
+
+\begin{minted}{felix}
+  supertype C : A = "$1"; // A < C, A -> C
+  supertype C : B = "$1"; // B < C, B -> C
+\end{minted}
+
+\section{Intersection Types Required}
+And now the real crux of it. We want an {\em anonymous} type constructor,
+and that is the intersection operator:
+
+\begin{minted}{felix}
+  A & B
+\end{minted}
+
+Intersection is symmetric and associative, and an empty intersection is
+isomorphic to the universal type.  There is a normal form for intersections,
+namely a list of types to intersect, none of which are, or contain, directly
+or indirectly, any intersection. The intersection is void if any component
+is void. 
+
+\section{Subtyping Judgements}
+\subsection{Primitives}
+Subtyping judgements between primitives 
+can be made easily by inspecting the graph of coercions, and finding, or failing to find, 
+a path between two types. 
+
+\subsection{Intersections}
+With the introduction of intersection types, we need two extra rules: 
+\begin{enumerate}
+\item a type X is a subtype of A \& B if is a subtype of both A and B, and, 
+\item A \& B is a subtype of Y if both A and B are subtypes of Y.
+\end{enumerate}
+
+With our power set the rule reads: 
+\begin{enumerate}
+\item a type X is a subset of $A \cap B$ if is a subset of both A and B, and, 
+\item $A \cap B$ is a subset of Y if both A and B are subset of Y.
+\end{enumerate}
+
+\subsection{Pair Judgement}
+It is worth unravelling the rule for making this judgement:
+\begin{minted}{felix}
+  A & B < C & D
+\end{minted}
+There are two ways:
+\begin{enumerate}
+\item Apply rule 1 then rule 2 twice:
+\begin{enumerate}
+  \item $A \& B < C \& D $
+  \item $A \& B < C$ and $A \& B < D$
+  \item $A < C$ and $B < C$ and $A < D$ and $B < D$
+\end{enumerate}
+\item Apply rule 2 then rule 1 twice
+\begin{enumerate}
+  \item $A \& B < C \& D$
+  \item $A < C \& D$ and $B < C \& D$
+  \item $A < C$ and $A < D$ and $B < D$ and $B < D$
+\end{enumerate}
+\end{enumerate}
+
+Generalising to subtyping $n$ intersections shows the solution can
+always be obtained with a quadratic number of primitive subtyping
+judgements.
+
+\subsection{Unification}
+The unification engine can implement both rules also since the types are 
+monomorphic the unification makes no contribution to the most general unifier
+the algorithm must return.
+
+\subsection{Application Binding}
+When an overload is successful an application term must be bound, at which
+time a mismatch between the function parameter type and the argument
+type will be discovered. Since unification succeeded or we would not
+reach this point, the path corresponding to the subtyping judgment
+traces out at least one sequence of coercions which could be applied,
+and the binder inserts a type coercion.
+
+Note that these coercion terms are purely type coercions supported 
+by an existential proof a composite coercion can be found at a later time.
+We also defer the examination of the question: what happens if there
+is more than one path tracing out distinct composite coercions?
+
+\subsection{Overloading}
+This leaves the machinery missing a description of how the right
+methods are found. ObjC methods are C functions so they exist in
+global scope in ObjC, so Felix puts them there too. This means
+they can always be found, provided they're actually defined of course.
+
+But now, overloading works by finding all the methods with the same
+name and using subtyping judgements to find all candidates. If the argument
+type is a subtype of the parameter type the function is a candidate.
+
+The algorithm now attempts to find a best fit as follows: the first
+candidate is added to the set of best fits. 
+\begin{enumerate}
+\item Now for each subsequent 
+candidate, if its parameter type is a proper subtype of the parameter 
+of any best fit function, that function is thrown out of the best fit set, 
+and finally the current candidate is added. 
+
+\item If the candidate is a proper supertype of any function
+in the best fit set, the candidate is ignored. 
+
+\item Otherwise the candidate is
+added to the best fit set because it is either incomparable with all of them,
+or equivalent to at least one of them.
+\end{enumerate}
+
+When we run out of candidates if the best fit set has only one element,
+that element is the best fit. Otherwise if there are at least two elements,
+there is at least two good fits neither of which is better than the other.
+
+\section{Why is this fabulous?}
+
+Now the {\em key point} in this design is that the whole of the method
+selection system is done by compile time static type analysis,
+so roughly if it compiles it must run without any possibility of
+a missing method or nasty null pointer arising from the method binding.
+Obviously if any objective C methods are called they have to be
+correctly bound to maintain the guarrantee.
+
+\section{Ok what's the catch?}
+But there is a caveat, as always.
+
+The machinery will not work in the general case
+if the user defined set of coercions are not constrained.
+
+It is vital to understand that because subtyping coercions implicit:
+
+{\em they are perfomed silently} and so {\em we cannot allow 
+unexpected behaviour to arise} because {\em there is no locally visible
+culprit to pin the blame on.}
+
+The rest of this paper therefore is primarily concerned with
+establishing, in the abstract, what the constraints on
+supertype definitions should be so as to obey the
+{\em principle of least surprise}.
+
 
 \chapter{Kernel Notions}
 
@@ -69,48 +374,59 @@ by this graph consist of the subtyping judgement category and the more
 concrete coercion category which consists of all compositions of 
 coercions.
 
+\section{Analysis}
 It is important to note that no constraint is imposed on the set of 
 coercions provided so that it is possible for the graph to be cyclic.
-In this case two primitives may be judged equivalent and can be
-interconverted using any path without loss of information: the objects
-are isomorphic and the coercion paths are isomorphisms.
+In this case two primitives may be judged equivalent. 
 
-There is a cruicial constraint on the representations and coercions
-functions: the functions must be monic. This causes a serious problem
-as we shall soon see but the requirement is essential to ensure 
-coherence. We have already met one of the reasons: to be able to interconvert
-between any set of equivalent types the coercions must be isomorphisms,
-and this is ensured by the fact that all coercions are monic.
+We now do the usual trick: equivalence, as the name suggests, is
+an equivalence relation, therefore we can partition the set of
+primitives into classes. At the same time, we're going to make
+"bundles" of coercion arrows as follows: for each class all the
+arrows between primitives of that class, and, for each class A and
+each class B, a bundle of all the arrows from any primitive in A to
+a primitive in B.
+
+These classes and bundles now strongly resemble the structure of the
+inclusion map on the powerset of some set.
+
+Now consider two primitives X and Y of a class. There are any number
+of coercions from one to the other, if we are going to identify the class
+with a subset in the powerset model, we really need that all paths
+from X to Y are equal, and all paths from Y to X. Furthermore,
+the two paths that now remain must be inverses of each other so that
+the primitives are isomorphic and the paths are isomorphisms.
+
+Anything less than this would allow operations that caused suprises.
+
+Now consider the bundle of arrows from X to Y again. Since every arrow
+in X is an isomorphism a map from any primitive of X to some primitive
+of Y is automatically a map from every object in X, via an isomorphism.
+
+Furthermore in Y, any map $f:x\rightarrow y$ to some primitive of Y can be extended
+to every other primitive $z$ via an isomorphism $h:y\rightarrow z$, and now we have a hard
+constraint, that if $g:x\rightarrow z = f \odot h$. This is a commuting square. 
+in other words every path from X to Y must be equal, give or take an isomorphism
+at each end of the arrow for retargetting.
+
+And so now by construction, the primitive classes and coercion arrow bundles
+are a subcategory of the powerset category.
+
+\section{Specifying the constraint}
+We have established a necessary condition for a coherent subtyping
+category. But the constraints are expressed in terms of equality
+of all paths, whereas the client simple encodes edges of the generating
+graph.
+
+The basic semantic rule is that each coersion must be an embedding,
+in other words, the function must be monic.
 
 Saunders MacLean says an arrow $m: a\rightarrow b$  is monic in a category $C$
 if when for any two parallel arrows $f,g: d\rightarrow a$, we have that $f\odot m = g\odot m$
 implies $f=g$. Note that we are using reverse composition in OO style, so that above the first 
 function is executed first, and the second applied to its result.
 
-Intersection and union types are provided with binary operators like:
-
-\begin{minted}{felix}
-   a & b \| c
-\end{minted}
-
-we note both these operators are symmetric and associative.  The type $0$ or {\tt void}
-is an unit of the union and zero of the intersection, whilst the universal type is
-called {\tt any} and is the unit of the intersection and zero of the union.
-An empty intersection is universal, whilst an empty union void.
-
-In order to ensure coherence, no representation can be specified for 
-intersections and unions, instead it is generated.
-
-For the subtyping judgement category the judgements follow automatically
-from the set inclusion model: an intersection of two types is a subtype
-of each of them, any two types are subtype of their union.
-
-However we need to be able to construct the coercions.
-
-
-
-
-
+\section{Extension to intersections}
 
 
 \end{document}
