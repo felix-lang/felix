@@ -133,7 +133,7 @@ class CWBuf
     ;
   }
  
-  // the latest data wll overwrite the most stale on full
+  // the latest data will overwrite the most stale on full
   proc push ( b: cwbuf_t, d: address ) {
     b->s.Spinlock::lock;
     b->w <- d; // write
@@ -181,7 +181,7 @@ class PoolAllocator {
 
   open CWBuf; 
 
-  chip Pool_Allocator[T] (poolsize: size, alloc: 1 -> T) 
+  chip Pool_Allocator[T] (poolsize: size, alloc: 1 -> &T) 
     connector memory 
       pin acquire: %>address 
       pin release: %<address
@@ -202,7 +202,8 @@ class PoolAllocator {
 
     proc service () {
       spawn_fthread provider;
-      spawn_process collector; 
+      //spawn_process collector;  // collector not running - why?
+      spawn_fthread collector; 
     }
 
     var pool = cwbuf_t poolsize; 
