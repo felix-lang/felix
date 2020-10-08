@@ -1,0 +1,44 @@
+@title spinlock test
+@h1 spinlock test
+Also tests cwbuf, a circular buffer of addresses.
+@felix
+include "std/datatype/cwbuf";
+
+var cb = CWBuf::cwbuf_t 512uz;
+for i in 0uz ..< 20uz do
+  var p = C_hack::cast[address] i;
+  CWBuf::push (cb,p);
+done
+for j in 0..25 do
+  var q : address; 
+  CWBuf::pop (cb,&q);
+  println$ C_hack::cast[size] q;
+done
+@expect
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+0
+0
+0
+0
+0
+0
+@
