@@ -188,14 +188,15 @@ class PoolAllocator {
   {
     proc provider () {
       while true do
-        var p : address = pool.pop;
-        write memory.acquire;
+        var p : address;
+        pop (pool, &p);
+        write (memory.acquire, p);
       done
     }
     proc collector () {
       while true do
         var p = read memory.release;
-        pool,push p;
+        push (pool,p);
       done
     }
 
@@ -205,8 +206,10 @@ class PoolAllocator {
     }
 
     var pool = cwbuf_t poolsize; 
-    for i = 0uz ..< poolsize do
-      pool.push #alloc;
+    for i in 0uz ..< poolsize do
+      var p = C_hack::cast[address] #alloc;
+      println$ "Adding " + p.str + " to Allocator pool";
+      push (pool,p);
     done 
     run service;
   }

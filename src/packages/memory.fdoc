@@ -86,7 +86,7 @@ class Memory
   ;
 
 
-  proc memset: address * !ints * byte = 
+  proc memset: address * byte * !ints = 
     "::std::memset($1,$2,$3);"
     requires Cxx_headers::cstring
   ;
