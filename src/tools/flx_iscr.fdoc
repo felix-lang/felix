@@ -1,49 +1,65 @@
 
 @h1 Core interscript interpreter.
 
-Define an equality for lists of strings.
-
 @felix
 fun streq : list[string] * list[string] -> bool =
-  | Cons (h1, t1), Cons (h2, t2) when h1 == h2 => streq (t1,t2)
   | #Empty, #Empty => true
-  | _ => false
+
+  | (Cons (head1, tail1) as lst1), (Cons (head2, tail2) as lst2) =>
+    if head1 == head2                           then streq (tail1, tail2)
+    elif head1 == "" or prefix (head1,"#line")  then streq (tail1, lst2)
+    elif head2 == "" or prefix (head2,"#line")  then streq (lst1, tail2)
+    else false
+
+  | (#Empty as lst1), (Cons (head2, tail2) as lst2) =>
+    if head2 == "" or prefix (head2,"#line")  then streq (lst1, tail2)
+    else false
+
+  | (Cons (head1, tail1) as lst1), (#Empty as lst2) =>
+    if head1 == "" or prefix (head1,"#line")  then streq (tail1, lst2)
+    else false
+
 ;
-@
 
-Now define a type to hold a file buffer.
-
-@felix
-struct file_buffer = 
+struct tangler_buffer = 
 {
+  dirname  : string;
   filename : string;
+  src      : string;
+  lno      : int;
+  emitlnos : bool;
   buffer : list[string];
-@
 
-An output routine to add a new line to the buffer.
-    
-@felix
-  proc output_line (line:string) =>
-    self.buffer <- Cons (line, self*.buffer);
-@
+  fun cal_hash_directive (newlno: int) => 
+    let ext = Filename::get_extension self.filename in
+    if ext == ".fpc" then
+     'Generated_from: '+newlno.str + ' "' + self.src + '"'
+    else 
+     '#line '+newlno.str + ' "' + self.src + '"'
+  ;
 
-Now the save routine. We only write the buffer to
-the file if the contents differ from the old file.
-This is to preserve the time stamp if things don't change.
-Note if a file is non-existent, and the tangler input
-is empty, the file will not be created.
+  proc output_line (newlno:int) (line:string) {
+    if self->emitlnos and newlno > self->lno + 1 do
+      val hash_directive = self->cal_hash_directive newlno;
+      self.buffer <- Cons (hash_directive, self->buffer);
+    done
+    self.buffer <- Cons (rstrip line, self->buffer);
+    self.lno <- newlno;
+  }
 
-@felix
   proc save (id:string)  
   {
+    var dirname = self*.dirname;
     var filename = self*.filename;
-
+//println$ "Save " + filename;
     // replace environment variable if the path starts with one.
     if filename.[0] == '$' do
 
       var endpos       = stl_find(filename,"/");
       var env_var_name = filename.[1 to endpos];
+//println$ "DETECTED ENVIRONMENT VARIABLE " + env_var_name;
       var env_value    = (Env::getenv (env_var_name), "$" + env_var_name);
+//println$ "     VALUE=" + env_value.0;
 
       if (env_value.0.len > 0uz) do
         filename = env_value.0 + filename.[endpos to];
@@ -51,53 +67,64 @@ is empty, the file will not be created.
 
     done
           
+    var pathname = 
+      if filename.[0] == "/" then filename else Filename::join (dirname, filename)
+    ;
+//println$ "Finale pathname = " + pathname;
+
     var data = self*.buffer;
-    var old = tail (rev_split (filename.load, char "\n"));
+    var old = tail (rev_split (pathname.load, char "\n"));
     if not streq (old , data) do // note: will NOT create an empty file!
-      Directory::mkdirs (Filename::dirname filename);
-      var f = fopen_output filename;
+println$ "=====================";
+println$ "old<>new";
+println$ "=====================";
+println$ "OLD";
+println$ "=====================";
+println$ old;
+println$ "=====================";
+println$ "NEW";
+println$ "=====================";
+println$ data;
+println$ "=====================";
+println$ "";
+println$ "";
+      Directory::mkdirs (Filename::dirname pathname);
+      var f = fopen_output pathname;
       if not valid f do
-        println$ "Can't open output file " + filename;
+        println$ "Can't open output file " + pathname;
         System::exit 1;
       done
-      println$ "Write     " + id + "->" + self*.filename;
+      println$ "Write     " + id + "->" + pathname;
       for line in rev data do
         writeln$ f,line;
       done
       fclose f;
     else 
-      println$ "Unchanged " + id + "->" + self*.filename;
+      //println$ "Unchanged " + id + "->" + pathname;
     done
-  }
+  } // save
+}; // file buffer
+
+val file_to_add_linenos = 
+     '.flx','.c','.h','.cpp','.cxx','.hpp',
+     '.fsyn','.fpc','.py'
+;
+
+variant state_t = Doc | Tangling of &tangler_buffer; 
+struct scan_state_t {
+  state : state_t;
+  tanglers : strdict[&tangler_buffer];
 };
-@
 
-We use a string dictionary variable to hold all the tanglers.
-
-@felix
-var tanglers = strdict[&file_buffer] ();
-@
-
-Now, define the state of the processor. It's either
-skipping over documentation, or, it's writing code
-out to some file.
-
-@felix
-variant state_t = Doc | Tangling of &file_buffer; 
-var state = Doc;
-@
-
-Now we define the syntax the processor uses. We're
-using regular definitions for the parser.
-
-@felix
 open Regdef; // required
 
 // helper definitions
 regdef optwhite = ' '*;
 regdef white = ' '+;
 regdef felt= perl ("[A-Za-z._][-A-Za-z0-9_.]*");
-regdef fname = (felt "/")* felt;
+regdef eelt= "$" felt;
+regdef delt = felt | eelt;
+regdef fname = (delt "/")* delt;
 
 // A tangler definition looks like:
 // @tangler name = filename
@@ -111,131 +138,110 @@ regdef tangler_def_regdef =
 regdef tangler_use_regdef = 
   "@tangle" white group (felt) optwhite 
 ; 
-@
-
-Now convert these regular definitions to compiled regexps.
-The render function translates the regular AST tree form
-into a Perl string, and the RE2 constructor compiles it
-using Google RE2.
-
-@felix
 var tangler_def_re2 = RE2 (Regdef::render tangler_def_regdef);
 var tangler_use_re2 = RE2 (Regdef::render tangler_use_regdef);
-@
 
-Now define the parser actions. First, a routine
-to add a new tangler (that's just a {file_buffer}).
-
-@felix
-proc def_tangler (id:string, filename:string, odir:string)
+proc def_tangler (scan_state: &scan_state_t) (id:string, filename:string, odir:string, src:string, lno:int)
 {
-  match get tanglers id with
+  match get scan_state->tanglers id with
   | Some _ =>
     println$ "Duplicate definition of tangler " + id;
     System::exit 1;
   | #None =>
-    var tangler = file_buffer (Filename::join (odir,filename), Empty[string]);
-    add tanglers id (new tangler);
+    var emitlnos = filename.Filename::get_extension in file_to_add_linenos;
+    var tangler = tangler_buffer (odir,filename, src,lno, emitlnos, Empty[string]);
+    add scan_state->tanglers id (new tangler);
   endmatch;
 }
-@
 
-Now a routine to revert to document mode.
-In document mode we just skip lines.
-
-@felix
-proc set_doc() =>  state = Doc;
-@
-
-Now a routine to specify a new current tangler.
-
-@felix
-proc set_tangler (s:string) 
+proc set_doc(scan_state: &scan_state_t) =>  scan_state . state <- Doc;
+proc set_tangler (scan_state: &scan_state_t) (s:string) 
 {
-   match get tanglers s with
-   | Some p => state = Tangling p;
+   match get scan_state->tanglers s with
+   | Some p => scan_state.state <- Tangling p;
    | #None =>
       println$ "Can't find tangler " + s;
       System::exit 1;
    endmatch;
 }
-@
-
-Now heres the main processing routine for the input file.
-We check for an @ character at the start of a line.
-If we don't find one we either write the line to the
-current tangler or just skip over it. If we do we have
-to see what command it is: either a command to define
-a new tangler, a command to switch to a different output
-file, or a switch to document mode in which we just skip
-over the lines.
-
-@felix
-proc process_file (f:ifile) (odir:string)
+proc process_file (scan_state: &scan_state_t) (f:ifile) (iname:string) (odir:string)
 {
+  var lno = 0;
   for line in split (f.load, "\n") do
+    ++lno;
     if line.[0] == "@" do
       match Match (tangler_def_re2, line) with
       | Some v =>
-         def_tangler (v.1, v.2, odir);
+         def_tangler scan_state (v.1, v.2, odir, iname,lno);
       | #None => 
         match Match (tangler_use_re2, line) with
         | Some v =>
-         set_tangler v.1;
-        | #None => set_doc;
+         set_tangler scan_state v.1;
+        | #None => 
+          if line.[1] == "@" do
+            match scan_state->state with
+            | #Doc => ;
+            | Tangling b => b.output_line lno line.(1..);
+            endmatch;
+          else
+            scan_state.set_doc;
+          done
         endmatch;
       endmatch;
     else 
-      match state with
+      match scan_state->state with
       | #Doc => ;
-      | Tangling b => b.output_line line;
+      | Tangling b => b.output_line lno line;
       endmatch;
     done 
   done
 }
-@
-
-Now for the mainline.
-First check the input file exists.
-
-@felix
 noinline proc iscr (iname:string) (var odir:string)
 {
   if not FileStat::fileexists iname do
     println$ "File " + iname + " doesn't exist";
     System::exit 1;
   done
-@
-
-Now check for optional directory for output.
-
-@felix
   odir = 
     if odir == "" then Directory::getcwd () 
     else Directory::mk_absolute_filename odir
   ;
-@
-
-Now, process the input file and buffer up the code.
-
-@felix
+  var scan_state = scan_state_t (Doc, strdict[&tangler_buffer] ());
   begin 
     var f = iname.fopen_input;
-    f.process_file odir;
+    scan_state&.process_file f iname odir;
     f.fclose;
   end
-@
-    
-Finally just dump the buffers to the associated
-files if the contents of the buffer and file differ.
-Do nothing if the contents are the same to avoid
-spoiling the last modification timestamp.
-
-@felix
-  match id,pbuffer in tanglers do 
+  match id,pbuffer in scan_state.tanglers do 
     pbuffer.save id;
   done
-}
+} // iscr
 
-iscr 1.System::argv 2.System::argv;
+var din = 1.System::argv;
+var fin = 2.System::argv;
+var dout = 3.System::argv;
 
+// ONE ARGUMENT
+if fin == "" do
+  var curdir = Env::getenv "PWD";
+  iscr din curdir; // output to current directory
+
+// TWO ARGUMENTS
+elif dout == "" do // only two arguments: one input file and output directory
+  iscr din fin;
+
+// THREE ARGUMENTS
+else
+  if prefix (fin,"--regex=") do
+    var rspec = fin.(8 ..);
+println$ "Rspec = '" + rspec+"'";
+    var files = FileSystem::regfilesin (din, rspec);
+    for file in files do 
+      var path = Filename::join (din,file);
+      println$ "  File " + path; // iscr file dout; 
+      iscr path dout;
+    done
+  else
+    println$ "If three arguments are given the second must be '-regex=<regex>'.";
+  done
+done

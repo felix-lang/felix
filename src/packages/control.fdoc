@@ -129,12 +129,6 @@ open class Control
   proc throw_continuation(x: unit->void) { _throw (C_hack::cast[cont] x); }
   private proc _throw: cont = "throw $1;";
 
-  //$ Type of the implementation of a  synchronous channel.
-  //$ should be private but needed in this class for the data type,
-  //$ and also needed in schannels to do the svc call.
-
-  _gc_pointer type _schannel = "::flx::rtl::schannel_t*";
-
-}
+ }
 @
 

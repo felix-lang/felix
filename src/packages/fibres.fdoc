@@ -248,6 +248,26 @@ open class Fibres
 
 open class Schannel 
 {
+  // SCHANNEL PRIMITIVE
+  _gc_pointer type _schannel = "::flx::rtl::schannel_t*";
+
+  // PRIMITIVE CONSTRUCTOR
+  ctor _schannel: 1 = 
+    "new(*ptf-> gcp,::flx::rtl::schannel_ptr_map,false) ::flx::rtl::schannel_t()"
+    requires property "needs_gc"
+  ;
+
+  // READ PRIMITIVE
+  proc read_address (chan:_schannel, loc: &address) {
+    svc$ svc_sread$ chan, loc;
+  } 
+
+  // WRITE PRIMITIVE
+  proc write_address[T] (chan:_schannel, var v:address) { 
+    svc$ svc_swrite$ C_hack::cast[_schannel] chan, &v;
+  }
+
+  // TYPED CHANNELS
   //$ The type of a bidirectional synchronous channel.
   _gc_pointer type schannel[t] = "::flx::rtl::schannel_t*";
 
@@ -257,13 +277,9 @@ open class Schannel
   //$ The type of an output synchronous channel.
   _gc_pointer type oschannel[t] = "::flx::rtl::schannel_t*";
 
-  gen mk_untyped_schannel: 1 -> address = 
-    "new(*ptf-> gcp,::flx::rtl::schannel_ptr_map,false) ::flx::rtl::schannel_t()"
-    requires property "needs_gc"
-  ;
   //$ Create a bidirectional synchronous channel.
   gen mk_schannel[t]():schannel[t] => 
-    C_hack::cast[schannel[t]] #mk_untyped_schannel
+    C_hack::cast[schannel[t]] #_schannel
   ;
 
   //$ Model a NULL pointer as an schannel. 
@@ -309,7 +325,6 @@ open class Schannel
   gen mk_ioschannel_pair[t]() =>
     mk_ioschannel_pair[t]$ mk_schannel[t] ()
   ;
-
   // pass in address of location to put the pointer to the T data
   proc read[T] (chan:schannel[T], loc: &&T) {
     svc$ svc_sread$ C_hack::cast[_schannel] chan, C_hack::reinterpret[&root::address] (loc);
@@ -330,6 +345,7 @@ open class Schannel
   }
   proc read[T] (chan:ischannel[T], loc: &&T) { read (C_hack::cast[schannel[T]] chan, loc); }
   proc read[T] (chan:ischannel[T], p: &T) { read (C_hack::cast[schannel[T]] chan, p); }
+
 
   //$ Read an item from an input channel.
   inline gen read[T] (chan:ischannel[T]) => read$ C_hack::cast[schannel[T]] chan;
@@ -456,7 +472,7 @@ inline proc write[r,w] (chan:duplex_schannel[r,w], v:w)  =>
 ;
 
 ctor[r,w] duplex_schannel[r,w] () =>
-  C_hack::cast[duplex_schannel[r,w]] #mk_untyped_schannel
+  C_hack::cast[duplex_schannel[r,w]] #_schannel
 ; 
 
 // NOTE: assuming the mainline want to read an r
@@ -464,7 +480,7 @@ ctor[r,w] duplex_schannel[r,w] () =>
 // use the second channel of the pair to do so.
 // passing the first one to the subroutine.
 gen mk_duplex_schannel_pair[r,w] () =>
-  let c = #mk_untyped_schannel in
+  let c = #_schannel in
   C_hack::cast[duplex_schannel[w,r]] c,
   C_hack::cast[duplex_schannel[r,w]] c
 ;

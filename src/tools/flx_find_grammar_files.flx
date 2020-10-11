@@ -2,31 +2,38 @@
 
 fun / (s:string, r:string) => Filename::join (s,r);
 var arg1 = System::argv 1;
-var dir = if arg1 == "" then "src"/"lib" else arg1 / "share" / "lib";
+var dir = if arg1 == "" then "build"/"release"/"share"/"lib" else arg1 / "share" / "lib";
 println$ "[flx_find_grammar_files] ** Scanning " + dir;
 
 var fsyn = RE2 ".*\\.fsyn";
+
+// FILES IN TOP LEVEL GRAMMAR DIRECTORY
 var gfiles = FileSystem::regfilesin (dir, fsyn);
-//println$ gfiles;
+//for g in gfiles perform println$ "  " + g;
 
-var oldfile=load (dir/"grammar"/"grammar.files");
-var oldfiles = filter (fun (x:string)=> x!="") (split (oldfile,"\n"));
+var initfsyn =([ "grammar/utility.fsyn", "grammar/grammar_scheme_support.fsyn", "grammar/blocks.fsyn"]);
+var termfsyn = (["grammar/felix.fsyn", "grammar/save.fsyn"]);
 
-var same = gfiles \cong oldfiles;
-println$ "Same=" + same.str;
-var extras = "";
-for file in gfiles
-  if file not in oldfiles do 
-    //call println ("EXTRA FILE " + file);
-    extras += file + "\n";
-  done
+// OLD LIST
+var filesname = dir/"grammar"/"grammar.files";
+var oldfile=load filesname;
+var oldfiles = filter (fun (x:string)=> x not in ( "" ! "@extras.files" ! (initfsyn + termfsyn))) (split (oldfile,"\n"));
 
-var extrafilename = dir /"grammar"/"extra.files";
-var oldextras = load extrafilename;
-if extras != oldextras do
-  println$ "[flx_find_grammar_files] ** Writing extra grammar files to "+extrafilename;
-  print extras;
-  save$ extrafilename,extras;
+var gfiles2 = filter (fun (x:string) => x not in ("" ! (initfsyn + termfsyn))) gfiles;
+var gfiles3 = initfsyn + gfiles2 + termfsyn;
+
+var same = gfiles2 \cong oldfiles;
+
+if same do
+  println$ "--- Unchanged " + filesname;
+  System::exit 0;
 else
-  println$ "[flx_find_grammar_files] ** Unchanged";
+  for name in gfiles2 perform
+    if name not in oldfiles perform println$ name + " is new";
+  for name in oldfiles perform
+    if name not in gfiles2 perform println$ name + " is missing";
+
+  println$ "+++ Writing " + filesname;
+  save (filesname, gfiles3);
 done
+ 

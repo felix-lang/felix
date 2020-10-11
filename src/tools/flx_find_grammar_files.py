@@ -6,6 +6,10 @@ import sys, fnmatch, os
 def tounix(s):
     return s.replace('\\', '/')
 
+initfsyn =["grammar/utility.fsyn", "grammar/grammar_scheme_support.fsyn", "grammar/blocks.fsyn"]
+termfsyn = ["grammar/felix.fsyn", "grammar/save.fsyn"]
+allfsyn = initfsyn + termfsyn
+
 # Because *no one* though of a recursive glob before 3.5...
 def rglob(dir, pat):
     for root, dirs, files in os.walk(dir):
@@ -29,37 +33,15 @@ def run(dir):
         dir = join('src', 'lib')
 
     stdfilename = join (dir,'grammar','grammar.files')
-    extrafilename = join(dir, 'grammar', 'extra.files')
 
     print('[flx_find_grammar_files] ** Scanning', dir)
 
     gfiles = list(rrglob(dir, '*.fsyn'))
-    #print("Files = "+ str(gfiles))
-
-    with open(stdfilename) as f:
-      tmp = f.readlines()
-    stdfiles = []
-    for file in tmp: stdfiles.append(file.rstrip())
-    #print("STD FILES=" + str(stdfiles))
-
-    try:
-      with open(extrafilename) as f:
-        tmp = f.readlines()
-    except:
-      tmp = []
-    oldextrafiles = []
-    for file in tmp: oldextrafiles.append(file.rstrip())
-    #print("OLD Extra files = " + str(oldextrafiles))
-
-    newextrafiles = list(filter(lambda f: f not in stdfiles, gfiles))
-
-    #print("New Extras = " + str(newextrafiles))
-    if set(newextrafiles) != set(oldextrafiles):
-        print('[flx_find_grammar_files] ** Writing extra grammar files to', extrafilename)
-        with open(extrafilename, 'w') as f:
-            for file in newextrafiles: f.write(file+"\n")
-    else:
-        print('[flx_find_grammar_files] ** Unchanged')
+    with open(stdfilename, 'w') as f:
+      for file in initfsyn : f.write(file+"\n")
+      for file in gfiles: 
+        if file not in allfsyn: f.write(file+"\n") 
+      for file in termfsyn : f.write(file+"\n")
 
 if __name__ == '__main__':
     main()
