@@ -1452,6 +1452,7 @@ tool:      flx_libindex
 tool:      flx_libcontents
 tool:      flx_mktutindex
 tool:      flx_renumber
+tool:      flx_find_grammar_files
 tool:      flx_iscr
 tool:      flx_pretty
 flx_tool: flx_find_cxx_packages

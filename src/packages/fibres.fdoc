@@ -260,11 +260,13 @@ open class Schannel
   // READ PRIMITIVE
   proc read_address (chan:_schannel, loc: &address) {
     svc$ svc_sread$ chan, loc;
+    println$ "read_address: " + loc->str;
   } 
 
   // WRITE PRIMITIVE
-  proc write_address[T] (chan:_schannel, var v:address) { 
-    svc$ svc_swrite$ C_hack::cast[_schannel] chan, &v;
+  proc write_address (chan:_schannel, var v:address) { 
+    println$ "write_address: " + v.str;
+    svc$ svc_swrite$ chan, &v;
   }
 
   // TYPED CHANNELS
