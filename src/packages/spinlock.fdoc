@@ -135,7 +135,7 @@ class CWBuf
  
   // the latest data will overwrite the most stale on full
   proc push ( b: cwbuf_t, d: address ) {
-println$ "Pool push " + d.str;
+//println$ "Pool push " + d.str;
     b->s.Spinlock::lock;
     b->w <- d; // write
     pre_incr b.w; // incr
@@ -154,7 +154,7 @@ println$ "Pool push " + d.str;
     b.empty <- b->w == b->r;
     b.full <- false; // just read so can't be full
     (b->s).Spinlock::unlock;
-println$ "Pool pop " + pp->str;
+//println$ "Pool pop " + pp->str;
   }
 
   // this version returns null on empty

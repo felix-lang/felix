@@ -9,6 +9,7 @@
 open class Address {
   //$ Construct from Felix object pointer.
   ctor[T] address: &T = "(void*)$1";
+  ctor address: uintptr = "(void*)$1";
 
   //$ Construct from possibly NULL pointer.
   ctor[T] address: cptr[T] = "(void*)$1"; //@

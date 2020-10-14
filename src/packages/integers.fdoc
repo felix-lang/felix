@@ -175,6 +175,7 @@ open class Intptr
 open class Uintptr
 {
   ctor uintptr: string = "static_cast<#0>(::std::atoi($1.c_str()))" requires Cxx_headers::cstdlib;
+  ctor uintptr: address = "(uintptr_t*)$1" requires Cxx_headers::cstdlib;
   ctor[T in reals] uintptr: T = "static_cast<#0>($1)/*int.flx: ctor*/";
 }
 
