@@ -75,6 +75,7 @@ struct tangler_buffer =
     var data = self*.buffer;
     var old = tail (rev_split (pathname.load, char "\n"));
     if not streq (old , data) do // note: will NOT create an empty file!
+/*
 println$ "=====================";
 println$ "old<>new";
 println$ "=====================";
@@ -88,6 +89,7 @@ println$ data;
 println$ "=====================";
 println$ "";
 println$ "";
+*/
       Directory::mkdirs (Filename::dirname pathname);
       var f = fopen_output pathname;
       if not valid f do

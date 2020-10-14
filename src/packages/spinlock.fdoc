@@ -216,6 +216,7 @@ class PoolAllocator {
       push (pool,p);
     done 
     run service;
+    println$ "Pool_Allocator terminated, NOT IMPLEMENTED YET FREE MEMORY!";
   }
 } // Allocator
 

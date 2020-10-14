@@ -157,8 +157,6 @@ grammar:
 extract: packages grammar
 
 fextract:
-	flx --static -c -od build/release/host/bin src/tools/flx_iscr.fdoc 
-	flx --static -c -od build/release/host/bin src/tools/flx_find_grammar_files.flx
 	flx_iscr ${PWD}/src/packages "--regex=.*\\.fdoc" build/release
 	flx_find_grammar_files
 

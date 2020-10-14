@@ -257,15 +257,19 @@ open class Schannel
     requires property "needs_gc"
   ;
 
+  // THEORETICALLY UNSOUND 
+  gen mk_null_channel : 1 -> _schannel = "(::flx::rtl::schannel*)NULL"; 
+  fun isNULL: _schannel -> bool = "!$1"; 
+
   // READ PRIMITIVE
   proc read_address (chan:_schannel, loc: &address) {
     svc$ svc_sread$ chan, loc;
-    println$ "read_address: " + loc->str;
+    //println$ "read_address: " + loc->str;
   } 
 
   // WRITE PRIMITIVE
   proc write_address (chan:_schannel, var v:address) { 
-    println$ "write_address: " + v.str;
+    //println$ "write_address: " + v.str;
     svc$ svc_swrite$ chan, &v;
   }
 
