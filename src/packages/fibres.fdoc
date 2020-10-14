@@ -262,13 +262,13 @@ open class Schannel
   fun isNULL: _schannel -> bool = "!$1"; 
 
   // READ PRIMITIVE
-  proc read_address (chan:_schannel, loc: &address) {
+  noinline proc read_address (chan:_schannel, loc: &address) {
     svc$ svc_sread$ chan, loc;
     //println$ "read_address: " + loc->str;
   } 
 
   // WRITE PRIMITIVE
-  proc write_address (chan:_schannel, var v:address) { 
+  noinline proc write_address (chan:_schannel, var v:address) { 
     //println$ "write_address: " + v.str;
     svc$ svc_swrite$ chan, &v;
   }

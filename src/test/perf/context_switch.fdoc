@@ -1,0 +1,59 @@
+@felix
+chip Add1 
+  connector io
+    pin out: %> uintptr
+    pin inp: %< uintptr
+{
+  var sample = 0;
+
+  while true do
+    var number: uintptr;
+    read_address (C_hack::cast[_schannel] io.inp, C_hack::cast[&address] &number);
+    ++number;
+    write_address(C_hack::cast[_schannel] io.out, C_hack::cast[address] number);
+  done
+}
+
+chip Zeros 
+  connector io
+    pin out: %> uintptr
+{
+  var start = time();
+  var i = 0;
+  while i < nmsgs do
+    write_address(C_hack::cast[_schannel] io.out, C_hack::cast[address] 0ju);
+    ++i;
+  done
+  var finish = time();
+  var elapsed = finish - start;
+  var ttrans = nmsgs * ntrans;
+  var rate = ttrans.double / elapsed / 1.0e6;
+  println$ "Done " + ttrans.str + " in " + elapsed.str + " sec or " + rate.str + "M per second";
+}
+
+chip printer
+  connector io
+    pin inp: %< uintptr
+{
+  var number : uintptr;
+  while true do
+    read_address (C_hack::cast[_schannel] io.inp, C_hack::cast[&address] &number);
+    //println$ "Got " + number.str;
+  done
+}
+
+var ntrans = 5;
+var nmsgs = 1000000; // 100K
+device a1 = Add1;
+device a2 = Add1;
+device a3 = Add1;
+device a4 = Add1;
+circuit
+  connect Zeros.out, a1.inp
+  connect a1.out, a2.inp
+  connect a2.out, a3.inp
+  connect a3.out, a4.inp
+  connect a4.out, printer.inp
+endcircuit
+@
+
