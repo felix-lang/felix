@@ -262,13 +262,13 @@ open class Schannel
   fun isNULL: _schannel -> bool = "!$1"; 
 
   // READ PRIMITIVE
-  noinline proc read_address (chan:_schannel, loc: &address) {
+  inline proc read_address (chan:_schannel, loc: &address) {
     svc$ svc_sread$ chan, loc;
     //println$ "read_address: " + loc->str;
   } 
 
   // WRITE PRIMITIVE
-  noinline proc write_address (chan:_schannel, var v:address) { 
+  inline proc write_address (chan:_schannel, var v:address) { 
     //println$ "write_address: " + v.str;
     svc$ svc_swrite$ chan, &v;
   }
@@ -288,33 +288,8 @@ open class Schannel
     C_hack::cast[schannel[t]] #_schannel
   ;
 
-  //$ Model a NULL pointer as an schannel. 
-  //$ Necessary for killing off schannels,
-  //$ so as to make them unreachable, so the gc can reap them.
-  //$ Note: null_schannels are safe.
-  gen mk_null_schannel[t]: 1->schannel[t] = "NULL";
-
-  //$ Model a NULL pointer as an ischannel. 
-  //$ Necessary for killing off schannels,
-  //$ so as to make them unreachable, so the gc can reap them.
-  gen mk_null_ischannel[t]: 1->ischannel[t] = "NULL";
-
-  //$ Model a NULL pointer as an oschannel. 
-  //$ Necessary for killing off schannels,
-  //$ so as to make them unreachable, so the gc can reap them.
-  gen mk_null_oschannel[t]: 1->oschannel[t] = "NULL";
-
   ctor[T] address: oschannel[T] = "$1";
   ctor[T] address: ischannel[T] = "$1";
-
-  //$ Check if an schannel is NULL.
-  fun isNULL[T] :schannel[T] -> bool = "NULL==$1";
-
-  //$ Check if an ischannel is NULL.
-  fun isNULL[T] :ischannel[T] -> bool = "NULL==$1";
-
-  //$ Check if an oschannel is NULL.
-  fun isNULL[T] :oschannel[T] -> bool = "NULL==$1";
 
   //$ Safe cast from bidirectional to ouput synchronous channel.
   ctor[t] oschannel[t](x:schannel[t]) => C_hack::cast[oschannel[t]] x;
@@ -331,6 +306,20 @@ open class Schannel
   gen mk_ioschannel_pair[t]() =>
     mk_ioschannel_pair[t]$ mk_schannel[t] ()
   ;
+
+
+  // READ POINTER
+  inline proc read_pointer[T] (chan:ischannel[&T], p: &&T) {
+    read_address$ C_hack::cast[_schannel] chan, C_hack::cast[&address] p;
+  } 
+
+  // WRITE POINTER
+  inline proc write_pointer[T] (chan:oschannel[&T], var p:&T) { 
+    write_address$ C_hack::cast[_schannel] chan, p.address;
+  }
+
+
+
   // pass in address of location to put the pointer to the T data
   proc read[T] (chan:schannel[T], loc: &&T) {
     svc$ svc_sread$ C_hack::cast[_schannel] chan, C_hack::reinterpret[&root::address] (loc);
