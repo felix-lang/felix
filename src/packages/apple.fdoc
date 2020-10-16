@@ -253,6 +253,59 @@ open class AudioUnitAPI {
   gen AudioOutputUnitStop: AudioUnit -> OSStatus;
   gen AudioUnitUninitialize: AudioUnit -> OSStatus;
   gen AudioComponentInstanceDispose: AudioUnit -> OSStatus;
+  gen AudioComponentInstanceNew : AudioComponent * &AudioUnit -> OSStatus;
+
+  // C type of Apple Audio Callback
+  typedef AURenderCallback = 
+    address *               // void*
+    &AudioUnitRenderActionFlags *
+    &<AudioTimeStamp *
+    uint32 *
+    uint32 *
+    AudioBufferList
+    --> OSStatus
+  ;
+
+  // Define thunk for Felix
+  callback fun audioRenderCallback_thunk :
+    audioRenderCallback_thunk *               // void*
+    &AudioUnitRenderActionFlags *
+    &<AudioTimeStamp *
+    uint32 *
+    uint32 *
+    AudioBufferList
+    -> OSStatus
+  ;
+
+  // The type of the thunk doesn't quite agree with Apple
+  typedef audioRenderCallback_thunk_t =
+    (
+      &AudioUnitRenderActionFlags *
+      &<AudioTimeStamp *
+      uint32 *
+      uint32 *
+      AudioBufferList
+      -> OSStatus
+    ) *
+    &AudioUnitRenderActionFlags *
+    &<AudioTimeStamp *
+    uint32 *
+    uint32 *
+    AudioBufferList
+    --> OSStatus
+  ;
+
+  // Force the Felix thunk to have the type Apple wants
+  fun castCB_thunk : audioRenderCallback_thunk_t -> AURenderCallback = 
+    "reinterpret_cast<AURenderCallback>($1)"
+  ;
+
+  // Apple Callback specification object type
+  cstruct AURenderCallbackStruct {
+    inputProc: AURenderCallback;
+    inputProcRefCon: address;
+  };
+
 
 } // class
 @

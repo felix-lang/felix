@@ -1,5 +1,3 @@
-@title Basic Buttons
-@felix
 
 include "gui/__init__";
 open FlxGui;
@@ -98,7 +96,7 @@ proc mkbutton (
   endcircuit
 }
 
-begin
+spawn_fthread {
   //create a window manager
   var wm = window_manager();
 
@@ -130,7 +128,10 @@ begin
   println$ "Window number " + wno.str;
 
   wm.run_with_timeout 15.0;
+  runflag = false;
   println$ "gui_06 quitting";
-end
+};
+
+
 
 
