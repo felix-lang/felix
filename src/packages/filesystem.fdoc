@@ -662,8 +662,8 @@ class PosixFileSystem
   gen creat: string * PosixFileStat::mode_t-> posix_file = 'open($1.c_str(), O_WRONLY | O_CREAT | O_TRUNC, $2)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
 
   gen close: posix_file -> int = "close($1)";
-  gen read: posix_file * &char * size -> size = "read($1, $2, $3)";
-  gen write: posix_file * &char * size -> size = "write($1, $2, $3)";
+  gen read: posix_file * &char * size -> size = "::read($1, $2, $3)";
+  gen write: posix_file * &char * size -> size = "::write($1, (void*)$2, $3)/*posix write*/" requires Posix_headers::unistd_h;
 
   gen dup: posix_file -> posix_file = "dup($1)" requires Posix_headers::unistd_h;
   gen dup2: posix_file * posix_file -> posix_file = "dup2($1,$2)" requires Posix_headers::unistd_h;
