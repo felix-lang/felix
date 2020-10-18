@@ -75,6 +75,7 @@ ctor[T in ints] double  : T = "(double)($1)";
 ctor[T in ints] ldouble : T = "(long double)($1)";
 
 ctor float : double = "(float)($1)";
+ctor double: float= "(double)($1)";
 ctor float : string = "::std::stof($1)";
 ctor double  : string = "::std::stod($1)";
 ctor ldouble : string = "::std::stold($1)";
