@@ -653,20 +653,20 @@ class PosixFileSystem
   const fd1 : posix_file = "1";
   const fd2 : posix_file = "2";
 
-  gen open: string * file_perm_t * PosixFileStat::mode_t -> posix_file = "open($1.c_str(), $2, $3)";
-  gen open: string * file_perm_t -> posix_file = "open($1.c_str(), $2)";
+  gen open: string * file_perm_t * PosixFileStat::mode_t -> posix_file = "::open($1.c_str(), $2, $3)";
+  gen open: string * file_perm_t -> posix_file = "::open($1.c_str(), $2)";
 
-  gen ropen: string -> posix_file = 'open($1.c_str(), O_RDONLY,0)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
-  gen wopen: string -> posix_file = 'open($1.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
-  gen rwopen: string -> posix_file = 'open($1.c_str(), O_RDWR,0)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
-  gen creat: string * PosixFileStat::mode_t-> posix_file = 'open($1.c_str(), O_WRONLY | O_CREAT | O_TRUNC, $2)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
+  gen ropen: string -> posix_file = '::open($1.c_str(), O_RDONLY,0)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
+  gen wopen: string -> posix_file = '::open($1.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
+  gen rwopen: string -> posix_file = '::open($1.c_str(), O_RDWR,0)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
+  gen creat: string * PosixFileStat::mode_t-> posix_file = '::open($1.c_str(), O_WRONLY | O_CREAT | O_TRUNC, $2)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
 
-  gen close: posix_file -> int = "close($1)";
+  gen close: posix_file -> int = "::close($1)";
   gen read: posix_file * &char * size -> size = "::read($1, $2, $3)";
   gen write: posix_file * &char * size -> size = "::write($1, (void*)$2, $3)/*posix write*/" requires Posix_headers::unistd_h;
 
-  gen dup: posix_file -> posix_file = "dup($1)" requires Posix_headers::unistd_h;
-  gen dup2: posix_file * posix_file -> posix_file = "dup2($1,$2)" requires Posix_headers::unistd_h;
+  gen dup: posix_file -> posix_file = "::dup($1)" requires Posix_headers::unistd_h;
+  gen dup2: posix_file * posix_file -> posix_file = "::dup2($1,$2)" requires Posix_headers::unistd_h;
   header piper_def = """
     struct _piper_hack { int i; int o; };
   """;
@@ -682,8 +682,8 @@ class PosixFileSystem
   private fun _mkpair (x: _piper_hack) => x.i, x.o;
   gen pipe () => _mkpair #_piper;
 
-  gen fdopen_input: posix_file ->  ifile = 'fdopen($1,"r")';
-  gen fdopen_output: posix_file ->  ofile = 'fdopen($1,"w")';
+  gen fdopen_input: posix_file ->  ifile = '::fdopen($1,"r")';
+  gen fdopen_output: posix_file ->  ofile = '::fdopen($1,"w")';
 
   //------------------------------------------------------------
   // delete (unlink) a file
@@ -809,20 +809,20 @@ class Win32FileSystem
   const fd1 : posix_file = "1";
   const fd2 : posix_file = "2";
 
-  gen open: string * file_perm_t * Win32FileStat::mode_t -> posix_file = "_open($1.c_str(), $2, $3)";
-  gen open: string * file_perm_t -> posix_file = "_open($1.c_str(), $2)";
+  gen open: string * file_perm_t * Win32FileStat::mode_t -> posix_file = "::_open($1.c_str(), $2, $3)";
+  gen open: string * file_perm_t -> posix_file = "::_open($1.c_str(), $2)";
 
-  gen ropen: string -> posix_file = 'open($1.c_str(), _O_RDONLY | _O_BINARY,0)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
-  gen wopen: string -> posix_file = 'open($1.c_str(), _O_WRONLY  | _O_BINARY | _O_CREAT | _O_TRUNC, S_IRUSR | S_IWUSR)' requires Win32_headers::io_h, Posix_headers::sys_stat_h;
-  gen rwopen: string -> posix_file = 'open($1.c_str(), _O_RDWR | _O_BINARY,0)' requires Win32_headers::io_h, Posix_headers::sys_stat_h;
+  gen ropen: string -> posix_file = '::open($1.c_str(), _O_RDONLY | _O_BINARY,0)' requires Posix_headers::fcntl_h, Posix_headers::sys_stat_h;
+  gen wopen: string -> posix_file = '::open($1.c_str(), _O_WRONLY  | _O_BINARY | _O_CREAT | _O_TRUNC, S_IRUSR | S_IWUSR)' requires Win32_headers::io_h, Posix_headers::sys_stat_h;
+  gen rwopen: string -> posix_file = '::open($1.c_str(), _O_RDWR | _O_BINARY,0)' requires Win32_headers::io_h, Posix_headers::sys_stat_h;
   gen creat: string * Win32FileStat::mode_t-> posix_file = 'open($1.c_str(), _O_WRONLY | _O_BINARY | _O_CREAT | _O_TRUNC, $2)' requires Win32_headers::io_h, Posix_headers::sys_stat_h;
 
-  gen close: posix_file -> int = "_close($1)";
-  gen read: posix_file * &char * size -> size = "read($1, $2, $3)";
-  gen write: posix_file * &char * size -> size = "write($1, $2, $3)";
+  gen close: posix_file -> int = "::_close($1)";
+  gen read: posix_file * &char * size -> size = "::read($1, $2, $3)";
+  gen write: posix_file * &char * size -> size = "::write($1, $2, $3)";
 
-  gen dup: posix_file -> posix_file = "dup($1)" requires Win32_headers::io_h;
-  gen dup2: posix_file * posix_file -> posix_file = "dup2($1,$2)" requires Win32_headers::io_h;
+  gen dup: posix_file -> posix_file = "::dup($1)" requires Win32_headers::io_h;
+  gen dup2: posix_file * posix_file -> posix_file = "::dup2($1,$2)" requires Win32_headers::io_h;
   header piper_def = """
     struct _piper_hack { int i; int o; };
   """;
@@ -838,18 +838,18 @@ class Win32FileSystem
   private fun _mkpair (x: _piper_hack) => x.i, x.o;
   gen pipe () => _mkpair #_piper;
 
-  gen fdopen_input: posix_file ->  ifile = 'fdopen($1,"r")';
-  gen fdopen_output: posix_file ->  ofile = 'fdopen($1,"w")';
+  gen fdopen_input: posix_file ->  ifile = '::fdopen($1,"r")';
+  gen fdopen_output: posix_file ->  ofile = '::fdopen($1,"w")';
 
   //------------------------------------------------------------
   // delete (unlink) a file
   //------------------------------------------------------------
-  gen unlink_file: string -> int = "unlink($1.c_str())";
+  gen unlink_file: string -> int = "::unlink($1.c_str())";
 
   //------------------------------------------------------------
   // rename a file
   //------------------------------------------------------------
-  gen rename_file: string * string -> int = "rename($1.c_str(),$2.c_str())";
+  gen rename_file: string * string -> int = "::rename($1.c_str(),$2.c_str())";
 
   //------------------------------------------------------------
   // copy a file, preserving last access and modification times
@@ -984,21 +984,21 @@ class PosixDirectory
   // Posix specific stuff.
   type dirent_t = "struct dirent*" requires Posix_headers::dirent_h;
   type DIR_t = "DIR*" requires Posix_headers::dirent_h;
-  proc opendir: string * &DIR_t = "*$2=opendir($1.c_str());";
+  proc opendir: string * &DIR_t = "*$2=::opendir($1.c_str());";
   fun isNULL: DIR_t -> bool = "$1==0";
   fun isNULL: dirent_t -> bool = "$1==0";
   proc readdir: DIR_t * dirent_t * &dirent_t * &int = "*$4=readdir_r($1, $2, $3);";
-  proc closedir: DIR_t = "closedir($1);";
-  fun filename: dirent_t -> string = "std::string($1->d_name)";
-  private fun getcwd: +char * size -> +char = "getcwd($1,$2)" requires Posix_headers::unistd_h;
+  proc closedir: DIR_t = "::closedir($1);";
+  fun filename: dirent_t -> string = "::std::string($1->d_name)";
+  private fun getcwd: +char * size -> +char = "::getcwd($1,$2)" requires Posix_headers::unistd_h;
 
   // inherit generic stuff
   inherit Directory_class[Posix, PosixFileStat::mode_t];
 
   // instantiate generic stuff
   instance Directory_class[Posix, PosixFileStat::mode_t] {
-    gen mkdir: string * PosixFileStat::mode_t -> int = "mkdir($1.c_str(), $2)" requires Posix_headers::sys_stat_h;
-    gen mkdir: string  -> int = "mkdir($1.c_str(), 0777)" requires Posix_headers::sys_stat_h;
+    gen mkdir: string * PosixFileStat::mode_t -> int = "::mkdir($1.c_str(), $2)" requires Posix_headers::sys_stat_h;
+    gen mkdir: string  -> int = "::mkdir($1.c_str(), 0777)" requires Posix_headers::sys_stat_h;
     proc mkdirs (s:string)
     {
       if s == "" or s == "." or s == ".." or s == "/" do 
@@ -1009,7 +1009,7 @@ class PosixDirectory
     }
 
     // Delete an empty directory.
-    gen unlink_empty_dir : string -> int = "rmdir ($1.c_str())" requires Posix_headers::unistd_h;
+    gen unlink_empty_dir : string -> int = "::rmdir ($1.c_str())" requires Posix_headers::unistd_h;
 
 
     fun getcwd():string = {
@@ -1069,14 +1069,14 @@ class Win32Directory
   type DIR_t = "intptr_t" requires Win32_headers::io_h ;
   type FINDDATA_t = "struct _finddata_t" requires Win32_headers::io_h ;
 
-  proc findfirst: string * &FINDDATA_t * &DIR_t = "*$3=_findfirst($1.c_str(), $2);" ;
-  proc findnext: DIR_t * &FINDDATA_t * &int = "*$3=_findnext($1, $2);" ;
-  proc findclose : DIR_t = "_findclose($1);" ;
+  proc findfirst: string * &FINDDATA_t * &DIR_t = "*$3=::_findfirst($1.c_str(), $2);" ;
+  proc findnext: DIR_t * &FINDDATA_t * &int = "*$3=::_findnext($1, $2);" ;
+  proc findclose : DIR_t = "::_findclose($1);" ;
 
   fun findfailed : DIR_t -> bool = "int($1) == -1" ;
-  fun filename : FINDDATA_t -> string = "std::string($1.name)" ;
+  fun filename : FINDDATA_t -> string = "::std::string($1.name)" ;
 
-  private fun getcwd: +char * size -> +char = "_getcwd($1,(int)$2)" requires Win32_headers::direct_h;
+  private fun getcwd: +char * size -> +char = "::_getcwd($1,(int)$2)" requires Win32_headers::direct_h;
 
   // Generic stuff.
 
@@ -1089,8 +1089,8 @@ class Win32Directory
     //Make a directory.
 
     // warning: ignores the mode!
-    gen mkdir: string * Win32FileStat::mode_t -> int = "_mkdir($1.c_str())" requires Win32_headers::direct_h;
-    gen mkdir: string  -> int = "_mkdir($1.c_str())" requires Win32_headers::direct_h;
+    gen mkdir: string * Win32FileStat::mode_t -> int = "::_mkdir($1.c_str())" requires Win32_headers::direct_h;
+    gen mkdir: string  -> int = "::_mkdir($1.c_str())" requires Win32_headers::direct_h;
     proc mkdirs (s:string)
     {
       if s == "" or s == "." or s == ".." or s.[-1] == char "\\" do 
