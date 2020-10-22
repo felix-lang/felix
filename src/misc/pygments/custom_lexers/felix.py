@@ -101,10 +101,10 @@ class FelixLexer(RegexLexer):
 
             # Keywords
             (words(('axiom', 'ctor', 'chip', 'fun', 'gen', 'proc', 'reduce','regdef',
-              'var','val','typedef',
+              'var','val','typedef','supertype','cstmt','cexpr','supertype',
               'union'), suffix=r'\b'),
              Keyword, 'funcname'),
-            (words(('class', 'cclass', 'cstruct', 'obj', 'struct', 'object'), suffix=r'\b'),
+            (words(('type','header','body','class', 'cclass', 'cstruct', 'obj', 'struct', 'object'), suffix=r'\b'),
              Keyword, 'funcname'),
             (r'(module|typeclass|interface)\b', Keyword, 'funcname'),
 
@@ -149,7 +149,7 @@ class FelixLexer(RegexLexer):
             ("[cCfFqQwWuU]?'", String, combined('stringescape', 'sqs')),
 
             # Punctuation
-            (r'[\[\]{}:(),;?]', Punctuation),
+            (r'[@\[\]{}:(),;?]', Punctuation),
 
             # Labels
             (r'[a-zA-Z_]\w*:>', Name.Label),

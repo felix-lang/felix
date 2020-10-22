@@ -397,14 +397,6 @@ syntax expressions {
   x[sas_expr_pri] := x[sas_expr_pri] "as" "var" sname =># "`(ast_as_var ,_sr (,_1 ,_4))";
 
 
-//  x[sarrow_pri] := x[>sarrow_pri] ".." x[>sarrow_pri] =># '''
-//    `(ast_apply ,_sr ((ast_apply ,_sr (,(nos "slice_range") ,_1)) ,_3))
-//  ''';
-//
-//  x[sarrow_pri] := x[>sarrow_pri] "..<" x[>sarrow_pri] =># '''
-//    `(ast_apply ,_sr ((ast_apply ,_sr (,(nos "slice_range_excl") ,_1)) ,_3))
-//  ''';
-
   x[sarrow_pri] := x[>sarrow_pri] ".." x[>sarrow_pri] =># "(infix 'Slice_range_incl)";
   x[sarrow_pri] := x[>sarrow_pri] "..<" x[>sarrow_pri] =># "(infix 'Slice_range_excl)";
   x[sarrow_pri] := "..<" x[>sarrow_pri] =># "(prefix 'Slice_to_excl)";
