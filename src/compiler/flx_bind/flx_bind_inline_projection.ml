@@ -20,7 +20,7 @@ print_endline ("Bind inline projection " ^ Flx_print.string_of_expr f' ^ " appli
   (* special case, integer expression as array projection  *) 
   (* ---------------------------------------------------------- *)
   try 
-    let f = try be f' with _ -> raise Flx_dot.OverloadResolutionError in
+    let f = try be f' with _ -> raise Flx_exceptions.TryNext in
     let int_t = bt sr (`TYP_name (sr,"int",[])) in
     if snd f = int_t then 
     begin
@@ -28,13 +28,13 @@ print_endline ("Bind inline projection " ^ Flx_print.string_of_expr f' ^ " appli
       | BTYP_compactarray _ 
       | BTYP_array _ ->
         Flx_dot.handle_array_projection bsym_table int_t sr a ta f
-      | _ -> raise Flx_dot.OverloadResolutionError
+      | _ -> raise Flx_exceptions.TryNext
     end
-    else raise Flx_dot.OverloadResolutionError
-  with Flx_dot.OverloadResolutionError ->  
+    else raise Flx_exceptions.TryNext
+  with Flx_exceptions.TryNext ->  
   
   (* ---------------------------------------------------------- *)
-  (* special case, unitsum expression as tuple or array projection  *) 
+  (* special case, unitsum constant as tuple or array projection  *) 
   (* ---------------------------------------------------------- *)
   try match f' with
   (* a dirty hack .. doesn't check unitsum is right size or type *)
@@ -44,14 +44,14 @@ print_endline ("Bind inline projection " ^ Flx_print.string_of_expr f' ^ " appli
   with Flx_exceptions.TryNext ->
 
   (* ---------------------------------------------------------- *)
-  (* special case, array projection  *) 
+  (* general case, array projection, correct index type  *) 
   (* ---------------------------------------------------------- *)
   try
     let (bf,tf) as f = 
       try be f' 
       with 
       | Flx_exceptions.SimpleNameNotFound _ as x -> raise x
-      | exn -> raise Flx_dot.OverloadResolutionError 
+      | exn -> raise Flx_exceptions.TryNext
     in
     match tf, ta with
     (* Check for array projection *)
@@ -59,18 +59,18 @@ print_endline ("Bind inline projection " ^ Flx_print.string_of_expr f' ^ " appli
     | ixt1, BTYP_array (t,ixt2) when ixt1 = ixt2 -> (* SHOULD USE UNIFICATION *) 
       let prj = bexpr_aprj f ta t in
       bexpr_apply t (prj,a)
-    | _ -> raise Flx_dot.OverloadResolutionError
-  with Flx_dot.OverloadResolutionError ->
+    | _ -> raise Flx_exceptions.TryNext
+  with Flx_exceptions.TryNext  ->
 
   (* ---------------------------------------------------------- *)
-  (* special case, array pointer projection  *) 
+  (* general case, array pointer projection, correct index type  *) 
   (* ---------------------------------------------------------- *)
   try
     let (bf,tf) as f = 
       try be f' 
       with
       | Flx_exceptions.SimpleNameNotFound _ as x -> raise x
-      | exn -> raise Flx_dot.OverloadResolutionError 
+      | exn -> raise Flx_exceptions.TryNext
     in
     match tf, ta with
     (* Check for array projection *)
@@ -92,8 +92,8 @@ print_endline ("   array pointer projection, codomain type " ^ Flx_print.sbt bsy
 *)
       let prj = bexpr_aprj f ta pt in
       bexpr_apply pt (prj,a)
-    | _ -> raise Flx_dot.OverloadResolutionError
-  with Flx_dot.OverloadResolutionError ->
+    | _ -> raise Flx_exceptions.TryNext
+  with Flx_exceptions.TryNext ->
 
   raise Flx_exceptions.TryNext
 

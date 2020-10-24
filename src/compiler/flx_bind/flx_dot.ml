@@ -176,15 +176,13 @@ print_endline ("Array projection " ^ sbe bsym_table n ^ " of array type " ^ sbt 
     assert (snd n = ixt);
     bexpr_apply (btyp_ptr mode vt []) (bexpr_aprj n ta vt, a)
 
-  | _ -> 
-    (* We have to do a warning not a hard error here, because applying
-       an integer to some non-array type is could be done with
-       an apply operator
-    *)
-    print_endline ("Flx_dot: Array projection requires array or pointer thereto, got type:\n" ^
+  | BTYP_ptr (_,BTYP_compactarray _,_)-> 
+    print_endline ("Flx_dot: Not implemented compact array projection, array type:\n" ^
       sbt bsym_table ta);
     print_endline (Flx_srcref.long_string_of_src sr);
-    raise OverloadResolutionError
+    assert false
+
+  | _ -> assert false
 
 
 (* rref/wref .. did I get this right *)
