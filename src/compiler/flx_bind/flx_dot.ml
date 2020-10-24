@@ -127,34 +127,6 @@ print_endline ("projection " ^ si n ^ " of pointer to compact linear array type 
 print_endline ("Component type = " ^ sbt bsym_table c);
 *)
     bexpr_cltpointer tup c a [n] 
-(*
-    (* let domain_cltptr_t = Flx_btype.btyp_cltpointer tup tup in *)
-    let codomain_cltptr_t = Flx_btype.btyp_ptr mode c [tup] in
-
-    (* coerce the machine pointer to a compact linear pointer *)
-    let ptr = bexpr_cltpointer_of_pointer a in
-
-    (* calculate the projection *)
-
-    (* the selected index is n, so there are m terms, if n is 0, there are
-      m-1 on the right, and 0 on the left, if n is m - 1, there are 0 on
-      the right, and m-1 on the left, so generally, there are m - n - 1
-      terms on the right
-
-      to get rid of x terms on the right, we divide by the array base
-      raise to the power of x.
-    *)
-    let rec pow a b = match b with | 0 -> 1 | 1 -> a | _ -> a * pow a (b - 1) in
-    let base_size = Flx_btype.sizeof_linear_type () array_base in
-    let divisor = pow base_size (m - n - 1) in 
-(*
-print_endline ("Divisor for term " ^ si n ^ " is " ^ si divisor);
-*)
-    let prj = bexpr_cltpointer_prj tup c divisor in
-
-    (* apply clt pointer projection to coerced pointer *)
-    bexpr_apply codomain_cltptr_t ( prj, ptr )
-*)
 
    | BTYP_ptr (mode,BTYP_tuple ls,[]) ->
     let m = List.length ls in
@@ -176,7 +148,7 @@ print_endline ("Divisor for term " ^ si n ^ " is " ^ si divisor);
      bexpr_get_n (btyp_ptr mode t []) n a
 
   (* soft error because user could overload with apply function *)
-  | _ -> raise OverloadResolutionError
+  | _ -> raise TryNext 
   end
 
 let handle_array_projection bsym_table int_t sr a ta n =

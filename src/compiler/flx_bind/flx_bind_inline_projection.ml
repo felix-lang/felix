@@ -13,8 +13,8 @@ print_endline ("Bind inline projection " ^ Flx_print.string_of_expr f' ^ " appli
   | `EXPR_literal (_, {Flx_literal.felix_type="int"; internal_value=s}) ->
     let n = int_of_string s in
     Flx_dot.handle_constant_projection bsym_table sr a ta n
-  | _ -> raise Flx_dot.OverloadResolutionError
-  with Flx_dot.OverloadResolutionError ->
+  | _ -> raise Flx_exceptions.TryNext
+  with Flx_exceptions.TryNext ->
   
   (* ---------------------------------------------------------- *)
   (* special case, integer expression as array projection  *) 
@@ -40,8 +40,8 @@ print_endline ("Bind inline projection " ^ Flx_print.string_of_expr f' ^ " appli
   (* a dirty hack .. doesn't check unitsum is right size or type *)
   | `EXPR_typed_case (sr,n,sumt) when (match bt sr sumt with | BTYP_unitsum _ -> true | _ -> false)  ->
     Flx_dot.handle_constant_projection bsym_table sr a ta n
-  | _ -> raise Flx_dot.OverloadResolutionError
-  with Flx_dot.OverloadResolutionError ->
+  | _ -> raise Flx_exceptions.TryNext
+  with Flx_exceptions.TryNext ->
 
   (* ---------------------------------------------------------- *)
   (* special case, array projection  *) 
