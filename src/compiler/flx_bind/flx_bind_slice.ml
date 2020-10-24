@@ -18,8 +18,8 @@ let bind_constant_slice bsym_table be bt sr f' a' ta a =
       done;
       let sls = List.rev_map (fun i -> `EXPR_get_n (sr,(i,a'))) !sls in
       be (`EXPR_tuple (sr,sls))
-    | _ -> raise Flx_dot.OverloadResolutionError
-  with Flx_dot.OverloadResolutionError ->
+    | _ -> raise Flx_exceptions.TryNext
+  with Flx_exceptions.TryNext ->
 
   (* ---------------------------------------------------------- *)
   (* special case, constant slice of small linear array *) 
@@ -46,8 +46,8 @@ print_endline ("Bind slice, large slice, delegate to library");
         let subarray = `EXPR_name (sr,routine,[first;len]) in
         be (`EXPR_apply (sr,(subarray,a')))
       end
-    | _ -> raise Flx_dot.OverloadResolutionError
-  with Flx_dot.OverloadResolutionError ->
+    | _ -> raise Flx_exceptions.TryNext
+  with Flx_exceptions.TryNext ->
 
   (* ---------------------------------------------------------- *)
   (* special case, constant slice of tuple pointer *) 
@@ -63,8 +63,8 @@ print_endline ("Bind slice, large slice, delegate to library");
       done;
       let sls = List.rev_map (fun i -> `EXPR_get_n (sr,(i,a'))) !sls in
       be (`EXPR_tuple (sr,sls))
-    | _ -> raise Flx_dot.OverloadResolutionError
-  with Flx_dot.OverloadResolutionError ->
+    | _ -> raise Flx_exceptions.TryNext
+  with Flx_exceptions.TryNext ->
 
   raise Flx_exceptions.TryNext 
 

@@ -39,7 +39,7 @@ let cal_slice tmin tmax slice =
         `EXPR_literal (_,{Flx_literal.felix_type="int"; internal_value=v1}))) -> 
         int_of_string v1,int_of_string v1
 
-    | _ -> raise Flx_dot.OverloadResolutionError
+    | _ -> raise Flx_exceptions.TryNext
   in
   let smin = max tmin smin and smax = min tmax smax  in
   smin,smax
