@@ -162,19 +162,15 @@ let cal_bind_apply
       (* ---------------------------------------------------------- *)
       (* special case, name as record projection *)
       (* NOTE: this tries to handle projections of structs too *)
-      (* probably shouldn't. Also does Koenig lookup and other stuff *)
-      (* which might be obsolete now. *)
-      (* Koenig lookup allows a function f defined in the same class *)
-      (* as a struct X to be found as if it we a field name of the struct *)
-      (* without requiring a qualified name *) 
+      (* probably shouldn't.  *)
       (* ---------------------------------------------------------- *)
       try match f' with
       | `EXPR_name (sr, name, ts) ->
         Flx_bind_record_proj.try_bind_record_proj 
-          bsym_table state build_env koenig_lookup be bt env rs cal_apply bind_type' mkenv
+          bsym_table state build_env be bt env rs cal_apply bind_type' mkenv
           f' a' a sr name ts
-      | _ -> raise Flx_dot.OverloadResolutionError
-      with Flx_dot.OverloadResolutionError ->
+      | _ -> raise Flx_exceptions.TryNext
+      with Flx_exceptions.TryNext ->
    
       (* NOW TRY DEFERED FUNCTION OVERLOADING *)
       (* ALWAYS FAILS but can set a deferred type *)

@@ -720,11 +720,13 @@ let bexpr_variant t (name, ((_,argt) as arg)) =
   | _ -> failwith ("bexpr_variant requires variant type, got " ^ Flx_btype.st t)
 
 
+(* now generic, n can be anything that bexpr_prj accepts *)
 let bexpr_get_n c n (e,d) =  
   match Flx_btype.trivorder c with
   | Some k -> bexpr_unitptr k
   | _ -> bexpr_apply c ( bexpr_prj n d c, (e,d) )
 
+(* apply record projection *)
 let bexpr_get_named c name (e,d) =
   match Flx_btype.trivorder c with
   | Some k -> bexpr_unitptr k
