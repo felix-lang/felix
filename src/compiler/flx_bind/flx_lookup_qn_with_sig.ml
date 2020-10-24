@@ -442,7 +442,7 @@ print_endline ("AST_index (nonfunction): "^name^"=T<"^string_of_int i^">");
 print_endline ("Lookup qn with sig: AST_lookup of " ^ name ^ " in " ^ string_of_expr qn');
 *)
     let m =  eval_module_expr state bsym_table env qn' in
-    match m with (Flx_bind_deferred.Simple_module (impl, ts',htab,dirs)) ->
+    match m with (Flx_eval_module.Simple_module (impl, ts',htab,dirs)) ->
     (* let n = List.length ts in *)
     let ts = List.map (bt sr)( ts' @ ts) in
     (*

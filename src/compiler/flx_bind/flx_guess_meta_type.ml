@@ -54,7 +54,6 @@ let rec guess_metatype sr t : kind =
   | `TYP_compactarray _ 
   | `TYP_compacttuple _ -> kind_compactlinear
 
-  | `TYP_defer _ -> print_endline "Guess metatype: defered type found"; assert false
   | `TYP_tuple_cons (sr,t1,t2) -> assert false
   | `TYP_tuple_snoc (sr,t1,t2) -> assert false
   | `TYP_type_tuple _ -> print_endline "A type tuple"; assert false

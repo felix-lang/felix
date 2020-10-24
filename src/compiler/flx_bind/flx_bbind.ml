@@ -1273,15 +1273,6 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
 (*
 print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
 *)
-      begin match sym.Flx_sym.symdef with
-      | Flx_types.SYMDEF_function ((Satom (psr,kind,pid,`TYP_defer _,_),None),ret,effects,props,exes) ->
-print_endline ("[flx_bbind] bind_symbol FUNCTION " ^ sym.Flx_sym.id ^ " .. DEFERED");
-        defered := i :: !defered
-      | Flx_types.SYMDEF_parameter (kind,`TYP_defer _) ->
-print_endline ("[flx_bbind] bind_symbol PARAMETER " ^ sym.Flx_sym.id ^ " .. DEFERED");
-        defered := i :: !defered
- 
-      | _ -> 
 (*
 print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ " .. BINDING: calling BBIND_SYMBOL");
 print_endline ("Binding symbol " ^ symdef.Flx_sym.id ^ "<" ^ si i ^ ">"); 
@@ -1293,7 +1284,6 @@ print_endline ("Binding symbol " ^ symdef.Flx_sym.id ^ "<" ^ si i ^ ">");
             string_of_bid i ^ " parent " ^ (match parent with | None -> "NONE" | Some p -> string_of_int p))
         with Not_found ->
           failwith ("Binding error, Not_found thrown binding unknown id with index " ^ string_of_bid i)
-      end
     end;
     incr counter
   done

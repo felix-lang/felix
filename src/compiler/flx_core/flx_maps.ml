@@ -12,11 +12,6 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | `TYP_typeop (sr,op,t,k) -> `TYP_typeop (sr,op, f t, k)
   | `TYP_rptsum (i,t) -> `TYP_rptsum (f i, f t)
   | `TYP_compactrptsum (i,t) -> `TYP_compactrptsum (f i, f t)
-  | `TYP_defer (sr,dt) -> 
-    begin match !dt with
-    | None -> t (* unmodified *)
-    | Some xt -> f xt  (* replace defered type completely *)
-    end
   | `TYP_name (sr,name,ts) -> `TYP_name (sr, name, List.map f ts)
   | `TYP_lookup (sr,(e,name,ts)) -> `TYP_lookup (sr, (e, name, List.map f ts))
   | `TYP_suffix (sr,(qn,t)) -> `TYP_suffix (sr, (qn, f t))

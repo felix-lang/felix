@@ -23,7 +23,8 @@ open Flx_btype_occurs
 open Flx_btype_subst
 open Flx_bid
 
-type module_rep_t = Flx_bind_deferred.module_rep_t
+type module_rep_t =
+  | Simple_module of bid_t * typecode_t list * name_map_t * sdir_t list
 
 let check_module state name sr entries ts =
     begin match entries with
@@ -33,9 +34,9 @@ let check_module state name sr entries ts =
         | SYMDEF_root _
         | SYMDEF_library 
         | SYMDEF_module ->
-            Flx_bind_deferred.Simple_module (sye index, ts, sym.Flx_sym.pubmap, sym.Flx_sym.dirs)
+            Simple_module (sye index, ts, sym.Flx_sym.pubmap, sym.Flx_sym.dirs)
         | SYMDEF_typeclass ->
-            Flx_bind_deferred.Simple_module (sye index, ts, sym.Flx_sym.pubmap, sym.Flx_sym.dirs)
+            Simple_module (sye index, ts, sym.Flx_sym.pubmap, sym.Flx_sym.dirs)
         | _ ->
             clierrx "[flx_bind/flx_lookup.ml:6424: E231] " sr ("Expected '" ^ sym.Flx_sym.id ^ "' to be module in: " ^
             Flx_srcref.short_string_of_src sr ^ ", found: " ^
@@ -78,7 +79,7 @@ let rec eval_module_expr
   | `EXPR_lookup (sr,(e,name,ts)) ->
     let result = eval_module_expr state bsym_table env e in
     begin match result with
-      | Flx_bind_deferred.Simple_module (index,ts',htab,dirs) ->
+      | Simple_module (index,ts',htab,dirs) ->
       let env' = Flx_name_lookup.mk_bare_env state.sym_table index in
       let tables = get_pub_tables state bsym_table env' rsground dirs in
       let result = lookup_name_in_table_dirs htab tables sr name in

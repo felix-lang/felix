@@ -172,16 +172,6 @@ let cal_bind_apply
       | _ -> raise Flx_exceptions.TryNext
       with Flx_exceptions.TryNext ->
    
-      (* NOW TRY DEFERED FUNCTION OVERLOADING *)
-      (* ALWAYS FAILS but can set a deferred type *)
-      try
-        Flx_bind_deferred.set_deferred_type  
-          bsym_table state env inner_lookup_name_in_env 
-          eval_module_expr get_pub_tables
-          rs 
-          sr f' a
-      with Flx_dot.OverloadResolutionError ->
-
       try
         Flx_bind_inline_projection.bind_inline_projection bsym_table be bt sr f' a' ta a  
       with Flx_exceptions.TryNext ->

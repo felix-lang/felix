@@ -101,7 +101,6 @@ let string_of_type_name (t:typecode_t) = match t with
   | `TYP_as _ -> "`TYP_as"
   | `TYP_var _ -> "`TYP_var"
   | `TYP_isin _ -> "`TYP_isin"
-  | `TYP_defer _ -> "`TYP_defer"
   | `TYP_typeset _ -> "`TYP_typeset"
   | `TYP_setunion _ -> "`TYP_setunion"
   | `TYP_setintersection _ -> "`TYP_setintersection"

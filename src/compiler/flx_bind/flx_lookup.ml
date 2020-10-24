@@ -36,7 +36,7 @@ let crt = ref 0
 
 module L = Flx_literal
 
-type module_rep_t = Flx_bind_deferred.module_rep_t
+type module_rep_t = Flx_eval_module.module_rep_t
 
 let mkentry counter_ref vs i = Flx_name_map.mkentry counter_ref vs i
 
@@ -151,7 +151,7 @@ and lookup_qn_in_env2'
     print_endline ("Searching for name " ^ name);
     *)
     match eval_module_expr state bsym_table env me with
-    | Flx_bind_deferred.Simple_module (impl,ts', htab,dirs) ->
+    | Flx_eval_module.Simple_module (impl,ts', htab,dirs) ->
       let env' = mk_bare_env state.sym_table impl in
       let tables = get_pub_tables state bsym_table env' rs dirs in
       let result = lookup_name_in_table_dirs htab tables sr name in

@@ -147,11 +147,6 @@ print_endline ("  .. result = " ^ sbt bsym_table result);
 
   | `TYP_rpclt (d,c) -> btyp_cltrref (bt d) (bt c)
   | `TYP_wpclt (d,c) -> btyp_cltwref (bt d) (bt c)
-  | `TYP_defer (sr, tor) -> 
-    begin match !tor with
-    | None -> print_endline ("Bind type: undefined defered type found"); assert false
-    | Some t -> bt t
-    end
 
   | `TYP_rptsum (count, base) ->
     let n = bt count in
