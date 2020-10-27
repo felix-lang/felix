@@ -71,9 +71,13 @@ if index = 37461 then print_env env;
   match sym.Flx_sym.symdef with
   | SYMDEF_label s -> btyp_label ()
 
-  | SYMDEF_callback _ ->
-      print_endline "Inner type of index finds callback";
-      assert false
+  | SYMDEF_callback (props,ts_orig,ret,reqs) ->
+print_endline ("Inner type of index finds SYMDEF_callback");
+    let client_data_pos, bret, ts_c, ts_cf, tc, tcf = 
+       Flx_callback.cal_callback_types bsym_table (bt sym.Flx_sym.sr) state.counter sym.Flx_sym.sr sym.Flx_sym.id ret ts_orig  
+    in 
+    tcf 
+
   | SYMDEF_inherit qn ->
       failwith ("Woops inner_type_of_index found inherit " ^
         string_of_bid index)

@@ -1373,6 +1373,10 @@ if id = "bind" then print_endline ("Finished Adding fun bind index=" ^ string_of
    * but which Felix must consider as the type of a closure with the same type
    * as the C function, with this void* dropped. *)
   | DCL_callback (props, ts,t,reqs) ->
+(*
+print_endline ("Adding callback " ^ id ^ "<"^string_of_int symbol_index^"> type=" ^ 
+  Flx_util.catmap " * " Flx_print.string_of_typecode ts ^ " --> " ^ Flx_print.string_of_typecode t);
+*)
       (* Add the callback to the sym_table. *)
       add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_callback (props, ts, t, reqs));
 
