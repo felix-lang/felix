@@ -708,7 +708,7 @@ print_endline ("Flx_bbind: Adding type of index " ^ si symbol_index ^ " to cache
 print_endline ("Binding callback " ^ sym.Flx_sym.id ^ " index=" ^ string_of_bid symbol_index);
 *)
     let client_data_pos, bret, ts_c, ts_cf, tc, tcf = 
-       Flx_callback.cal_callback_types bsym_table bt state.counter sym.Flx_sym.sr sym.Flx_sym.id ret ts_orig  
+       Flx_callback.cal_callback_types bsym_table bt state.counter sym.Flx_sym.sr sym.Flx_sym.id ts_orig ret 
     in 
     let prec = "postfix" in
 

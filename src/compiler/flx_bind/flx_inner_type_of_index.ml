@@ -72,9 +72,9 @@ if index = 37461 then print_env env;
   | SYMDEF_label s -> btyp_label ()
 
   | SYMDEF_callback (props,ts_orig,ret,reqs) ->
-print_endline ("Inner type of index finds SYMDEF_callback");
+(* print_endline ("Inner type of index finds SYMDEF_callback"); *)
     let client_data_pos, bret, ts_c, ts_cf, tc, tcf = 
-       Flx_callback.cal_callback_types bsym_table (bt sym.Flx_sym.sr) state.counter sym.Flx_sym.sr sym.Flx_sym.id ret ts_orig  
+       Flx_callback.cal_callback_types bsym_table (bt sym.Flx_sym.sr) state.counter sym.Flx_sym.sr sym.Flx_sym.id ts_orig ret
     in 
     tcf 
 

@@ -1,6 +1,59 @@
 open Flx_btype
 
-let cal_callback_types bsym_table bt syscounter sr name ret ts_orig =
+let c_callback_type sr name ts_orig ret =
+  let client_data_pos = ref (-1) in
+
+  (* type of callback C expects *)
+  let ts_c =
+    List.map
+    (function
+      | `TYP_name (_,id,[]) when id = name ->
+        `TYP_name (sr, "address", []) 
+      | t -> t
+    )
+    ts_orig
+  in
+  let domain = match ts_c with
+    | [x] -> x
+    | x -> `TYP_tuple x
+  in
+  `TYP_cfunction (domain, ret)
+
+let felix_callback_type sr name ts_orig ret =
+  (* type of Felix callback passed to thunk *)
+  let ts_f =
+      List.filter
+      (function
+        | `TYP_name (_,id,[]) when id = name -> false
+        | t -> true
+      )
+      ts_orig
+  in
+  let domain = match ts_f with
+    | [x] -> x
+    | x -> `TYP_tuple x
+  in
+  `TYP_function (domain, ret)
+
+let felix_thunk_type sr name ts_orig ret =
+  (* type of Felix callback passed to thunk *)
+  let fback = felix_callback_type sr name ts_orig ret in
+
+  let ts_f =
+      List.map
+      (function
+        | `TYP_name (_,id,[]) when id = name -> fback
+        | t -> t
+      )
+      ts_orig
+  in
+  let domain = match ts_f with
+    | [x] -> x
+    | x -> `TYP_tuple x
+  in
+  `TYP_cfunction (domain, ret)
+
+let cal_callback_types bsym_table bt syscounter sr name ts_orig ret =
   let bret = bt ret in
   let client_data_pos = ref (-1) in
 

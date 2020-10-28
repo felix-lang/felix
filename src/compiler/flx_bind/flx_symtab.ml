@@ -1372,13 +1372,13 @@ if id = "bind" then print_endline ("Finished Adding fun bind index=" ^ string_of
    * the function. It has a special argument the C function has as type void*,
    * but which Felix must consider as the type of a closure with the same type
    * as the C function, with this void* dropped. *)
-  | DCL_callback (props, ts,t,reqs) ->
+  | DCL_callback (props, ts,ret,reqs) ->
 (*
 print_endline ("Adding callback " ^ id ^ "<"^string_of_int symbol_index^"> type=" ^ 
   Flx_util.catmap " * " Flx_print.string_of_typecode ts ^ " --> " ^ Flx_print.string_of_typecode t);
 *)
       (* Add the callback to the sym_table. *)
-      add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_callback (props, ts, t, reqs));
+      add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_callback (props, ts, ret, reqs));
 
       (* Possibly add the callback to the public symbol table. *)
       if access = `Public then add_function pub_name_map id symbol_index;
@@ -1387,7 +1387,47 @@ print_endline ("Adding callback " ^ id ^ "<"^string_of_int symbol_index^"> type=
       add_function priv_name_map id symbol_index;
 
       (* Add the type variables to the private symbol table. *)
-      add_tvars privtab
+      add_tvars privtab;
+
+      (* type C expects for the callback thunk, 
+         the actual thunk type has to be cast to this 
+         to keep C happy
+      *)
+      begin
+        let ctdef_index = fresh_bid counter_ref in
+        let ctdef_id = id ^ "'c_callback_type" in
+        if access = `Public then add_unique pub_name_map ctdef_id ctdef_index;
+        add_unique priv_name_map ctdef_id ctdef_index;
+        let ct = Flx_callback.c_callback_type sr id ts ret in
+        let ct_symdef = SYMDEF_type_alias ct in
+        add_symbol ~pubtab ~privtab ctdef_index ctdef_id sr ct_symdef
+      end;
+
+      (* the type of the Felix callback that has to be passed to the thunk 
+      *)
+      begin
+        let ftdef_index = fresh_bid counter_ref in
+        let ftdef_id = id ^ "'felix_callback_type" in
+        if access = `Public then add_unique pub_name_map ftdef_id ftdef_index;
+        add_unique priv_name_map ftdef_id ftdef_index;
+        let ft = Flx_callback.felix_callback_type sr id ts ret in
+        let ft_symdef = SYMDEF_type_alias ft in
+        add_symbol ~pubtab ~privtab ftdef_index ftdef_id sr ft_symdef
+      end;
+
+      (* the actual type of the thunk Felix sees,
+         this has to be cast to the type C expects 
+         if the thunk is passed to C as a callback
+      *)
+      begin
+        let ftdef_index = fresh_bid counter_ref in
+        let ftdef_id = id ^ "'felix_thunk_type" in
+        if access = `Public then add_unique pub_name_map ftdef_id ftdef_index;
+        add_unique priv_name_map ftdef_id ftdef_index;
+        let ft = Flx_callback.felix_thunk_type sr id ts ret in
+        let ft_symdef = SYMDEF_type_alias ft in
+        add_symbol ~pubtab ~privtab ftdef_index ftdef_id sr ft_symdef
+      end
 
   | DCL_union (its) ->
       let tvars = List.map (fun (s,_,_)-> `TYP_name (sr,s,[])) (fst ivs) in
