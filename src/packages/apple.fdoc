@@ -135,12 +135,15 @@ open class AudioUnitAPI {
   // Property IDs
   typedef AudioUnitPropertyID = uint32;
   const kAudioUnitProperty_SetRenderCallback : AudioUnitPropertyID;
+  const kAudioOutputUnitProperty_SetInputCallback : AudioUnitPropertyID;
   const kAudioOutputUnitProperty_EnableIO : AudioUnitPropertyID;
   const kAudioUnitProperty_StreamFormat: AudioUnitPropertyID;
 
   // Scopes
   typedef AudioUnitScope = uint32;
   const kAudioUnitScope_Input : AudioUnitScope;
+  const kAudioUnitScope_Output : AudioUnitScope;
+  const kAudioUnitScope_Global : AudioUnitScope;
 
   // Elements
   typedef AudioUnitElement = uint32;
