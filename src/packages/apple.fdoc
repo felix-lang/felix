@@ -4,6 +4,7 @@
 @tangler cocoa.fpc                 = $PWD/src/config/macosx/cocoa.fpc
 @tangler corefoundation.fpc        = $PWD/src/config/macosx/corefoundation.fpc
 @tangler audiounit.fpc             = $PWD/src/config/macosx/audiounit.fpc
+@tangler coreaudio.fpc             = $PWD/src/config/macosx/coreaudio.fpc
 @tangler audiotoolbox.fpc          = $PWD/src/config/macosx/audiotoolbox.fpc
 
 
@@ -403,6 +404,14 @@ Description: AudioUnit C API
 includes: '<AudioUnit/AudioUnit.h>'
 provides_dlib: ---framework=AudioUnit
 provides_slib: ---framework=AudioUnit
+@
+
+@tangle coreaudio.fpc
+Name: CoreAudio
+Description: CoreAudio C API
+includes: '<CoreAudio/CoreAudio.h>'
+provides_dlib: ---framework=CoreAudio
+provides_slib: ---framework=CoreAudio
 @
 
 
