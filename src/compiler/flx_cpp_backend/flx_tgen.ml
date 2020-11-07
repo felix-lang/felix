@@ -146,6 +146,11 @@ let gen_record tname tn typs =
 
 (* this routine generates a typedef (for primitives)
 or struct declaration which names the type.
+
+If its a typedef of a primitive its a definition,
+but it must depend ONLY on types defined in C or C/C++ 
+header files, that is, not defined by Felix but previously
+injected.
 *)
 
 let rec gen_type_name syms bsym_table (index,typ) =
@@ -203,24 +208,7 @@ let rec gen_type_name syms bsym_table (index,typ) =
     let name = cn typ in
     "struct " ^ name ^ ";\n"
 
-  | BTYP_cfunction (d,c) ->
-    descr ^
-    let name = cn typ in
-    let ds = match d with
-      | BTYP_tuple ls -> ls
-      | BTYP_array (t,n) -> (* not sure if this is enough or even right .. *) 
-        begin match n with
-        | BTYP_unitsum n ->
-          let rec aux ls n = if n = 0 then ls else aux (t::ls) (n-1) in 
-          aux [] n
-        | _ -> failwith "flx_tgen unexpected array indexed by non-unit sum"
-        end
-      | x -> [x]
-    in
-    let ctn t = `Ct_base (cpp_typename syms bsym_table t) in
-    let t = `Ct_fun (ctn c,map ctn ds) in
-    let cdt = `Cdt_value t in
-    "typedef " ^ string_of_cdecl_type name cdt ^ ";\n"
+  | BTYP_cfunction (d,c) -> descr ^ "\n"
 
   | BTYP_rptsum _ 
   | BTYP_sum _ 
@@ -383,7 +371,24 @@ let rec gen_type syms bsym_table (index,typ) =
   | BTYP_fix _ -> failwith "[gen_type] can't gen type fixpoint"
 
   (* PROCEDURE *)
-  | BTYP_cfunction _ -> ""
+  | BTYP_cfunction (d,c) ->
+    let name = cn typ in
+    let ds = match d with
+      | BTYP_tuple ls -> ls
+      | BTYP_array (t,n) -> (* not sure if this is enough or even right .. *) 
+        begin match n with
+        | BTYP_unitsum n ->
+          let rec aux ls n = if n = 0 then ls else aux (t::ls) (n-1) in 
+          aux [] n
+        | _ -> failwith "flx_tgen unexpected array indexed by non-unit sum"
+        end
+      | x -> [x]
+    in
+    let ctn t = `Ct_base (cpp_typename syms bsym_table t) in
+    let t = `Ct_fun (ctn c,map ctn ds) in
+    let cdt = `Cdt_value t in
+    "typedef " ^ string_of_cdecl_type name cdt ^ ";\n"
+
 
   | BTYP_linearfunction (a,BTYP_fix (0,_))
   | BTYP_linearfunction (a,BTYP_void) 

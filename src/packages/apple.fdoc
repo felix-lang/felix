@@ -97,17 +97,39 @@ open class AudioUnitAPI {
   ;
    
 
-  // Manually define this structure
-  type AudioBufferList = "AudioBufferList*";
-  fun mNumberBuffers: AudioBufferList -> uint32 = "$1->mNumberBuffers";
-  fun mBuffers: AudioBufferList -> +AudioBuffer = "$1->mBuffers";
 
   // Manually define this structure too
   type AudioBuffer = "AudioBuffer";
   fun mDataByteSize : AudioBuffer -> uint32 = "$1.mDataByteSize";
   fun mNumberChannels : AudioBuffer -> uint32 = "$1.mNumberChannels";
   fun mData : AudioBuffer -> address = "$1.mData";
+  ctor AudioBuffer : uint32 * uint32 * address = "AudioBuffer {.mDataByteSize=$1, .mNumberChannels=$2, .mData=$3}";
 
+  // Manually define this structure too
+  type _AudioBufferList = "AudioBufferList";
+  typedef AudioBufferList = &_AudioBufferList;
+
+  fun mNumberBuffers: AudioBufferList -> uint32 = "$1->mNumberBuffers";
+  fun mBuffers: AudioBufferList -> +AudioBuffer = "$1->mBuffers";
+
+  // This is a serious mess but its the only way
+  // An AudioBufferList object consist of a count followed by an array of 
+  // pointers to AudioBuffers, so it must be dynamically allocated,
+  // either with malloc or alloca
+  ctor AudioBufferList: uint32 * +AudioBuffer = """
+     ([=](){
+      int n = sizeof(AudioBuffer) + ($1-1)sizeof(void*);
+      return (AudioBufferList*)(::std::malloc(n));
+     }());
+  """;
+  proc deleteAudioBufferList : AudioBufferList = "::std::free($1);";
+  
+  // However in our code we only ever need to construct an AudioBufferList
+  // with a single buffer which does not require a heap allocation
+  // Note the client has to store the result in a variable and take
+  // its address to get a Felix AudioBufferList since that's a pointer
+  fun mk_AudioBufferList1: AudioBuffer -> _AudioBufferList = "AudioBufferList {.mNumberBuffers=1, .mBuffers = {$1}}";
+  
   // Some core Audio Unit Description parts
   const kAudioUnitType_Output: OSType;
   const kAudioUnitSubType_HALOutput: OSType;
@@ -258,6 +280,11 @@ open class AudioUnitAPI {
   gen AudioUnitUninitialize: AudioUnit -> OSStatus;
   gen AudioComponentInstanceDispose: AudioUnit -> OSStatus;
   gen AudioComponentInstanceNew : AudioComponent * &AudioUnit -> OSStatus;
+  gen AudioUnitRender: 
+    AudioUnit * &AudioUnitRenderActionFlags * &<AudioTimeStamp * uint32 * uint32 *  AudioBufferList
+    ->
+    OSStatus
+  ;
 
   // Define thunk for Felix
   callback fun audioRenderCallback_thunk :
