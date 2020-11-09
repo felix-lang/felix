@@ -191,6 +191,8 @@ open class Uintmax
   ctor[T in reals] uintmax: T = "static_cast<#0>($1)/*int.flx: ctor*/";
 }
 
+ctor byte : uint8 = "$1";
+ctor uint8 : byte = "$1";
 
 @h1 Convert to decimal string.
 @tangle int.flx
