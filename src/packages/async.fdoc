@@ -283,7 +283,7 @@ static void sleep(thread_control_base_t *tc, size_t ns)
 {
   assert(tc);
   tc->yield();
-  ::std::this_thread::sleep_for(::std::chrono::milliseconds(1000)); // 1 second, temporarily
+  ::std::this_thread::sleep_for(::std::chrono::nanoseconds(ns));
   ::std::this_thread::yield();
 }
 
