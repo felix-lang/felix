@@ -245,7 +245,7 @@ void async_sched::spawn_impl(fthread_list *pactive, thread_kind_t k) {
 void async_sched::do_general()
 {
   if (debug_driver)
-    fprintf(stderr, "[prun %p: svc_general] from fthread=%p\n", (void*)mythrid(),ss->ft);
+    fprintf(stderr, "<%p>[prun: svc_general] from fthread=%p\n", (void*)mythrid(),ss->ft);
 
   if(debug_driver)
     fprintf(stderr, "[prun %p: svc_general] async=%p, ptr_create_async_hooker=%p\n", 
@@ -259,23 +259,23 @@ void async_sched::do_general()
   ++ss->active->async_count;
   if (debug_driver)
     fprintf(stderr,
-       "[prun: svc_general] Async system created: %p, count %zu\n",
-       ss->active->async,ss->active->async_count);
+       "<%p>[prun: svc_general] Async system created: %p, count %zu\n",
+       (void*)mythrid(),ss->active->async,ss->active->async_count);
   ::flx::async::flx_driver_request_base *dreq =  ss->request->svc_general_req.pgeneral;
   if (debug_driver)
-    fprintf(stderr, "[prun: svc_general] Request object %p\n", dreq);
+    fprintf(stderr, "<%p>[prun: svc_general] Request object %p\n", (void*)mythrid(),dreq);
 
   // requests are now ALWAYS considered asynchronous
   // even if the request handler reschedules them immediately
   ss->active->async->handle_request(dreq, ss->ft);
   if (debug_driver)
-    fprintf(stderr, "[prun: svc_general] Request object %p captured fthread %p \n", dreq, ss->ft);
+    fprintf(stderr, "<%p>[prun: svc_general] Request object %p captured fthread %p \n", (void*)mythrid(),dreq, ss->ft);
   if (debug_driver)
-    fprintf(stderr, "[prun: svc_general] Request object %p\n", dreq);
+    fprintf(stderr, "<%p>[prun: svc_general] Request object %p\n", (void*)mythrid(),dreq);
   gcp->collector->add_root(ss->ft);
   ss->ft = 0; 
   if(debug_driver)
-    fprintf(stderr,"[prun: svc_general] request dispatched..\n");
+    fprintf(stderr,"<%p>[prun: svc_general] request dispatched..\n",(void*)mythrid());
 }
 
 // calls thread_control_t::yield which does a world stop check
@@ -340,6 +340,9 @@ sync_run:
             if (debug_driver)
               fprintf(stderr, "prun: %s %p Async blocking\n", str(thread_kind), (void*)mythrid());
             ss->ft = ss->active->async->dequeue(); // get fibre
+            if (debug_driver)
+              fprintf(stderr, "prun: %s %p Async fetched fibre %p\n", str(thread_kind), (void*)mythrid(), ss->ft);
+
             gcp->collector->remove_root(ss->ft); // transfer ownership
             --ss->active->async_count; // accounting
             ss->active->qisblocked.clear(); // release control
