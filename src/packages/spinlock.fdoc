@@ -215,7 +215,7 @@ class PoolAllocator {
       println$ "Adding " + p.address.str + " to Allocator pool";
       push (pool,p.address);
     done 
-    run service;
+    call service;
     println$ "Pool_Allocator terminated, NOT IMPLEMENTED YET FREE MEMORY!";
   }
 } // Allocator

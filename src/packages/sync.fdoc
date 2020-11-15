@@ -530,6 +530,8 @@ dispatch:
     case svc_kill: do_kill(); goto dispatch;
 
     default:  
+      if (debug_driver)
+        fprintf(stderr,"[flx_sync:sync_sched] delegating service request %d\n", request->svc_req);
       return delegated;
   }
 }

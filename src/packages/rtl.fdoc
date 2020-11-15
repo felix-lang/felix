@@ -1114,8 +1114,12 @@ namespace flx { namespace rtl { namespace executil {
 @tangle flx_executil.cpp
 #include "flx_executil.hpp"
 namespace flx { namespace rtl { namespace executil {
+
+// badly named, this procedure just runs a Felix procedure, with minimal support
+// no handling of coroutine stuff or svc is supported
 void run(::flx::rtl::con_t *p)
 {
+fprintf(stderr,"Starting executil::run\n");
   while(p)
   {
     try { p=p->resume(); }
@@ -1123,8 +1127,11 @@ void run(::flx::rtl::con_t *p)
   }
 }
 
+// This utility provides more support for synchronous scheduling
+// operations, supporting channel I/O etc but not async stuff like svc general
 void frun (::flx::gc::generic::gc_profile_t* gcp, ::flx::rtl::con_t *p)
 {
+fprintf(stderr,  "Starting executil::frun\n");
   ::flx::run::fthread_list *q = new(*gcp,::flx::run::fthread_list_ptr_map,false) ::flx::run::fthread_list(gcp);
 
   ::flx::run::sync_sched *ss = 
@@ -1136,7 +1143,10 @@ void frun (::flx::gc::generic::gc_profile_t* gcp, ::flx::rtl::con_t *p)
   ;
 
   gcp->collector->add_root(ss);
-  ss->frun();
+
+  // this code should check the termination condition and BUG OUT
+  // is the client code caused a delegation eg svc general
+  ss->frun(); 
   gcp->collector->remove_root(ss);
 }
 
