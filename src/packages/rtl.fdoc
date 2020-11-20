@@ -1119,7 +1119,7 @@ namespace flx { namespace rtl { namespace executil {
 // no handling of coroutine stuff or svc is supported
 void run(::flx::rtl::con_t *p)
 {
-fprintf(stderr,"Starting executil::run\n");
+//fprintf(stderr,"Starting executil::run\n");
   while(p)
   {
     try { p=p->resume(); }
@@ -1131,7 +1131,7 @@ fprintf(stderr,"Starting executil::run\n");
 // operations, supporting channel I/O etc but not async stuff like svc general
 void frun (::flx::gc::generic::gc_profile_t* gcp, ::flx::rtl::con_t *p)
 {
-fprintf(stderr,  "Starting executil::frun\n");
+//fprintf(stderr,  "Starting executil::frun\n");
   ::flx::run::fthread_list *q = new(*gcp,::flx::run::fthread_list_ptr_map,false) ::flx::run::fthread_list(gcp);
 
   ::flx::run::sync_sched *ss = 
