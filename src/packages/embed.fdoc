@@ -381,7 +381,7 @@ run_felix_pthread_ctor(
     //fprintf(stderr, "  ** MAIN THREAD: flx_main entry point : %p\n", top);
     if (top)
     {
-      fthread_t *flx_main = new (*gcp, _fthread_ptr_map, false) fthread_t(top);
+      fthread_t *flx_main = new (*gcp, _fthread_ptr_map, false) fthread_t(top, active);
       active->push_front(flx_main);
     }
   }
@@ -391,7 +391,7 @@ run_felix_pthread_ctor(
     //fprintf(stderr, "  ** MAIN THREAD: flx_start (initialisation) entry point : %p\n", top);
     if (top)
     {
-      fthread_t *ft = new (*gcp, _fthread_ptr_map, false) fthread_t(top);
+      fthread_t *ft = new (*gcp, _fthread_ptr_map, false) fthread_t(top, active);
       active->push_front(ft);
     }
   }
@@ -758,8 +758,9 @@ int flx_world::run() {
 // =================================================================
 // TODO: factor into async_sched. run_felix_pthread_ctor does this twice
 void flx_world::spawn_fthread(con_t *top) {
-	fthread_t *ft = new (*gcp, _fthread_ptr_map, false) fthread_t(top);
-  get_sync_scheduler()->push_front(ft);
+  auto ss = get_sync_scheduler();
+	fthread_t *ft = new (*gcp, _fthread_ptr_map, false) fthread_t(top, ss->active);
+  ss->push_front(ft);
 }
 
 // =================================================================

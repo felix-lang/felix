@@ -41,7 +41,7 @@ open class Fibres
   gen start (p:1->0) = { return _start0 (p); }
 
   //$ Function to make a fibre out of a continuation.
-  gen mk_thread: cont->fthread = "new(*ptf-> gcp,::flx::rtl::_fthread_ptr_map,false) ::flx::rtl::fthread_t($1)";
+  gen mk_thread: cont->fthread = "new(*ptf-> gcp,::flx::rtl::_fthread_ptr_map,false) ::flx::rtl::fthread_t($1,nullptr)";
 
   // Spawn a fibre on this fibres scheduler.
   // uses a supervisor call so can't be used in a function

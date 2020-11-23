@@ -39,9 +39,9 @@ private:
   spinguard(spinguard const&) = delete;
   spinguard *operator=(spinguard const&)=delete;
   bool cond;
-  ::std::atomic_flag *plock;
+  flx_spinlock *spinlock;
 public:
-  spinguard (bool,::std::atomic_flag *p);
+  spinguard (flx_spinlock *);
   ~spinguard ();
 };
 }}
@@ -62,10 +62,8 @@ void flx_spinlock::lock() volatile { while(flag.test_and_set(memory_order_acquir
 void flx_spinlock::unlock() volatile { flag.clear(memory_order_release); }
 
 
-spinguard::spinguard (bool cond_, ::std::atomic_flag *p): cond(cond_), plock(p) { 
-  if (cond) while (plock->test_and_set(std::memory_order_acquire));
-}
-spinguard::~spinguard () { if (cond)plock->clear(std::memory_order_release); }
+spinguard::spinguard (flx_spinlock *p) : spinlock(p) { spinlock->lock(); }
+spinguard::~spinguard () {  spinlock->unlock(); }
 
 ::flx::gc::generic::gc_shape_t flx_spinlock_ptr_map = {
   "rtl::spinlock",

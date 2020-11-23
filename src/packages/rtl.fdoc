@@ -633,6 +633,9 @@ extern "C" FLX_EXPORT ::flx::rtl::con_t *name##_flx_start(\
 #include <atomic>
 #include "flx_spinlock.hpp"
 
+// forward decl
+namespace flx {namespace run { struct RTL_EXTERN fthread_list; }}
+
 namespace flx { namespace rtl {
 
 
@@ -696,8 +699,10 @@ struct RTL_EXTERN fthread_t // fthread abstraction
 {
   con_t *cc;                    ///< current continuation
   fthread_t *next;              ///< link to next fthread, to be used in scheduler queue and schannels
-  fthread_t();                  ///< dead thread, suitable for assignment
-  fthread_t(con_t*);            ///< make thread from a continuation
+  ::flx::run::fthread_list *owner; ///< weak pointer to owning scheduler model object
+  //fthread_t();                  ///< dead thread, suitable for assignment
+  //fthread_t(con_t*);            ///< make thread from a continuation
+  fthread_t(con_t*, ::flx::run::fthread_list *);            ///< make thread from a continuation
   svc_req_t *run();               ///< run until dead or driver service request
   void kill();                  ///< kill by detaching the continuation
   svc_req_t *get_svc()const;      ///< get current service request of waiting thread
@@ -885,8 +890,9 @@ muxguard::~muxguard () { if (m)m->unlock(); }
 // fthread_t implementation
 // ********************************************************
 
-fthread_t::fthread_t() : cc(nullptr), next(nullptr) {}
-fthread_t::fthread_t(con_t *a) : cc(a), next(nullptr) {}
+//fthread_t::fthread_t() : cc(nullptr), next(nullptr) {}
+//fthread_t::fthread_t(con_t *a) : cc(a), next(nullptr) {}
+fthread_t::fthread_t(con_t *a, ::flx::run::fthread_list *b) : cc(a), owner(b), next(nullptr) {}
 
 void fthread_t::kill() { cc = nullptr; }
 
@@ -1139,7 +1145,7 @@ void frun (::flx::gc::generic::gc_profile_t* gcp, ::flx::rtl::con_t *p)
   ;
 
   ::flx::rtl::fthread_t *ft = 
-    new(*gcp,::flx::rtl::_fthread_ptr_map,false) ::flx::rtl::fthread_t(p)
+    new(*gcp,::flx::rtl::_fthread_ptr_map,false) ::flx::rtl::fthread_t(p,q)
   ;
 
   gcp->collector->add_root(ss);

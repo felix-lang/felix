@@ -41,6 +41,7 @@ off a synchronous channel into the active queue.
 #include "flx_rtl.hpp"
 #include <list>
 #include <atomic>
+#include "flx_spinlock.hpp"
 #include "flx_async.hpp"
 #include "pthread_thread.hpp"
 
@@ -70,11 +71,7 @@ public:
   ::std::atomic<int> thread_count; // n threads sharing list
   ::std::atomic<int> busy_count; // n threads actually working
 
-//  ::std::mutex active_lock;
-//  ::std::mutex *pactive_lock;
-
-  bool lockneeded;
-  ::std::atomic_flag active_lock;
+  ::flx::rtl::flx_spinlock active_lock;
 
   size_t async_count; // pending async jobs
   async_hooker* async; // async dispatch and ready list object
@@ -130,10 +127,6 @@ struct RTL_EXTERN sync_sched {
     ::flx::gc::generic::gc_profile_t *gcp_,
     fthread_list *active_
   );
-
-private:
-  // helper routines.
-  void impl_push_front(::flx::rtl::fthread_t*);
 
 public:
   void push_front(::flx::rtl::fthread_t*);
@@ -205,15 +198,12 @@ fthread_list::fthread_list(::flx::gc::generic::gc_profile_t *gcp_) :
   busy_count(0),
   async_count(0),
   async(nullptr),
-  //pactive_lock(nullptr),
-  lockneeded(false),
   active_lock(),
   gcp(gcp_),
   fthread_first(nullptr),
   fthread_last(nullptr)
 {
   qisblocked.clear();
-  active_lock.clear();
 }
 fthread_list::~fthread_list () { 
   fprintf(stderr,"[fthread_list: destructor] Pthread %p delete async queue\n",(void*)::flx::pthread::mythrid());
@@ -329,40 +319,41 @@ void sync_sched::show_state () {
 
 // used by async to activate fthread in ready (async complete) queue
 void sync_sched::push_front(fthread_t *f) {
-  spinguard dummy(active->lockneeded,&(active->active_lock));
-  impl_push_front(f);
+  spinguard dummy(&(active->active_lock));
+  if(ft) active->push_front(ft);
+  ft = f;
 }
-void sync_sched::impl_push_front(fthread_t *f) 
-  {
-    if(ft) active->push_front(ft);
-    ft = f;
-  }
 
 void sync_sched::do_yield()
     {
       if(debug_driver)
          fprintf(stderr,"[sync: svc_yield] yield");
       
-      spinguard dummy(active->lockneeded,&(active->active_lock));
+      spinguard dummy(&(active->active_lock));
       active->push_back(ft);
       ft = active->pop_front();
     }
 
 void sync_sched::do_spawn_fthread()
     {
-      spinguard dummy(active->lockneeded,&(active->active_lock));
+      spinguard dummy(&(active->active_lock));
       fthread_t *ftx = request->svc_fthread_req.fthread;
+      ftx->owner = active;
       if(debug_driver)
         fprintf(stderr,"[sync: svc_spawn_fthread] Spawn fthread %p\n",ftx);
-      impl_push_front(ftx);
+      // invoke new fibre immediately like a subroutine
+      active->push_front(ft);
+      ft = ftx;
     }
 
 void sync_sched::do_schedule_fthread()
     {
-      spinguard dummy(active->lockneeded,&(active->active_lock));
+      spinguard dummy(&(active->active_lock));
       fthread_t *ftx = request->svc_fthread_req.fthread;
+      ftx->owner = active;
       if(debug_driver)
         fprintf(stderr,"[sync: svc_schedule_fthread] Schedule fthread %p\n",ftx);
+      // keep running current fibre, delay invoking new one
       active->push_back(ftx);
     }
 
@@ -370,78 +361,114 @@ void sync_sched::do_schedule_fthread()
 // if the data type is unit
 void sync_sched::do_sread()
     {
-      spinguard dummy(active->lockneeded,&(active->active_lock));
+      fthread_list *writer_owner;
+      svc_sio_req_t pw;
+      fthread_t *writer;
+
       svc_sio_req_t pr = request->svc_sio_req;
       schannel_t *chan = pr.chan;
       if(debug_driver)
         fprintf(stderr,"[sync: svc_read] Fibre %p Request to read on channel %p\n",ft,chan);
+
+      active->active_lock.lock();
       if(chan==NULL) goto svc_read_none;
-    svc_read_next:
-      {
-        fthread_t *writer= chan->pop_writer();
-        if(writer == 0) goto svc_read_none;       // no writers
-        if(writer->cc == 0) goto svc_read_next;   // killed
-        svc_sio_req_t pw = writer->get_svc()->svc_sio_req;
-        if (pr.data && pw.data) {
-          if(debug_driver)
-            fprintf(stderr,"[sync: svc_read] Writer @%p=%p, read into %p\n", 
-              pw.data,*pw.data, pr.data);
-          *pr.data= *pw.data;
-        }
-        if(debug_driver)
-          fprintf(stderr,"[sync: svc_read] current fibre %p FED, fibre %p UNBLOCKED\n",ft, writer);
 
-        // WE are the reader, stay current, push writer
-        // onto active list
-        active->push_front(writer);
-show_state();
-        return;
+svc_read_next:
+     writer = chan->pop_writer();
+     if(writer == 0) goto svc_read_none;       // no writers
+     if(writer->cc == 0) goto svc_read_next;   // killed
+
+     pw = writer->get_svc()->svc_sio_req;
+     if (pr.data && pw.data) {
+       if(debug_driver)
+          fprintf(stderr,"[sync: svc_read] Writer @%p=%p, read into %p\n", 
+            pw.data,*pw.data, pr.data);
+        *pr.data= *pw.data;
       }
+      if(debug_driver)
+        fprintf(stderr,"[sync: svc_read] current fibre %p FED, fibre %p UNBLOCKED\n",ft, writer);
 
-    svc_read_none:
+      // WE are the reader, stay current, push writer
+      // onto active list
+      writer_owner = writer->owner;
+      if (active == writer_owner) {
+        active->push_front(writer); 
+        goto exit1;
+      } 
+      else goto exit2;
+
+svc_read_none:
       if(debug_driver)
         fprintf(stderr,"[sync: svc_read] No writers on channel %p: fibre %p HUNGRY\n",chan,ft);
       chan->push_reader(ft);
       ft = active->pop_front();
-show_state();
+exit1:      
+      show_state();
+      active->active_lock.unlock();
+      return;
+
+exit2:
+      active->active_lock.unlock();
+      writer_owner->active_lock.lock();
+      writer_owner->push_front(writer);
+      show_state();
+      writer_owner->active_lock.unlock();
       return;
     }
 
 void sync_sched::do_swrite()
     {
-      spinguard dummy(active->lockneeded,&(active->active_lock));
+      fthread_list *reader_owner;
+      svc_sio_req_t pr;
+      fthread_t *reader;
+
       svc_sio_req_t pw = request->svc_sio_req;
       schannel_t *chan = pw.chan;
       if(debug_driver)
          fprintf(stderr,"[sync: svc_write] Fibre %p Request to write on channel %p\n",ft,chan);
-      if(chan==NULL)goto svc_write_none;
-    svc_write_next:
-      {
-        fthread_t *reader= chan->pop_reader();
-        if(reader == 0) goto svc_write_none;     // no readers
-        if(reader->cc == 0) goto svc_write_next; // killed
-        svc_sio_req_t pr = reader->get_svc()->svc_sio_req;
-        if (pr.data && pw.data) {
-          if(debug_driver)
-            fprintf(stderr,"[sync: svc_write] Writer @%p=%p, read into %p\n", 
-              pw.data,*pw.data, pr.data);
-          *pr.data= *pw.data;
-        }
-        if(debug_driver)
-          fprintf(stderr,"[sync: svc_write] hungry fibre %p FED\n",reader);
 
+      active->active_lock.lock();
+      if(chan==NULL)goto svc_write_none;
+svc_write_next:
+      reader= chan->pop_reader();
+      if(reader == 0) goto svc_write_none;     // no readers
+      if(reader->cc == 0) goto svc_write_next; // killed
+      pr = reader->get_svc()->svc_sio_req;
+      if (pr.data && pw.data) {
+        if(debug_driver)
+          fprintf(stderr,"[sync: svc_write] Writer @%p=%p, read into %p\n", 
+            pw.data,*pw.data, pr.data);
+        *pr.data= *pw.data;
+      }
+      if(debug_driver)
+        fprintf(stderr,"[sync: svc_write] hungry fibre %p FED\n",reader);
+
+      reader_owner = reader->owner;
+      if (active == reader_owner) {
         // WE are the writer, push us onto the active list
         // and make the reader on the channel current
-        impl_push_front(reader);
-show_state();
-        return;
+        active->push_front(ft); 
+        ft = reader;
+        goto exit1;
       }
-    svc_write_none:
+      else goto exit2;
+
+svc_write_none:
       if(debug_driver)
         fprintf(stderr,"[sync: svc_write] No readers on channel %p: fibre %p BLOCKING\n",chan,ft);
       chan->push_writer(ft);
       ft = active->pop_front();
-show_state();
+exit1:
+      active->active_lock.unlock();
+      show_state();
+      return;
+
+exit2:
+      active->active_lock.unlock();
+      reader_owner->active_lock.lock();
+      reader_owner->push_front(reader);
+      reader_owner->active_lock.unlock();
+      show_state();
       return;
     }
 
@@ -459,14 +486,14 @@ void sync_sched::external_multi_swrite (schannel_t *chan, void *data)
            fprintf(stderr,"[sync: svc_multi_write] Write data %p, read into %p\n", 
              data, pr.data);
         *pr.data = data;
-        impl_push_front(reader);
+        active->push_front(reader); // NOTE: NOT LOCKED! Possibly WRONG
       }
       goto svc_multi_write_next;
     }
 
 void sync_sched::do_multi_swrite()
     {
-      spinguard dummy(active->lockneeded,&(active->active_lock));
+      spinguard dummy(&(active->active_lock));
       svc_sio_req_t pw = request->svc_sio_req;
       void *data = pw.data;
       schannel_t *chan = pw.chan;
@@ -477,7 +504,7 @@ void sync_sched::do_multi_swrite()
 
 void sync_sched::do_kill()
     {
-      spinguard dummy(active->lockneeded,&(active->active_lock));
+      spinguard dummy(&(active->active_lock));
       fthread_t *ftx = request->svc_fthread_req.fthread;
       if(debug_driver)fprintf(stderr,"[sync: svc_kill] Request to kill fthread %p\n",ftx);
       ftx -> kill();
@@ -496,7 +523,7 @@ sync_sched::fstate_t sync_sched::frun()
         (void*)::flx::pthread::mythrid(), ft,(int)active->size());
 dispatch:
   if (ft == 0) {
-     spinguard dummy(active->lockneeded,&(active->active_lock));
+     spinguard dummy(&(active->active_lock));
      ft = active->pop_front(); 
      if (debug_driver)
        fprintf(stderr,"[sync] pthread %p fetching fthread %p\n",(void*)::flx::pthread::mythrid(),ft);
@@ -507,7 +534,7 @@ dispatch:
   request = ft->run();        // run fthread to get request
   if(request == 0)            // euthenasia request
   {
-    spinguard dummy(active->lockneeded,&(active->active_lock));
+    spinguard dummy(&(active->active_lock));
     ft = 0;
     goto dispatch;
   }
