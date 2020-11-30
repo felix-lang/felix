@@ -610,6 +610,8 @@ class FlxLibBuild
 println$ "[make_lib] source directory " + srcpath;
 
     var build_includes= db.getpkgfield ehandler (pkg,"build_includes");
+println$ "[make_lib] build_includes " + build_includes;
+
     var result3,ddeps= db.query$ list$ pkg, "--keepleftmost", "--field=requires_dlibs";
     ddeps = FlxPkg::fix2word_flags ddeps;
     var deps = db.getpkgfield ehandler (pkg,"Requires");

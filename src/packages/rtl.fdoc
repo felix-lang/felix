@@ -1653,6 +1653,7 @@ Requires: flx_exceptions flx_pthread flx_async
 Requires: re2 flx_dynlink demux faio
 Requires: flx_uint256_t 
 Requires: sqlite3
+Requires: umka
 @
 
 @tangle flx_thread_free_rtl_core.fpc

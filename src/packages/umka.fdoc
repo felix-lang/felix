@@ -1,0 +1,35 @@
+@title Umka Statically Typed Embedded Scripting Language
+
+@tangler flx_umka.hpp        = share/lib/rtl/flx_umka.hpp
+@tangler umka.flx          = share/lib/std/umka.flx
+@tangler unix_umka.fpc     = $PWD/src/config/unix/umka.fpc
+@tangler win_umka.fpc      = $PWD/src/config/win/umka.fpc
+
+@tangle flx_umka.hpp
+#ifdef FLX_STATIC
+#define UMKA_STATIC 1
+#endif
+
+#include "umka/umka_api.h"
+@
+
+@tangle umka.flx
+// Umka API will go here
+@
+
+@tangle unix_umka.fpc
+Name: Umka
+Description: Umka Embedded interpreter
+provides_dlib: -lflx_umka_dynamic
+provides_slib: -lflx_umka_static
+includes: '"flx_umka.h"'
+library: flx_umka
+macros: UMKA_BUILD
+srcdir: src/umka-lang/src
+headers: flx_umka.h
+src: umka_.*\.c
+build_includes: src/umka-lang/src 
+@
+
+
+
