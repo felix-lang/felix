@@ -15,6 +15,53 @@
 
 @tangle umka.flx
 // Umka API will go here
+class Umka {
+
+  cstruct UmkaStackSlot {
+    intVal  : int64;
+    uintVal : uint64;
+    ptrVal  : int64;
+    realVal : double;
+  }
+
+  cstruct UnkaError {
+    fileName : +char;
+    line     : int;
+    pos      : int;
+    msg      : +char;
+  }
+
+  typedef UmkExternFunc = +UmkaStackSlot * &UmkaStackSlot --> 0;
+
+  gen  umkaAlloc     : 1 -> umka_t;     // create interpreter
+  proc umkaFree      : umka_t;          // free interpreter
+
+  gen  umkaInit      : umka_t * +char * +char int * int * int * +(+char) -> bool = ; 
+    // filename, source string, storage size, stack size, argv argc
+    // if source string is NULL, program is loaded from filename
+    // otherwise filename just acts as documentation for error messages
+
+  gen  umkaCompile   : umka_t -> bool; // Assemble to VM code
+
+  gen  umkaRun       : umka_t -> bool; // Run assembled VM code
+
+  gen  umkaCall      : umka_t * int * int * +UmkaStackSlot * &UmkaStackSlot -> bool; 
+    // entry offset in VM code, 
+    // number of parameters, 
+    // actual parameter array, 
+    // pointer to location for return value
+ 
+  proc umkaGetError  : umka_t * &UmkaError; // client supplies address to put error object
+
+  proc umkaAsm       : umka_t * +char;      // dump VM code to string
+
+  proc umkaAddFunc   : umka_t * +char  * UmkaExternFunc;  
+    // Import C extension with name
+
+  gen  umkaGetFunc   : umka_t * +char * +char -> int; 
+    // get offset of function with given module and file name
+    // can be used by umkaCall to invoke function
+}
 @
 
 @tangle unix_umka.fpc
