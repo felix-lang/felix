@@ -1,6 +1,6 @@
 @title Umka Statically Typed Embedded Scripting Language
 
-@tangler flx_umka.hpp        = share/lib/rtl/flx_umka.hpp
+@tangler flx_umka.hpp      = share/lib/rtl/flx_umka.hpp
 @tangler umka.flx          = share/lib/std/umka.flx
 @tangler unix_umka.fpc     = $PWD/src/config/unix/umka.fpc
 @tangler win_umka.fpc      = $PWD/src/config/win/umka.fpc
@@ -10,33 +10,36 @@
 #define UMKA_STATIC 1
 #endif
 
-#include "umka/umka_api.h"
+#include "umka_api.h"
 @
 
 @tangle umka.flx
 // Umka API will go here
 class Umka {
+  requires package "umka";
+
+  type umka_t = "void*";
 
   cstruct UmkaStackSlot {
     intVal  : int64;
     uintVal : uint64;
     ptrVal  : int64;
     realVal : double;
-  }
+  };
 
-  cstruct UnkaError {
+  cstruct UmkaError {
     fileName : +char;
     line     : int;
     pos      : int;
     msg      : +char;
-  }
+  };
 
-  typedef UmkExternFunc = +UmkaStackSlot * &UmkaStackSlot --> 0;
+  typedef UmkaExternFunc = +UmkaStackSlot * &UmkaStackSlot --> 0;
 
   gen  umkaAlloc     : 1 -> umka_t;     // create interpreter
   proc umkaFree      : umka_t;          // free interpreter
 
-  gen  umkaInit      : umka_t * +char * +char int * int * int * +(+char) -> bool = ; 
+  gen  umkaInit      : umka_t * +char * +char * int * int * int * +(+char) -> bool; 
     // filename, source string, storage size, stack size, argv argc
     // if source string is NULL, program is loaded from filename
     // otherwise filename just acts as documentation for error messages
@@ -61,7 +64,7 @@ class Umka {
   gen  umkaGetFunc   : umka_t * +char * +char -> int; 
     // get offset of function with given module and file name
     // can be used by umkaCall to invoke function
-}
+} // class Umka
 @
 
 @tangle unix_umka.fpc
@@ -69,11 +72,11 @@ Name: Umka
 Description: Umka Embedded interpreter
 provides_dlib: -lflx_umka_dynamic
 provides_slib: -lflx_umka_static
-includes: '"flx_umka.h"'
+includes: '"flx_umka.hpp"'
 library: flx_umka
 macros: UMKA_BUILD
 srcdir: src/umka-lang/src
-headers: flx_umka.h
+headers: umka_api.h 
 src: umka_.*\.c
 build_includes: src/umka-lang/src 
 @
