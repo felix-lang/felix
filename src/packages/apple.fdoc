@@ -453,8 +453,8 @@ provides_slibs: ---framework=AudioToolbox
 Name: ObjC Runtime
 Description: run time library for objective C
 cflags: -ObjC++
-provides_dlib: /usr/lib/libobjc.dylib
-provides_slib: /usr/lib/libobjc.a
+provides_dlib: -L/usr/lib -lobjc
+provides_slib: -L/usr/lib -lobjc
 includes: '"/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/objc/runtime.h"'
 
 
