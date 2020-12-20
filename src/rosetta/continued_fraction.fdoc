@@ -1,0 +1,34 @@
+@title Rosetta: Continued Fraction
+@h1 Rosetta Continued Fraction
+@felix
+fun pi (n:int) : (double*double) =>
+    let a = match n with | 0 => 3.0 | _ => 6.0 endmatch in 
+    let b = pow(2.0 * n.double - 1.0, 2.0) in
+    (a,b)
+;
+fun sqrt_2 (n:int) : (double*double) =>
+    let a = match n with | 0 => 1.0 | _ => 2.0 endmatch in
+    let b = 1.0 in
+    (a,b)
+;
+ 
+fun napier (n:int) : (double*double) =>
+    let a = match n with | 0 => 2.0 | _ => n.double endmatch in
+    let b = match n with | 1 => 1.0 | _ => (n.double - 1.0) endmatch in
+    (a,b)
+;
+ 
+fun cf_iter (steps:int) (f:int -> double*double)  = {
+    var acc = 0.0;
+    for var n in steps downto 0 do
+        var a, b = f(n);
+        acc = if (n > 0) then (b / (a + acc)) else (acc + a);
+    done
+    return acc;
+}
+ 
+println$ cf_iter 200 sqrt_2; // => 1.41421
+println$ cf_iter 200 napier; // => 2.71818
+println$ cf_iter 1000 pi; // => 3.14159
+
+@
