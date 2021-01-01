@@ -439,6 +439,34 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be (cs:Flx_
         be name 
       in
       let device_closure = Flx_bexpr.bexpr_apply proc_t (bdev,record) in
+
+ (* FIXME: FOR REAL TIME THREADS WE NEED TO STORE THE FIBRES IN A VARIABLE AS WELL AS THE CHANNELS.
+    The circuit is then persistent: whilst the procedure executing the circuit is reachable,
+    the channels and fibres will also be reachable. This means the real time thread running
+    the circuit can be spawned without GC registration so the GC will not wait for it to respond
+    to a world stop. This machinery PREVENTS a starving or block fibre from terminating until
+    the frame holding the variables becomes unreachable. On the other hand, if it becomes unreachble
+    whilst the circuit is running the system will crash since the fibres and channels become
+    unreachable and can be reaped by the GC. Therefore, the scheduler running the circuit should
+    return before the owning frame is released. Perhaps this is best organised by spawning a fibre
+    which runs the owning procedure as a fibre, since that fibre is in a run state until
+    the nested scheduler returns.
+
+    Note there is a BUG in most code using circuit statement, because most of my code
+    assumed the circuit statement "forgets" the channels it creates, but the code
+    here shows this is not the case: the fibres are lost but the schannels are remembered.
+
+    Since these circuits need to be wrapped in procedures to fix it, it seems harmless
+    to always record the fibres too. Note the wrapper procedure MUST be a named procedure
+    marked noinline, or a closure (which can't currently be inlined). Anon procedures
+    can be inlined which defeats the wrapping.
+  *)
+     
+   (* replace this call with a variable allocation and an expansion of the spawn_fthread
+      library procedure which stores the fthread object into the variables before
+      spawning them
+   *)
+
       let spawn_exe = Flx_bexe.bexe_call (sr,spawn_fthread,device_closure) in
 (*
       print_endline ("SPAWN: " ^ string_of_bexe bsym_table 0 spawn_exe);
