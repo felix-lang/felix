@@ -378,9 +378,7 @@ to go elsewhere!
 
 open class Semaphore
 {
-  // FIXME: does not comply with GC friendly blocking protocol!
-
-  requires package "pthread";
+  requires "pthread";
   type semaphore = "::flx::pthread::flx_semaphore_t*" requires semaphore_hxx;
   ctor semaphore = "new ::flx_pthread::flx_semaphore_t";
   ctor semaphore * int = "new ::flx_pthread::flx_semaphore_t($1)";
