@@ -48,7 +48,6 @@ synchronisation instead.
 header pthread_hxx = '#include "pthread_thread.hpp"';
 header mutex_hxx = '#include "pthread_mutex.hpp"';
 header condv_hxx = '#include "pthread_condv.hpp"';
-header semaphore_hxx = '#include "pthread_semaphore.hpp"';
 header monitor_hxx = '#include "pthread_monitor.hpp"';
 header work_fifo_hxx = '#include "pthread_work_fifo.hpp"';
 
@@ -374,20 +373,6 @@ the customer is waiting due to unavailable stock .. and @{sem_trywait}
 is the customer that, seeing there is no available stock, decides
 to go elsewhere!
 
-@tangle semaphore.flx
-
-open class Semaphore
-{
-  requires "pthread";
-  type semaphore = "::flx::pthread::flx_semaphore_t*" requires semaphore_hxx;
-  ctor semaphore = "new ::flx_pthread::flx_semaphore_t";
-  ctor semaphore * int = "new ::flx_pthread::flx_semaphore_t($1)";
-  proc destroy : semaphore = "delete $1;";
-  proc post: semaphore = "$1->post();";
-  proc wait: semaphore = "$1->wait();";
-  gen trywait: semaphore -> int = "$1->trywait()";
-  int get: semaphore = "$1->get();";
-} 
 @h1 Condition Variables.
 @tangle condition_variable.flx
 
