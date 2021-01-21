@@ -220,7 +220,7 @@ let print_disjoint_tl_res res =
 module Ordered_node =
 struct
   type t = node
-  let compare n1 n2 = Pervasives.compare n1.id n2.id
+  let compare n1 n2 = compare n1.id n2.id
 end
 module Node_set = Set.Make(Ordered_node)
 
@@ -442,7 +442,7 @@ let make_lexer build_nfa_table =
         (function ([ci],n1) -> write_interval ci n.id dec_table n1.id
           | _ -> assert false)
         trans_l);
-      final.(n.id) <- List.sort Pervasives.compare (list_of_set n.matched)
+      final.(n.id) <- List.sort compare (list_of_set n.matched)
       (* Is it necessary to sort the list or doesn't
        list_of_set already do it? *))
     sl in
@@ -497,7 +497,7 @@ let extend_lexer main_lexer_start regexp_list build_nfa_table node_nb regexp_nb 
         (function ([ci],n1) -> write_interval ci n.id dec_table n1.id
           | _ -> assert false)
         trans_l);
-      final.(n.id) <- List.sort Pervasives.compare (list_of_set n.matched)
+      final.(n.id) <- List.sort compare (list_of_set n.matched)
       (* Is it necessary to sort the list or doesn't
        list_of_set already do it? *))
     sl in

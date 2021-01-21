@@ -56,7 +56,7 @@ let char_for_backslash = function
   | 'r' -> '\r'
   | c   -> c
 
-let string_of_char c = let x = " " in x.[0] <- c; x
+let string_of_char c = String.make 1 c
 
 }
 

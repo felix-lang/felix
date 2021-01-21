@@ -17,7 +17,7 @@ open Flx_btype_subst
 module WeakSet = Set.Make (
   struct 
     type t=Flx_btype.t
-    let compare = compare
+    let compare = Stdlib.compare
   end
 )
 

@@ -60,7 +60,7 @@ let gen_function_names syms bsym_table =
 
     | _ -> () (* bcat s ("//SKIPPING " ^ id ^ "\n") *)
   )
-  (sort compare !xxsym_table)
+  (sort Stdlib.compare !xxsym_table)
   ;
   Buffer.contents s
 

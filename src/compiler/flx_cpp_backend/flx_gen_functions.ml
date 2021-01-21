@@ -168,7 +168,7 @@ let gen_functions syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_table 
 
     | _ -> () (* bcat s ("//SKIPPING " ^ id ^ "\n") *)
   )
-  (sort compare !xxsym_table)
+  (sort Stdlib.compare !xxsym_table)
   ;
   Buffer.contents s
 

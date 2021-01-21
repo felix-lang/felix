@@ -106,7 +106,7 @@ let make_syms options =
   }
 
 module TypecodeSet = Set.Make(
-  struct type t = Flx_ast.typecode_t let compare = compare end
+  struct type t = Flx_ast.typecode_t let compare = Stdlib.compare end
 )
 type typecodeset_t = TypecodeSet.t
 

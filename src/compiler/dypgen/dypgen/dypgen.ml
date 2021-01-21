@@ -26,7 +26,7 @@ let extract_type = input_file_short^".extract_type"
 let output_file_mli = input_file_short^".mli"
 
 
-let lexbuf = Lexing.from_channel (Pervasives.open_in input_file)
+let lexbuf = Lexing.from_channel (open_in input_file)
 let () =
   lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = input_file };
   lexbuf.lex_start_p <- { lexbuf.lex_start_p with pos_fname = input_file }
@@ -272,40 +272,30 @@ let grammar =
 
 
 
-let insert_line_number = "\n# insert-line-number \""^temp_output_file^"\"\n"
-let insert_line_number_mli = "\n# insert-line-number \""^output_file_mli^"\"\n"
-let sharp_line_number fname = function 0 | -1 -> "\n"
-  | lnum -> "\n# "^(string_of_int lnum)^" \""^fname^"\"\n"
-
 let space_string n = String.make (max n 0) ' '
 
 
 let dummy_line = "\nlet _ = () (* dummy line to improve OCaml error location *)"
 
 let topheader_main = if topheader_main="" then "\n" else
-  (sharp_line_number topheader_main_pos.pos_fname topheader_main_pos.pos_lnum)^
+  (* topheader_main_pos.pos_fname topheader_main_pos.pos_lnum^ *)
   (space_string (topheader_main_pos.pos_cnum-topheader_main_pos.pos_bol))^
-  topheader_main^dummy_line^insert_line_number
+  topheader_main^dummy_line
 let header_main = if header_main="" then "\n" else
-  (sharp_line_number header_main_pos.pos_fname header_main_pos.pos_lnum)^
   (space_string (header_main_pos.pos_cnum-header_main_pos.pos_bol))^
-  header_main^dummy_line^insert_line_number
+  header_main^dummy_line
 let trailer_main = if trailer_main = "" then "" else
-  (sharp_line_number trailer_main_pos.pos_fname trailer_main_pos.pos_lnum)^
   (space_string (trailer_main_pos.pos_cnum-trailer_main_pos.pos_bol))^
-  trailer_main^dummy_line^insert_line_number
+  trailer_main^dummy_line
 let topmli_code = if topmli_code = "" then "\n" else
-  (sharp_line_number topmli_code_pos.pos_fname topmli_code_pos.pos_lnum)^
   (space_string (topmli_code_pos.pos_cnum-topmli_code_pos.pos_bol))^
-  topmli_code^insert_line_number_mli
+  topmli_code
 let midmli_code = if midmli_code = "" then "\n" else
-  (sharp_line_number midmli_code_pos.pos_fname midmli_code_pos.pos_lnum)^
   (space_string (midmli_code_pos.pos_cnum-midmli_code_pos.pos_bol))^
-  midmli_code^insert_line_number_mli
+  midmli_code
 let mli_code = if mli_code = "" then "\n" else
-  (sharp_line_number mli_code_pos.pos_fname mli_code_pos.pos_lnum)^
   (space_string (mli_code_pos.pos_cnum-mli_code_pos.pos_bol))^
-  mli_code^insert_line_number_mli
+  mli_code
 
 
 
@@ -651,7 +641,7 @@ let inh_cons_map =
 module Ordered_str2 =
 struct
   type t = string * string
-  let compare = Pervasives.compare
+  let compare = compare
 end
 module Str2_map = Map.Make(Ordered_str2)
 
@@ -735,9 +725,8 @@ let code_main_lexer =
       if typ = "No_type" then
         (let c = if c="" then c else
           "let _ = ("^
-          (sharp_line_number pos.pos_fname pos.pos_lnum)^
           (space_string (pos.pos_cnum - pos.pos_bol))^
-          c^insert_line_number^") in "
+          c^") in "
         in
         "(fun lexbuf -> "^c^obj_pref^cons^")")
       else if c="" then
@@ -745,9 +734,8 @@ let code_main_lexer =
           "Error: line %d, an action is expected for terminal %s\n"
            pos.pos_lnum tname; exit 2)
       else "(fun lexbuf -> "^obj_pref^cons^
-        (sharp_line_number pos.pos_fname (pos.pos_lnum-1))^
         "(\n"^(space_string (pos.pos_cnum - pos.pos_bol))^
-        "("^c^"):'dypgen__"^cons^")"^insert_line_number^")"
+        "("^c^"):'dypgen__"^cons^")"^")"
     in
     let ter_id =
       try String_map.find tname token_name_map
@@ -802,9 +790,8 @@ let code_aux_lexer =
       in
       "(fun __dypgen_av_list lexbuf -> (match __dypgen_av_list with ["^
       code_var_list^"] -> "^obj_pref^cons^
-      (sharp_line_number pos.pos_fname (pos.pos_lnum-1))^
       "(\n"^(space_string (pos.pos_cnum - pos.pos_bol))^
-      "("^code^"):'dypgen__"^cons^")"^insert_line_number^
+      "("^code^"):'dypgen__"^cons^")"^
       "  | _ -> failwith \"lexing: bad action variable list when calling lexer user action\"))"
       ) aux_def
     in
@@ -1154,10 +1141,8 @@ let code_parser =
               code_iv, n+1, n'+1
             else
             (" "^obj_pref^"Lexeme_matched ("^
-            (sharp_line_number pos.pos_fname pos.pos_lnum)^
             (space_string (pos.pos_cnum - pos.pos_bol))^
             "("^pat^":string)"^
-            insert_line_number^
             " as _"^(string_of_int n)^")")::code_vl,
             code_iv, n+1, n'+1
         | (Symb_terminal (ter,_)), (pat, (Pat_syn pat_typ), pos)
@@ -1175,10 +1160,10 @@ let code_parser =
                 with Not_found -> None
               in
               (obj_pref^(String_map.find ter symb_cons_map)^" "^
-              " ("^(sharp_line_number pos.pos_fname pos.pos_lnum)^
+              " ("^
               (space_string (pos.pos_cnum - pos.pos_bol))^
               (match typ with None -> pat | Some t -> "("^pat^":"^t^")")^
-              insert_line_number^" as _"^(string_of_int n)^")")::code_vl,
+              " as _"^(string_of_int n)^")")::code_vl,
               code_iv, n+1, n'+1
         | (Symb_non_terminal ((nt,_),_,_,(code, code_pos))),
             (pat, (Pat_syn pat_typ), pos)
@@ -1186,12 +1171,12 @@ let code_parser =
             (pat, (Pat_syn pat_typ), pos)
           when nt.[0] <> '0' ->
             let code_var = (*aux "" n patternl in*)
-              " ("^(sharp_line_number pos.pos_fname pos.pos_lnum)^
+              " ("^
               (space_string (pos.pos_cnum - pos.pos_bol))^
               (try "("^pat^":'dypgen__"^
               (make_type_var_aux nt)^")"
               with Not_found -> pat)^
-              insert_line_number^" as _"^(string_of_int n)^")"
+              " as _"^(string_of_int n)^")"
             in
             let code_iv =
               if code = "" then code_iv else
@@ -1206,10 +1191,8 @@ let code_parser =
                   "__dypgen_av_list) with [";
                   code_var_list;"] -> ";obj_pref;
                   (String_map.find nt inh_cons_map);" ";
-                  (sharp_line_number code_pos.pos_fname (code_pos.pos_lnum-1));
                   "(\n";(space_string (code_pos.pos_cnum - code_pos.pos_bol));
                   "(";code;"):";typ;")";
-                  insert_line_number;
                   " | _ -> raise Dyp.Giveup))) __dypgen_ol __dypgen_pos";
                   " __dypgen_posl __dypgen_gd __dypgen_ld __dypgen_lld";
                   " __dypgen_di __dypgen_p __dypgen_nl)"])::code_iv
@@ -1239,11 +1222,10 @@ let code_parser =
                       with Not_found -> assert false)
                 )^")"
               in
-              (" ("^(sharp_line_number lhs_pat_pos.pos_fname
-                 lhs_pat_pos.pos_lnum)^
+              (" ("^
               (space_string (lhs_pat_pos.pos_cnum - lhs_pat_pos.pos_bol))^
               typ^
-              insert_line_number^" as _"^(string_of_int i)^")")::patl,
+              " as _"^(string_of_int i)^")")::patl,
               i+1)
             ([], 0) lhs_pat_l
           in
@@ -1276,12 +1258,10 @@ let code_parser =
           "__dypgen_av_list) with [";
           code_var_list;"] -> ";
           " let res = ";
-          (sharp_line_number pos.pos_fname (pos.pos_lnum-1));
           "(\n";(space_string (pos.pos_cnum - pos.pos_bol));
           "(";action;"):";typ;" * ('t,'obj,'gd,'ld,'l) Dyp.dyp_action list)";
         (* The extra parentheses around action are useful when the action
         is empty, it converts it to unit. *)
-          insert_line_number;
           "  in ";
           obj_pref;(String_map.find lhs_nt symb_cons_map);
           "(fst res), snd res\n";
@@ -1303,12 +1283,10 @@ let code_parser =
           "__dypgen_av_list) with [";
           code_var_list;"] -> ";obj_pref;
           (String_map.find lhs_nt symb_cons_map);" ";
-          (sharp_line_number pos.pos_fname (pos.pos_lnum-1));
           "(\n";(space_string (pos.pos_cnum - pos.pos_bol));
           "(";action;"):";typ;")";
         (* The extra parentheses around action are useful when the action
         is empty, it converts it to unit. *)
-          insert_line_number;
           ",[] | _ -> raise Dyp.Giveup))) __dypgen_ol __dypgen_pos";
           " __dypgen_posl __dypgen_gd __dypgen_ld __dypgen_lld __dypgen_di";
           " __dypgen_p __dypgen_nl)"]
@@ -1620,10 +1598,7 @@ let parser_code = String.concat "" parser_codl
 
 
 
-let () = Insert_linenum.buffer := String.copy parser_code
 let lexbuf = Lexing.from_string parser_code
-let parser_code = Insert_linenum.insert_linenum lexbuf
-
 let dest_file = open_out temp_output_file
 let () = output_string dest_file parser_code
 let () = close_out dest_file
@@ -1689,15 +1664,9 @@ let () = if !Argument.no_mli then () else
     (List.fold_left aux "" non_terminal_start_list)^
     mli_code
   in
-  Insert_linenum.buffer := String.copy parser_code_mli;
-  let lexbuf = Lexing.from_string parser_code_mli in
-  let parser_code_mli = Insert_linenum.insert_linenum lexbuf in
   let dest_file_mli = open_out output_file_mli in
   output_string dest_file_mli parser_code_mli;
   close_out dest_file_mli;
-  let lexbuf = Lexing.from_string parser_code in
-  (try Insert_linenum.replace_filename parser_code input_file_short lexbuf
-  with Failure _ -> (error_regexp (input_file_short^".ml.temp"); exit 2));
   let dest_file = open_out output_file in
   output_string dest_file parser_code;
   close_out dest_file)

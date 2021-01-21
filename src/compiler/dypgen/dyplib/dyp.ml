@@ -91,7 +91,7 @@ let new_counters () = {
 module Ordered_urule =
 struct
   type t = nrule
-  let compare = Pervasives.compare
+  let compare = compare
 end
 
 module Urule_map = Map.Make(Ordered_urule)
@@ -355,7 +355,7 @@ let make_real_grammar user_g (*(pmap:priority_data)*) str_non_ter nt_table ppar 
 module Ordered_nrule =
 struct
   type t = nrule
-  let compare = Pervasives.compare
+  let compare = compare
 end
 
 module RS = Set.Make (Ordered_nrule)
@@ -933,7 +933,7 @@ struct
   type t = (non_ter * priority) * rhs * int
    (* the int tells whether the rule allows layout characters
     inside or afterwards *)
-  let compare = Pervasives.compare
+  let compare = compare
 end
 module Rule_map = Map.Make(Ordered_rule)
 
@@ -2012,7 +2012,7 @@ let merge_states state_list li succ_states_array (*prd_nb*) non_kernel_array =
 module Ordered_edge =
 struct
   type t = lit_trans * priority
-  let compare = Pervasives.compare
+  let compare = compare
 end
 module Edge_map = Map.Make(Ordered_edge)
 
@@ -2391,7 +2391,7 @@ instead of just the result for ntp. *)
   with Not_found ->
     let new_lhslist =
       comp_lhslist (nt,ntp) lhslists priodata array_nt_prio in
-    let new_lhslist = List.sort Pervasives.compare new_lhslist in
+    let new_lhslist = List.sort compare new_lhslist in
     try
     let old_nt = make_old_nt nt ntp pdev priodata str_non_ter in
     let old_lhslist =
@@ -2402,7 +2402,7 @@ instead of just the result for ntp. *)
         nt_of_ind.(i),prio_of_ind.(i),i)
       old_lhslist
     in
-    let old_lhslist = List.sort Pervasives.compare old_lhslist in
+    let old_lhslist = List.sort compare old_lhslist in
     let l = diff_list new_lhslist old_lhslist [] in
     let prio_l = List.map (fun (_,p,_) -> p) l in
     (*Printf.fprintf !log_channel "diff_lhslist res = ";
@@ -3295,9 +3295,9 @@ the module Path_queue. (but it seems to be slower) *)
     | None -> assert false
   in
   if rel then 1 else
-  let c = Pervasives.compare (ind,rhs) (ind1,rhs1) in
+  let c = compare (ind,rhs) (ind1,rhs1) in
   if c<>0 then c else
-  let c = Pervasives.compare start_node.sn_nb
+  let c = compare start_node.sn_nb
     start1.sn_nb in
   if c<>0 then c else
   let rec aux l1 l2 = match l1,l2 with
@@ -3305,7 +3305,7 @@ the module Path_queue. (but it seems to be slower) *)
     | _,[] -> 1
     | [],_ -> -1
     | (e1::t1),(e2::t2) ->
-        let c = Pervasives.compare (snd e1.edge_label)
+        let c = compare (snd e1.edge_label)
           (snd e2.edge_label) in
         if c<>0 then c else aux t1 t2
   in aux p p1
@@ -4840,11 +4840,11 @@ let select_token topmost lexbuf all_token reset_start_pos select_unexpected layo
     output_string !log_channel "select_token called\n";
   
   let topmost = List.sort (fun v1 v2 ->
-    Pervasives.compare v1.pdev.lex_nb v2.pdev.lex_nb) topmost in
+    compare v1.pdev.lex_nb v2.pdev.lex_nb) topmost in
   (*let topmost = match topmost with
     | [_] -> topmost
     | _ -> List.sort (fun v1 v2 ->
-        Pervasives.compare v1.pdev.lex_nb v2.pdev.lex_nb)
+        compare v1.pdev.lex_nb v2.pdev.lex_nb)
         topmost
   in*)
   let tbl_l, pdev_l, snll, snl, _ = List.fold_left
@@ -4941,7 +4941,7 @@ let select_token topmost lexbuf all_token reset_start_pos select_unexpected layo
     in
     match act_id_l with [] -> None
     | x ->
-    let x = no_double (List.sort Pervasives.compare x) in
+    let x = no_double (List.sort compare x) in
         (*Printf.printf "list x = %s\n"
         (String.concat " " (List.map (fun i -> string_of_int i) x));*)
         Some ((if all_token then x else [select_act_id x]), pdev)

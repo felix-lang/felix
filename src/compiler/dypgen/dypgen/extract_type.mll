@@ -10,7 +10,7 @@ end
 module String_map = Map.Make(Ordered_string)
 
 let string_buf = Buffer.create 20
-
+let byte_of_char c = Bytes.get (Bytes.of_string (String.make 1 c )) 0
 }
 
 let newline = ('\010' | '\013' | "\013\010")
@@ -72,8 +72,9 @@ and extract_pp_type = parse
       let slist = List.rev (remove_tpar [] lexbuf2) in
       let s = String.concat "" slist in
       let lexbuf2 = Lexing.from_string s in
-      fix_variant s lexbuf2;
-      s }
+      let b = Bytes.of_string s in
+      fix_variant b lexbuf2;
+      Bytes.to_string b }
   | [^'\010''\013'] * newline
       { Buffer.add_string string_buf (Lexing.lexeme lexbuf);
       extract_pp_type lexbuf }
@@ -87,7 +88,9 @@ and fun_type_2 map curr_val = parse
         let slist = List.rev (remove_tpar [] lexbuf2) in
         let s = String.concat "" slist in
         let lexbuf2 = Lexing.from_string s in
-        fix_variant s lexbuf2;
+        let b = Bytes.of_string s in
+        fix_variant b lexbuf2;
+        let s = Bytes.to_string b in
         String_map.add curr_val s map
       else map in
     Buffer.clear string_buf;
@@ -119,12 +122,12 @@ and replace_tpar oldtp newtp = parse
   | ''' ['a'-'z'] ['0'-'9']* [' ''\010''\013'','')']
     { let r = Lexing.lexeme lexbuf in
     let len = String.length r in
-    let s = String.sub r 1 (len-2) in
-    if s = oldtp then
-      (let s = "'"^newtp^" " in
-      let len2 = String.length s in
+    let s = Bytes.of_string (String.sub r 1 (len-2)) in
+    if s = Bytes.of_string oldtp then
+      (let s = Bytes.of_string ("'"^newtp^" ") in
+      let len2 = Bytes.length s in
       s.[len2-1] <- r.[len-1];
-      Buffer.add_string string_buf s)
+      Buffer.add_bytes string_buf s)
     else
       Buffer.add_string string_buf r;
     replace_tpar oldtp newtp lexbuf }
@@ -137,11 +140,11 @@ and fix_variant fun_typ = parse
   | [^'_''['] * eof { () }
   | "_[" ['<''>']
     { let i = Lexing.lexeme_start lexbuf in
-    fun_typ.[i] <- ' '; fun_typ.[i+2] <- ' ';
+    fun_typ.[i] <- byte_of_char ' '; fun_typ.[i+2] <- byte_of_char ' ';
     fix_variant fun_typ lexbuf}
   | "[" ['<''>']
     { let i = Lexing.lexeme_start lexbuf in
-    fun_typ.[i+1] <- ' ';
+    fun_typ.[i+1] <- byte_of_char ' ';
     fix_variant fun_typ lexbuf}
   | [^'_''['] + { fix_variant fun_typ lexbuf }
   | ['_''['] { fix_variant fun_typ lexbuf }

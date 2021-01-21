@@ -3086,7 +3086,7 @@ let print_sym sym_table bid =
 
 let print_sym_table sym_table =
   let syms = Flx_sym_table.fold (fun k _ v acc -> (k,v) :: acc) sym_table [] in
-  let syms = List.sort (fun (k1,_) (k2,_) -> compare k1 k2) syms in
+  let syms = List.sort (fun (k1,_) (k2,_) -> Stdlib.compare k1 k2) syms in
 
   List.iter (fun (bid, _) -> print_sym sym_table bid) syms
 
@@ -3120,7 +3120,7 @@ let print_bsym_table bsym_table =
     bsym_table
     []
   in
-  let bsyms = List.sort (fun (k1,_) (k2,_) -> compare k1 k2) bsyms in
+  let bsyms = List.sort (fun (k1,_) (k2,_) -> Stdlib.compare k1 k2) bsyms in
 
   List.iter (fun (bid, _) -> print_bsym bsym_table bid) bsyms;
   print_endline ("=============  END TABLE ======================");
