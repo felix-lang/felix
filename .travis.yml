@@ -10,8 +10,8 @@ addons:
     - g++-8
 before_script:
 - wget https://github.com/ocaml/ocaml/archive/4.10.2.tar.gz
-- tar -xzf 4.06.1.tar.gz
-- cd ocaml-4.06.1
+- tar -xzf 4.10.2.tar.gz
+- cd ocaml-4.10.2
 - "./configure"
 - make world
 - make world.opt
