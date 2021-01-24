@@ -240,7 +240,7 @@ println$ "-" * 20;
           println$ "Compiling ML  " + file;
           begin
             var result = Shell::system$ list(
-               "ocamlopt.opt",
+               "ocamlopt.opt", "-g", /* with exception tracing enabled */
                "-I",tmpdir, 
                "-I",tmpdir/dir, 
                "-I", entmp (Filename::dirname file)) +

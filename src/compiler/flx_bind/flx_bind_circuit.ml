@@ -59,6 +59,7 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be (cs:Flx_
       let ts = [] in
       luf name ts signs
     in
+    let fthread_type_index = lun "fthread" in
     let schannel = lun "schannel" in
     let ischannel = lun "ischannel" in
     let oschannel = lun "oschannel" in
@@ -466,6 +467,13 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be (cs:Flx_
       library procedure which stores the fthread object into the variables before
       spawning them
    *)
+      let fibre_index = !(state.counter) in
+      incr state.counter;
+      let fibre_name = "fibre_" ^ string_of_int fibre_index in
+      let fthread_t = Flx_btype.btyp_inst (fthread_type_index, [], Flx_kind.KIND_type) in
+      let bbdcl = Flx_bbdcl.bbdcl_val (state.parent_vs,fthread_t,`Var) in
+      let bsym = Flx_bsym.create ~sr fibre_name bbdcl in 
+      Flx_bsym_table.add bsym_table fibre_index state.parent bsym;
 
       let spawn_exe = Flx_bexe.bexe_call (sr,spawn_fthread,device_closure) in
 (*

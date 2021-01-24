@@ -4,7 +4,7 @@ open Lexing
 module Ordered_string =
 struct
   type t = string
-  let compare = Pervasives.compare
+  let compare = Stdlib.compare
 end
 
 module String_map = Map.Make(Ordered_string)
@@ -66,7 +66,7 @@ and extract_type_2 = parse
 and extract_pp_type = parse
   | ' ' * "val __dypgen_dummy_marker_5 : unit" newline
       { Buffer.add_string string_buf "\n";
-      let s = String.copy (Buffer.contents string_buf) in
+      let s = Buffer.contents string_buf in
       Buffer.clear string_buf;
       let lexbuf2 = Lexing.from_string s in
       let slist = List.rev (remove_tpar [] lexbuf2) in
@@ -100,7 +100,7 @@ and fun_type_2 map curr_val = parse
     { let m =
       if curr_val <> "" then
         String_map.add curr_val
-        (String.copy (Buffer.contents string_buf)) map
+        (Buffer.contents string_buf) map
       else map in
     Buffer.clear string_buf;
     Buffer.add_string string_buf s;
