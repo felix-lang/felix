@@ -59,7 +59,33 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be (cs:Flx_
       let ts = [] in
       luf name ts signs
     in
+    let start_continuation = lus "_continuation_start" in
+(*
+print_endline ("Continuation starting function '_continuation_start' is " ^ Flx_print.sbe bsym_table start_continuation);
+*)
+    let continuation_type_index = lun "cont" in
+    let continuation_type = Flx_btype.btyp_inst (continuation_type_index, [], Flx_kind.KIND_type) in 
+    let lmk name =
+      let signs = [continuation_type] in
+      let ts = [] in
+      luf name ts signs
+    in
     let fthread_type_index = lun "fthread" in
+    let fthread_type = Flx_btype.btyp_inst (fthread_type_index, [], Flx_kind.KIND_type) in
+    let mk_thread = lmk "mk_thread" in
+(*
+print_endline ("Fthread constructor function 'mk_thread' is " ^ Flx_print.sbe bsym_table mk_thread);
+*)
+    let lsvc name = 
+      let signs = [fthread_type] in
+      let ts = [] in
+      luf name ts signs
+    in
+    let svc_fthread = lsvc "_svc_fthread" in
+(*
+print_endline ("SPawn Fthread svc call '_svc_fthread' is " ^ Flx_print.sbe bsym_table svc_fthread);
+*)
+
     let schannel = lun "schannel" in
     let ischannel = lun "ischannel" in
     let oschannel = lun "oschannel" in
@@ -470,16 +496,21 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be (cs:Flx_
       let fibre_index = !(state.counter) in
       incr state.counter;
       let fibre_name = "fibre_" ^ string_of_int fibre_index in
-      let fthread_t = Flx_btype.btyp_inst (fthread_type_index, [], Flx_kind.KIND_type) in
-      let bbdcl = Flx_bbdcl.bbdcl_val (state.parent_vs,fthread_t,`Var) in
+      let bbdcl = Flx_bbdcl.bbdcl_val (state.parent_vs,fthread_type,`Var) in
       let bsym = Flx_bsym.create ~sr fibre_name bbdcl in 
       Flx_bsym_table.add bsym_table fibre_index state.parent bsym;
 
-      let spawn_exe = Flx_bexe.bexe_call (sr,spawn_fthread,device_closure) in
+      let con_expr = Flx_bexpr.bexpr_apply continuation_type (start_continuation, device_closure) in
+      let fthread_expr = Flx_bexpr.bexpr_apply fthread_type (mk_thread, con_expr) in
+      let fvar = Flx_bexpr.bexpr_varname fthread_type (fibre_index, parent_ts) in
+      let assignment = Flx_bexe.bexe_assign (sr, fvar, fthread_expr) in
+      let spawn = Flx_bexe.bexe_call (sr, svc_fthread, fvar) in
+      exes := spawn :: assignment :: !exes (* reverse order of execution is reversed at the end *)
 (*
+      let spawn_exe = Flx_bexe.bexe_call (sr,spawn_fthread,device_closure) in
       print_endline ("SPAWN: " ^ string_of_bexe bsym_table 0 spawn_exe);
-*)
       exes := spawn_exe :: !exes
+*)
     )
     devices;
     bexe_comment (sr, "create circuit") :: List.rev !exes

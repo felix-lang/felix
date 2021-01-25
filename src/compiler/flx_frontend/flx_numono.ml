@@ -113,7 +113,14 @@ let rec mono_element debug syms to_process processed bsym_table nutab nubids i t
         begin match bbdcl with
         | BBDCL_fun (_,vs,_,_,_,_) ->
           let n = List.length vs in
-          let pts = Flx_list.list_prefix ts n in 
+          let pts = 
+            begin 
+              try Flx_list.list_prefix ts n 
+              with exn -> 
+                print_endline ("Invariant len ts >= len vs in Flx_numono.mono_element found broken for function " ^ id);
+                assert false
+            end
+          in 
 (*
 print_endline ("Our ts = " ^ catmap "," (sbt bsym_table) ts);
 print_endline ("Parent vs = " ^ catmap "," (fun (s,i) -> s) vs);

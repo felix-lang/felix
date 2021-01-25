@@ -340,7 +340,10 @@ print_endline ("Monomorphising variable "^Flx_bsym.id bsym ^" polytype " ^ sbt b
     Some (bbdcl_external_const (props,vs, t, cs, reqs))
  
   | BBDCL_external_type (vs,quals,cs,reqs)  -> 
-    assert (List.length vs = List.length ts);
+    if List.length vs <> List.length ts then begin
+      print_endline ("Ts/vs mismatch in external type " ^ Flx_bsym.id bsym);
+      assert (List.length vs = List.length ts);
+    end;
     let vars = List.map2 (fun (s,i,_) t -> i,t) vs ts in
     let reqs = Flx_monofixup_base.fixup_reqs syms bsym_table vars polyinst sr reqs in
     let quals = List.map (Flx_monofixup_base.fixup_qual vars mt) quals in

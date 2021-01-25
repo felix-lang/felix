@@ -22,7 +22,7 @@ let call name f arg =
     in
     Hashtbl.replace statistics name ((end_time -. start_time) :: old_times)
   in
-  Flx_util.finally fend f arg
+  Fun.protect ~finally:fend (fun () -> f arg)
 
 
 (** Print out our gathered statistics. *)

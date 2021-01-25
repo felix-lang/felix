@@ -39,6 +39,7 @@ open class Fibres
 
   //$ Function to start a contiuation without an argument.
   gen start (p:1->0) = { return _start0 (p); }
+  gen _continuation_start (p:1->0) = { return _start0 (p); } // compiler looks this up do not change
 
   //$ Function to make a fibre out of a continuation.
   gen mk_thread: cont->fthread = "new(*ptf-> gcp,::flx::rtl::_fthread_ptr_map,false) ::flx::rtl::fthread_t($1,nullptr)";
@@ -49,6 +50,10 @@ open class Fibres
   {
       var con = start p;              // get continuation of p
       var fthr = mk_thread con;
+      svc$ svc_spawn_fthread fthr;
+  }
+
+  proc _svc_fthread (fthr:fthread) {
       svc$ svc_spawn_fthread fthr;
   }
 
