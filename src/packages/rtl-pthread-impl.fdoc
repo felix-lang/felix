@@ -90,6 +90,7 @@ class PTHREAD_EXTERN thread_control_t : public virtual thread_control_base_t
 
     ::std::condition_variable_any stop_guard;
     ::std::mutex stop_mutex;
+    ::std::mutex notification_registry_mutex;
 
     // WORLD STOP NOTIFICATION REGISTRY
     // .. a set of condition variables that a thread could be waiting on

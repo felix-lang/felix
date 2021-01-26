@@ -28,7 +28,7 @@ namespace flx { namespace run {
 // be made a GC root
 struct RTL_EXTERN async_sched
 {
-  enum thread_kind_t {mainline,embedded,pthread,process};
+  enum thread_kind_t {mainline,embedded,pthread,process,realtime};
   thread_kind_t thread_kind;
   static char const *str(thread_kind_t);
 
@@ -116,6 +116,7 @@ char const *async_sched::str(thread_kind_t k) {
   case embedded: return "embedded";
   case pthread: return "pthread";
   case process: return "process";
+  case realtime: return "realtime";
   }
 }
 
