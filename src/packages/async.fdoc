@@ -136,7 +136,7 @@ async_sched::async_sched(
     thread_kind(k)
   { 
     ss = new(*gcp,sync_sched_ptr_map, false) sync_sched(debug_driver, gcp, a); 
-    ++a->thread_count;
+    ++a->fibre_count;
     ++a->busy_count;
     if (debug_driver)
       fprintf(stderr, "prun %p: async scheduler, creating and rooting synchronous scheduler! threads=1,busy=1\n",(void*)mythrid());
@@ -149,9 +149,9 @@ async_sched::async_sched(
 async_sched::~async_sched() {
   try
   {
-    --ss->active->thread_count;
+    --ss->active->fibre_count;
     if (debug_driver)
-      fprintf(stderr, "prun %p: Terminating async scheduler, threads=%d\n",(void*)mythrid(), ss->active->thread_count.load());
+      fprintf(stderr, "prun %p: Terminating async scheduler, threads=%d\n",(void*)mythrid(), ss->active->fibre_count.load());
     if (debug_driver)
       fprintf(stderr, "prun %p: async scheduler, fibre queue length %d, async_cound=%d\n",
          (void*)mythrid(), ss->active->size(), ss->active->async_count);
@@ -180,12 +180,6 @@ static void prun_pthread_entry(void *data) {
 // REGISTERS IN THREAD_CONTROL
 void async_sched::do_spawn_process()
 {
-  // this is safe (at the moment) because, if the active list
-  // is already in use by other processes, we're just overwriting
-  // the lock pointer with its existing value. If the list isn't
-  // in use by other processes, the lock pointer is NULL,
-  // but this thread is the one running the current process,
-  // so it can't race with itself. 
   spawn_impl (ss->active,process);
 }
 void async_sched::do_spawn_pthread()
@@ -360,8 +354,8 @@ sync_run:
             ss->active->qisblocked.clear(); // release control
             // DELAY
             if (debug_driver)
-              fprintf(stderr, "prun: %s %p Async delaying thread_count=%d, busy_count=%d\n", 
-                str(thread_kind), (void*)mythrid(), ss->active->thread_count.load(),ss->active->busy_count.load());
+              fprintf(stderr, "prun: %s %p Async delaying fibre_count=%d, busy_count=%d\n", 
+                str(thread_kind), (void*)mythrid(), ss->active->fibre_count.load(),ss->active->busy_count.load());
             sleep(gcp->collector->get_thread_control(), 10.00); // nanoseconds
             ++ss->active->busy_count;
             goto sync_run;

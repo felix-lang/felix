@@ -68,7 +68,7 @@ public:
 
   // FIXME: THESE SHOULDNT BE ATOMIC BECAUSE IDIOT C++ MIGHT MUTEX WRAP THEM
   // Instead they should only be used inside our spinlock
-  ::std::atomic<int> thread_count; // n threads sharing list
+  ::std::atomic<int> fibre_count; // n threads sharing list
   ::std::atomic<int> busy_count; // n threads actually working
 
   ::flx::rtl::flx_spinlock active_lock;
@@ -194,7 +194,7 @@ static ::flx::gc::generic::offset_data_t const sync_sched_offset_data = { 2, syn
 // fthread_list
 // ***************************************************
 fthread_list::fthread_list(::flx::gc::generic::gc_profile_t *gcp_) : 
-  thread_count(1),
+  fibre_count(1),
   busy_count(0),
   async_count(0),
   async(nullptr),

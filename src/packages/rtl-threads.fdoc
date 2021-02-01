@@ -75,7 +75,7 @@ bool thread_control_t::get_debug()const { return debug; }
 thread_control_base_t::~thread_control_base_t(){}
 
 thread_control_t::thread_control_t (bool d) :
-  do_world_stop(false), thread_counter(0), active_counter(0), debug(d),
+  do_world_stop(false), thread_counter(0), active_counter(0), realtime_thread_counter(0), debug(d),
   world_stop_notifier_array(0), world_stop_notifier_array_length(0)
   {
     if(debug)
@@ -92,6 +92,11 @@ size_t thread_control_t::active_count()
   {
     ::std::unique_lock< ::std::mutex> m(stop_mutex);
     return active_counter;
+  }
+
+void thread_control_t::set_realtime() 
+  {
+     ++realtime_thread_counter;
   }
 
 void thread_control_t::add_thread(void *stack_base)
@@ -149,7 +154,7 @@ bool thread_control_t::world_stop()
 
     stop_guard.notify_all();
 
-    while(active_counter>1) {
+    while(active_counter - realtime_thread_counter > 1) {
       if(debug)
         for(
           thread_registry_t::iterator it = threads.begin();

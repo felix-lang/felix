@@ -87,6 +87,7 @@ class PTHREAD_EXTERN thread_control_t : public virtual thread_control_base_t
     bool do_world_stop;     // flag to say we want to stop the world
     size_t thread_counter;  // total Felix threads (not counting demux etc)
     size_t active_counter;  // total active Felix threads (not suspended for world stop yet_
+    size_t realtime_thread_counter;
 
     ::std::condition_variable_any stop_guard;
     ::std::mutex stop_mutex;
@@ -117,6 +118,7 @@ public:
     thread_control_t (bool);
     size_t thread_count() override;
     size_t active_count();
+    void set_realtime();
     void add_thread(void*) override;
     void remove_thread() override;
     bool world_stop() override;
