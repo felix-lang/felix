@@ -564,7 +564,7 @@ int flx_world::setup(int argc, char **argv) {
   }
 
   // flx_libinst_t::create can run code, so add thread to avoid world_stop abort
-  thread_control->add_thread(get_stack_pointer());
+  thread_control->add_thread(get_stack_pointer(), ::flx::pthread::mainline);
 
   // Create the usercode driver instance
   // NB: seems to destroy()ed in do_final_cleanup
@@ -600,7 +600,7 @@ int flx_world::setup(int argc, char **argv) {
   async_scheduler = new (*gcp,async_sched_ptr_map,false) async_sched(
     this,
     debug_driver,
-    gcp, schedlist,async_sched::mainline
+    gcp, schedlist
     ); // deletes active for us!
 
   return 0;
@@ -661,14 +661,13 @@ int flx_world::teardown() {
   if (debug_driver)
     fprintf(stderr, "[teardown] entry\n");
 
-  collector->get_thread_control()->add_thread(get_stack_pointer());
+  thread_control_base_t *thread_control = collector->get_thread_control();
+  thread_control->add_thread(get_stack_pointer(), ::flx::pthread::mainline);
 
   // could this override error_exit_code if something throws?
   int error_exit_code = explicit_dtor();
   if (debug_driver)
     fprintf(stderr,"[teardown] explicit dtor run code %d\n", error_exit_code);
-
-  thread_control_base_t *thread_control = collector->get_thread_control();
 
   instance=0;
   library=0;
@@ -723,7 +722,7 @@ int flx_world::teardown() {
 // flx_world : Resume Felix
 // =================================================================
 void flx_world::begin_flx_code() {
-  collector->get_thread_control() -> add_thread(get_stack_pointer());
+  collector->get_thread_control() -> add_thread(get_stack_pointer(), ::flx::pthread::mainline);
 }
 
 // =================================================================

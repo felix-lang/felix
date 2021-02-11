@@ -24,16 +24,15 @@ namespace flx { namespace run {
 // based on state variables.
 //
 // NOTE: currently async_sched is NOT garbage collected
-// Hence, the synchronous scheduler is creates must
+// Hence, the synchronous scheduler it creates must
 // be made a GC root
 struct RTL_EXTERN async_sched
 {
-  enum thread_kind_t {mainline,embedded,pthread,process,realtime};
-  thread_kind_t thread_kind;
-  static char const *str(thread_kind_t);
-
   // weak pointer
   struct flx_world *world;
+
+  // weak pointer
+  ::flx::pthread::thread_data_t *thread_data;
 
   bool debug_driver;
 
@@ -48,14 +47,15 @@ struct RTL_EXTERN async_sched
     flx_world *world_arg, 
     bool d, 
     ::flx::gc::generic::gc_profile_t *g, 
-    fthread_list *a, thread_kind_t
+    fthread_list *a
   );
   ~async_sched();
 
+  ::flx::pthread::thread_kind_t get_thread_kind() const;
   int prun();
   void do_spawn_pthread();
   void do_spawn_process();
-  void spawn_impl(fthread_list*, thread_kind_t);
+  void spawn_impl(fthread_list*, ::flx::pthread::thread_kind_t);
   void do_general();
 
   void external_multi_swrite(::flx::rtl::schannel_t *, void *data);
@@ -77,6 +77,20 @@ RTL_EXTERN extern ::flx::gc::generic::gc_shape_t async_sched_ptr_map;
 #include "flx_async_world.hpp"
 #include "flx_sync.hpp"
 #include <assert.h>
+
+namespace flx { namespace pthread {
+
+char const *str(thread_kind_t k) {
+  switch (k) {
+  case mainline: return "mainline";
+  case embedded: return "embedded";
+  case pthread: return "pthread";
+  case process: return "process";
+  case realtime: return "realtime";
+  case joinable: return "joinable";
+  case foreign: return "foreign";
+  }
+}}}
 
 using namespace ::flx::rtl;
 using namespace ::flx::pthread;
@@ -109,15 +123,8 @@ static ::flx::gc::generic::offset_data_t const async_sched_offset_data = { 1, as
 // Async_sched: Thread kind pretty printer
 // ***************************************************
 
-
-char const *async_sched::str(thread_kind_t k) {
-  switch (k) {
-  case mainline: return "mainline";
-  case embedded: return "embedded";
-  case pthread: return "pthread";
-  case process: return "process";
-  case realtime: return "realtime";
-  }
+thread_kind_t async_sched::get_thread_kind() const { 
+  thread_data->thread_kind;
 }
 
 // ***************************************************
@@ -128,12 +135,12 @@ async_sched::async_sched(
     flx_world *world_arg, 
     bool d, 
     ::flx::gc::generic::gc_profile_t *g, 
-    fthread_list *a, thread_kind_t k
+    fthread_list *a
   ) : 
     world(world_arg), 
     debug_driver(d), 
     gcp(g),
-    thread_kind(k)
+    thread_data(nullptr)
   { 
     ss = new(*gcp,sync_sched_ptr_map, false) sync_sched(debug_driver, gcp, a); 
     ++a->fibre_count;
@@ -162,7 +169,8 @@ async_sched::~async_sched() {
 }
 
 // ***************************************************
-// Async_sched: Thread procedure 
+// Async_sched: Thread procedure
+// ACTUAL procedure run by OS for a new thread  
 // ***************************************************
 static void prun_pthread_entry(void *data) {
   async_sched *d = (async_sched*)data;
@@ -185,10 +193,10 @@ void async_sched::do_spawn_process()
 void async_sched::do_spawn_pthread()
 {
   fthread_list *pactive = new(*gcp, ::flx::run::fthread_list_ptr_map,false) fthread_list(gcp);
-  spawn_impl (pactive,pthread);
+  spawn_impl (pactive,::flx::pthread::pthread);
 }
 
-void async_sched::spawn_impl(fthread_list *pactive, thread_kind_t k) {
+void async_sched::spawn_impl(fthread_list *pactive, thread_kind_t thread_kind) {
 
   fthread_t *ftx = ss->request->svc_fthread_req.fthread;
   if (debug_driver)
@@ -200,7 +208,7 @@ void async_sched::spawn_impl(fthread_list *pactive, thread_kind_t k) {
     // NO NO! This is ALL BAD! Some OTHER thread might run this routine!
     pactive->push_front(ftx);
   }
-  void *data = new  (*gcp, async_sched_ptr_map, false) async_sched(world,debug_driver, gcp, pactive,k);
+  void *data = new  (*gcp, async_sched_ptr_map, false) async_sched(world,debug_driver, gcp, pactive);
 
   if (debug_driver)
     fprintf(stderr, "[prun %p: spawn_pthread] Starting new pthread, thread counter= %zu\n",
@@ -214,9 +222,11 @@ void async_sched::spawn_impl(fthread_list *pactive, thread_kind_t k) {
     ::std::condition_variable_any spawner_cond;
     bool spawner_flag = false;
     ::std::unique_lock< ::std::mutex> locktite(spawner_lock);
+
+    // THIS LINE ACTUALLY CREATES A NEW PTHREAD
     flx_detached_thread_t().init(prun_pthread_entry, data, gcp->collector->get_thread_control(), 
       &spawner_lock, &spawner_cond,
-      &spawner_flag
+      &spawner_flag, thread_kind
     );
 
     if (debug_driver)
@@ -286,6 +296,9 @@ static void sleep(thread_control_base_t *tc, size_t ns)
 // Async_sched:  MASTER SCHEDULER
 // ***************************************************
 int async_sched::prun() {
+   // Set the cached weak pointer to the thread data
+   thread_data = gcp->collector->get_thread_control()->get_thread_data_pointer();
+   thread_kind_t thread_kind = thread_data->thread_kind;
 sync_run:
   // RUN SYNCHRONOUS SCHEDULER
   if (debug_driver)
@@ -326,7 +339,7 @@ sync_run:
       switch (thread_kind) 
       {
         case mainline:
-        case pthread:
+        case ::flx::pthread::pthread:
           // gain exclusive control
           while(!ss->active->qisblocked.test_and_set());
           if (ss->active->async_count > 0) 
@@ -443,7 +456,7 @@ sync_run:
 bool async_sched::nonblocking_schedule_queued_fthreads() {
   if (debug_driver) {
     fprintf(stderr,
-      "prun %s %p: out of active synchronous threads, trying async, pending=%zu\n", str(thread_kind), (void*)mythrid(), ss->active->async_count);
+      "prun %s %p: out of active synchronous threads, trying async, pending=%zu\n", str(get_thread_kind()), (void*)mythrid(), ss->active->async_count);
   }
   int scheduled_some = 0;
   if (ss->active->async && ss->active->async_count > 0) {

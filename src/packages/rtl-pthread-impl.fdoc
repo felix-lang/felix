@@ -48,6 +48,7 @@ threads and pchannels for synchronisation.
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include <memory>
 
 namespace flx { namespace pthread {
 
@@ -69,7 +70,7 @@ flx_native_thread_t PTHREAD_EXTERN get_current_native_thread();
 uintptr_t PTHREAD_EXTERN mythrid();
 
 // THREAD REGISTRY: a map from the FELIX THREAD ID to thread data
-typedef std::map<uintptr_t, thread_data_t, std::less<uintptr_t> > thread_registry_t;
+typedef std::map<uintptr_t, ::std::unique_ptr<thread_data_t>, std::less<uintptr_t> > thread_registry_t;
 
 // ********************************************************
 // MASTER THREAD CONTROL OBJECT
@@ -119,7 +120,8 @@ public:
     size_t thread_count() override;
     size_t active_count();
     void set_realtime();
-    void add_thread(void*) override;
+    void add_thread(void*, thread_kind_t) override;
+    thread_data_t *get_thread_data_pointer()const override;
     void remove_thread() override;
     bool world_stop() override;
     void join_all()  override;
@@ -140,9 +142,10 @@ struct tstart_t
   ::std::mutex *spawner_lock;
   ::std::condition_variable_any *spawner_cond;
   bool *spawner_flag;
+  thread_kind_t thread_kind;
 
-  tstart_t(void (*s)(void*),void* c,thread_control_base_t *t, ::std::mutex *sl, ::std::condition_variable_any *sc, bool *sf)
-    : sr(s), cd(c), tc(t), spawner_lock(sl), spawner_cond(sc), spawner_flag(sf)
+  tstart_t(void (*s)(void*),void* c,thread_control_base_t *t, ::std::mutex *sl, ::std::condition_variable_any *sc, bool *sf, thread_kind_t k)
+    : sr(s), cd(c), tc(t), spawner_lock(sl), spawner_cond(sc), spawner_flag(sf), thread_kind(k)
   {}
 };
 
@@ -150,19 +153,19 @@ struct tstart_t
 // are freed. they just evaporate. probably the best type of thread.
 class PTHREAD_EXTERN flx_detached_thread_t {
   flx_native_thread_t thr;        ///< the thread
-  flx_detached_thread_t(flx_detached_thread_t const&); // uncopyable
-  void operator=(flx_detached_thread_t const&); // uncopyable
+  flx_detached_thread_t(flx_detached_thread_t const&) = delete; // uncopyable
+  void operator=(flx_detached_thread_t const&) = delete; // uncopyable
 public:
   flx_detached_thread_t();
   ~flx_detached_thread_t();
-  int init(void (*start)(void*), void* udat, thread_control_base_t*, ::std::mutex *, ::std::condition_variable_any *, bool*);
+  int init(void (*start)(void*), void* udat, thread_control_base_t*, ::std::mutex *, ::std::condition_variable_any *, bool*, thread_kind_t);
 };
 
 // rf: joinable threads. is it an error to not join joinable threads?
 class PTHREAD_EXTERN flx_thread_t {
   flx_native_thread_t thr;        ///< the thread
-  flx_thread_t(flx_thread_t const&); // uncopyable
-  void operator=(flx_thread_t const&); // uncopyable
+  flx_thread_t(flx_thread_t const&) = delete; // uncopyable
+  void operator=(flx_thread_t const&) = delete; // uncopyable
 public:
   flx_thread_t();
   ~flx_thread_t();
@@ -170,11 +173,11 @@ public:
   void join();
 };
 
-/// RAII wrapper for thread class
+/// RAII wrapper for joinable thread class
 class PTHREAD_EXTERN flx_thread_wrapper_t {
   flx_thread_t thread;
-  flx_thread_wrapper_t(flx_thread_wrapper_t const&); // uncopyable
-  void operator=(flx_thread_wrapper_t const&); // uncopyable
+  flx_thread_wrapper_t(flx_thread_wrapper_t const&) = delete; // uncopyable
+  void operator=(flx_thread_wrapper_t const&) = delete; // uncopyable
 public:
   ~flx_thread_wrapper_t();
   flx_thread_wrapper_t(void (*start)(void*), void* udat, thread_control_base_t *tc);
@@ -209,6 +212,7 @@ extern "C" void *flx_pthread_start_wrapper(void *e)
 {
   void *stack_base = get_stack_pointer();
   tstart_t *ehd = (tstart_t*)e;
+  thread_kind_t k = ehd->thread_kind;
   thread_control_base_t *tc = ehd -> tc;
   if(tc == 0)
   {
@@ -221,7 +225,7 @@ extern "C" void *flx_pthread_start_wrapper(void *e)
        (void*)mythrid(),stack_base, tc);
   if(debug)
       fprintf(stderr,"Thread registering itself\n");
-  tc->add_thread(stack_base);
+  tc->add_thread(stack_base, k);
   if(debug)
     fprintf(stderr,"Registered: Spawned Thread %p stack base = %p\n",
       (void*)mythrid(),stack_base, tc);
@@ -291,19 +295,16 @@ extern "C" void *nonflx_pthread_start_wrapper(void *e)
 
 // ---- detached threads ----------
 
-flx_detached_thread_t::flx_detached_thread_t(flx_detached_thread_t const&){} // uncopyable
-void flx_detached_thread_t::operator=(flx_detached_thread_t const&){} // uncopyable
-
 int
 flx_detached_thread_t::init(void (*start)(void*), void* udat, thread_control_base_t *tc,
-  ::std::mutex * m, ::std::condition_variable_any *c,bool *flag)
+  ::std::mutex * m, ::std::condition_variable_any *c,bool *flag, thread_kind_t k)
 {
   pthread_attr_t attr;
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
   pthread_attr_setstacksize(&attr, 1048576ul * 100ul ); // 100Meg .. should get from control/env of something
   int res = pthread_create(&thr, &attr, flx_pthread_start_wrapper,
-    new tstart_t(start, udat, tc, m,c,flag));
+    new tstart_t(start, udat, tc, m,c,flag,k));
   if(res)
   {
      fprintf(stderr, "WARNING: flx_detached_thread_t: pthread_create failed: %s\n",
@@ -317,14 +318,12 @@ flx_detached_thread_t::~flx_detached_thread_t() { }
 flx_detached_thread_t::flx_detached_thread_t() { }
 
 // ---- joinable threads ----------
-flx_thread_t::flx_thread_t(flx_thread_t const&){} // uncopyable
-void flx_thread_t::operator=(flx_thread_t const&){} // uncopyable
 
 int
 flx_thread_t::init(void (*start)(void*), void* udat, thread_control_base_t*tc)
 {
   int res = pthread_create(&thr, NULL, nonflx_pthread_start_wrapper,
-    new tstart_t(start, udat, tc,NULL,NULL,NULL));
+    new tstart_t(start, udat, tc,NULL,NULL,NULL,joinable));
   if(res)
   {
      fprintf(stderr, "WARNING: flx_thread_t: pthread_create failed: %s\n",
@@ -352,9 +351,6 @@ flx_thread_t::~flx_thread_t() { }
 flx_thread_t::flx_thread_t() { }
 
 // ---- joinable thread wrapper ----------
-
-flx_thread_wrapper_t::flx_thread_wrapper_t(flx_thread_wrapper_t const&){} // uncopyable
-void flx_thread_wrapper_t::operator=(flx_thread_wrapper_t const&){} // uncopyable
 
 flx_thread_wrapper_t::flx_thread_wrapper_t(void (*start)(void*), void* udat, thread_control_base_t*tc)
 {
@@ -415,7 +411,7 @@ DWORD WINAPI flx_pthread_start_wrapper(LPVOID e)
     fprintf(stderr,"Spawned Thread %p start stack base = %p, tc=%p\n",(void*)mythrid(),stack_base, tc);
   if(tc->get_debug())
     fprintf(stderr,"Thread registering itself\n");
-  tc->add_thread(stack_base);
+  tc->add_thread(stack_base, k);
   if(debug)
     fprintf(stderr,"Registered: Spawned Thread %p stack base = %p\n",
       (void*)mythrid(),stack_base, tc);
@@ -481,18 +477,15 @@ DWORD WINAPI nonflx_pthread_start_wrapper(LPVOID e)
 
 // ---- detached threads ----------
 
-flx_detached_thread_t::flx_detached_thread_t(flx_detached_thread_t const&){} // uncopyable
-void flx_detached_thread_t::operator=(flx_detached_thread_t const&){} // uncopyable
-
 // returns -1 on failure with error in GetLastError, 0 if all good.
 int
 flx_detached_thread_t::init(void (*start)(void*), void *lParam, thread_control_base_t *tc,
-  ::std::mutex * m, ::std::condition_variable_any *c,bool *flag)
+  ::std::mutex * m, ::std::condition_variable_any *c,bool *flag, thread_kind_t k)
 {
   DWORD thread_id = 0;
   thr = (HANDLE)CreateThread(NULL, 1048576ul * 100ul, // 100Meg .. should use control/env
     (LPTHREAD_START_ROUTINE)flx_pthread_start_wrapper,
-    new tstart_t(start,lParam, tc, m, c, flag), 0,
+    new tstart_t(start,lParam, tc, m, c, flag,k), 0,
     &thread_id
   );
 
@@ -509,9 +502,6 @@ flx_detached_thread_t::~flx_detached_thread_t() { CloseHandle(thr); }
 flx_detached_thread_t::flx_detached_thread_t() { }
 
 // ---- joinable threads ----------
-flx_thread_t::flx_thread_t(flx_thread_t const&){} // uncopyable
-void flx_thread_t::operator=(flx_thread_t const&){} // uncopyable
-
 
 flx_thread_t::flx_thread_t() { }
 flx_thread_t::~flx_thread_t() { }
