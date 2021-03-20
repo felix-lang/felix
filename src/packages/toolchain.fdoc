@@ -1322,7 +1322,7 @@ object toolchain_clang_linux (config:toolchain_config_t) implements toolchain_t 
   var ccflags_for_dynamic_link = list[string] ("-shared");
 
   var base_cxx_compile_flags =  
-     "-std=c++14"! "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! (cxx_compile_warning_flags+config.ccflags)
+     "-std=c++14"! "-g"! "-c" ! "-O1" ! "-fno-common"! "-fno-strict-aliasing" ! "-fblocks" ! (cxx_compile_warning_flags+config.ccflags)
   ;
 
   var base_c_compile_flags =  
