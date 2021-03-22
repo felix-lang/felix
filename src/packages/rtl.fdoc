@@ -90,22 +90,18 @@ def build_runtime(phase):
 //#define PTF ptf->
 #define FLX_POINTER_TO_THREAD_FRAME ptf
 
-// for declarations in header file
-//#define FLX_FMEM_DECL thread_frame_t *ptf;
-//#define FLX_FPAR_DECL_ONLY thread_frame_t *_ptf
-//#define FLX_FPAR_DECL thread_frame_t *_ptf,
-//#define FLX_APAR_DECL_ONLY thread_frame_t *ptf
-//#define FLX_APAR_DECL thread_frame_t *ptf,
 #define FLX_DCL_THREAD_FRAME
 
 #if FLX_CGOTO
   #define FLX_LOCAL_LABEL_VARIABLE_TYPE void*
   #define FLX_PC_DECL void *pc;
   #define FLX_KILLPC pc = &&_flx_dead_frame;
+  #define FLX_RESETPC pc = nullptr;
 #else
   #define FLX_PC_DECL int pc;
   #define FLX_LOCAL_LABEL_VARIABLE_TYPE int
   #define FLX_KILLPC pc = -1;
+  #define FLX_RESETPC pc = 0;
 #endif
 
 // THESE ARE NOT CURRENTLY USED
@@ -260,7 +256,7 @@ class ProductType : public virtual ValueType
   size_t n;
   ValueType **cp;
 public:
-  ProductType (ValueType **p, size_t m) : cp(p), n(n) {}
+  ProductType (ValueType **p, size_t m) : cp(p), n(m) {}
   ~ProductType();
   size_t object_size_impl() override;
   size_t object_alignment_impl() override;
