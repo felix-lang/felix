@@ -15,12 +15,15 @@
 \hypersetup{pdftex,colorlinks=true,allcolors=blue}
 \usepackage{hypcap}
 
-\title{Programming Coroutines in C++}
+\title{Advanced Programming in C++}
 \author{John Skaller}
 \begin{document}
 \maketitle
 \tableofcontents
-\chapter{Overview}
+\chapter{Introduction}
+Blah.
+\chapter{Communicating Sequential Processes}
+\section{Overview}
 The Felix programming language uses a novel architecture which is related to
 Tony Hoare's communicating sequential process (CSP) model. We will document
 the design and implementation but our primary goal here is to allow the
@@ -33,7 +36,6 @@ When the API is finally introduced the programmer will then be familiar
 with the motivation and design issues. The problem is all such architectures
 involve complex interactions between components which cannot be introduced
 sequentially; but humans learn in steps.
-
 
 \section{Continuations}
 A {\em continuation} is an object which encapsulates the future of a program.
@@ -1054,10 +1056,201 @@ fibres to communicate with channels. The second thing we want to do is allow
 multiple threads to service the same active list, in effect providing a thread
 pool to execute queued jobs.
 
+The first and easiest thing to do is split up the scheduler.
 
+\begin{minted}{c++}
+// active set
+struct active_set_t {
+  ::std::atomic_size_t refcnt;
+  fibre_t *active;
+  ::std::atomic_flag lock;
+  active_set() : refcnt(1), active(nullptr), lock(ATOMIC_FLAG_INIT) {}
+
+  active_set_t *share() { ++refcnt; return this; }
+  void forget() { --refcnt; if(!atomic_load(&refcnt)) delete this; }
+
+  // push a new active fibre onto active list
+  void push(fibre_t *fresh) { 
+    while(lock.test_and_set(::std::memory_order_acquire); // spin
+    fresh->next = active; 
+    active = fresh; 
+    lock.clear(::std::memory_order_release); // release lock
+  }
+  // pop an active fibre off the active list
+  fibre_t *pop() {
+    while(lock.test_and_set(::std::memory_order_acquire); // spin
+    fibre_t *tmp = active;
+    if(tmp)active = tmp->next;
+    lock.clear(::std::memory_order_release); // release lock
+    return tmp;
+  }
+};
+\end{minted}
+
+We have provided an atomic flag we use as a spinlock in the push an pop operations.
+There is also a reference count. When a new scheduler is created, typically in a new
+thread, which is to share the active set, the share function is use to obtain a pointer
+to it, which increments the reference count. The initial creator gets a pointer
+to a fresh scheduler with the counter already set to 1.
+
+When any scheduler exits or otherwise wishes to relinquish access to the active
+set, it must call forget. This includes the initial creator. If there are no
+references left to the active set, it is deleted.
+
+Note that a corouine which somehow managed to get hold is the active list on which it
+is waiting, this would create a circularity. This would only cause a problem is the
+coroutine failed to reach the point where it forgot the active list. This could
+happen if the coroutine became suspended on a channel, its owning scheduling 
+process returned, and the coroutines destructor also failed to invoke forget.
+
+Now before we proceed we must make a decision about a new issue that
+arises when separate threads, running separate schedulers, meet via
+a successful I/O operation. In the single threaded case, we simply
+pushed the writer on the active list, and executed the reader.
+
+But now, we could execute both concurrently, or we could push
+both onto an active list, but which one?
+
+The simplest answer is that when a fibre is created it is associated with
+a particular active set, so it will always be either put on the active set,
+or executed by a thread accessing that active set. To make this happen,
+we have to save a pointer to the active set in the fibre:
+
+\begin{minted}{c++}
+// fibre
+struct fibre_t {
+  con_t *cc;
+  fibre_t *next;
+  active_set_t *owner;
+...
+};
+\end{minted}
+
+The scheduler has to be changed to this:
+
+\begin{minted}{c++}
+// scheduler
+struct sync_sched {
+  fibre_t *current; // currently running fibre, nullptr if none
+  struct active_set_t *active_set;  // 
+
+  sync_sched() : current(nullptr), active(nullptr) {}
+  ~sync_sched() { active_set->forget(); }
+
+  void sync_run();
+  void do_read(io_request_t *req);
+  void do_write(io_request_t *req);
+  void do_spawn_fibre(spawn_fibre_request_t *req);
+
+};
+\end{minted}
+
+Note there is one scheduler per thread.
+
+Now, we need the channel I/O operators to be mostly safe. To achieve this
+we have little choice but to add a lock to channels.
+
+\begin{minted}{c++}
+// channel
+struct channel_t {
+  fibre_t *top;
+  ::std::atomic_flag lock;
+  
+  channel_t () : top (nullptr), lock(ATOMIC_FLAG_INIT) {}
+...
+};
+\end{minted}
+
+Now comes the hard bit. It would be tempting to lock the push and pop
+operations on the channel, but this will not do. Recall a reader, for example,
+tries to get a writer, and gets pushed if there isn't one. The problem is,
+a writer from another thread may get pushed in between the check and the push,
+and now we have broken a core invariant: a channel must be empty, contain
+only readers, or contain only writers. So we have to acquire a lock at the start of the
+read operation and release it only when it is complete.
+
+\begin{minted}{c++}
+void sync_sched::do_read(io_request_t *req) {
+  while(lock.test_and_set(::std::memory_order_acquire); // spin
+  fibre_t *w = req->chan->pop_writer();
+  if(w) {
+    lock.clear(::std::memory_order_release); // release lock
+    *current->cc->svc_req->io_request.pdata =
+      *w->cc->svc_req->io_request.pdata; // transfer data
+
+    // null out svc requests so they're not re-issued
+    w->cc->svc_req = nullptr;
+    current->cc->svc_req = nullptr;
+
+    w->owner.push(w); // onto active list
+    // i/o match: reader retained as current
+  }
+  else {
+    req->chan->push_reader(current);
+    lock.clear(::std::memory_order_release); // release lock
+    current = active_set->pop(); // active list
+    // i/o fail: current pushed then set to next active
+  }
+}
+\end{minted}
+
+The location of the release is a bit surprising, it comes before the 
+data transfer. This is ok because the reader and writer are both suspended.
+The writer is suspended on the channel, and the reader is suspended
+in the function itself.
+
+Notice also, the writer is pushed back onto its owner active list.
+
+
+The pushes and pops on active lists are separately locked.
+It takes some thought to understand why this is enough: there is no
+need for the whole method to run atomically. The critical insight
+is the abstract semantics: the choice of active suspension to run
+next is arbitrary. If another fibre is pushed before we do our
+operation it doesn't matter.
+
+The critical observation is this: indeterminacy in semantic
+specification can enable optimisations. Contrary to popular
+belief indeterminacy is good.
+
+The write operation is similar but it has an interesting twist!
+
+\begin{minted}{c++}
+void sync_sched::do_write(io_request_t *req) {
+  while(lock.test_and_set(::std::memory_order_acquire); // spin
+  fibre_t *r = req->chan->pop_reader();
+  if(r) {
+    lock.clear(::std::memory_order_release); // release lock
+    *r->cc->svc_req->io_request.pdata = 
+      *current->cc->svc_req->io_request.pdata; // transfer data
+
+    // null out svc requests so they're not re-issued
+    r->cc->svc_req = nullptr;
+    current->cc->svc_req = nullptr;
+
+    if(r->owner == active_set) {
+      active_set->push(current); // current is writer, pushed onto active list
+      current = r; // make reader current
+    }
+    else {
+      r->owner.push(r);
+      // writer remains current if reader is foreign
+    }
+  }
+  else {
+    req->chan->push_writer(current); // i/o fail: push current onto channel
+    lock.clear(::std::memory_order_release); // release lock
+    current = active_set->pop(); // reset current from active list
+  }
+}
+
+\end{minted}
+
+Notice that our old semantics cannot be preserved if the reader and
+writer come from different active sets. This is also true in the read
+case but the extra check was not required!
 
 
 \end{document}
-
 
 
