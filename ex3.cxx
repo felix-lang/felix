@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cassert>
 #include <cstdio>
+#include <atomic>
 
 // continuation
 struct con_t {
@@ -17,7 +18,7 @@ struct con_t {
 struct fibre_t {
   con_t *cc;
   fibre_t *next;
-  active_set_t *owner;
+  struct active_set_t *owner;
 
   // default DEAD
   fibre_t() : cc(nullptr), next(nullptr) {}
@@ -64,7 +65,7 @@ struct channel_t {
   fibre_t *top;
   ::std::atomic_flag lock;
   
-  channel_t () : top (nullptr), lock(ATOMIC_FLAG_INIT) {}
+  channel_t () : top (nullptr), lock(false) {}
 
   // destructor deletes all continuations left in channel
   ~channel_t() {
@@ -113,21 +114,27 @@ struct active_set_t {
   ::std::atomic_size_t refcnt;
   fibre_t *active;
   ::std::atomic_flag lock;
-  active_set() : refcnt(1), active(nullptr), lock(ATOMIC_FLAG_INIT) {}
+  active_set_t() : refcnt(1), active(nullptr), lock(false) {}
 
   active_set_t *share() { ++refcnt; return this; }
   void forget() { --refcnt; if(!atomic_load(&refcnt)) delete this; }
 
   // push a new active fibre onto active list
   void push(fibre_t *fresh) { 
-    while(lock.test_and_set(::std::memory_order_acquire); // spin
+    while(lock.test_and_set(::std::memory_order_acquire)); // spin
     fresh->next = active; 
     active = fresh; 
     lock.clear(::std::memory_order_release); // release lock
   }
+
+  void push_new(fibre_t *fresh) {
+    fresh->owner = this;
+    push(fresh);
+  }
+
   // pop an active fibre off the active list
   fibre_t *pop() {
-    while(lock.test_and_set(::std::memory_order_acquire); // spin
+    while(lock.test_and_set(::std::memory_order_acquire)); // spin
     fibre_t *tmp = active;
     if(tmp)active = tmp->next;
     lock.clear(::std::memory_order_release); // release lock
@@ -160,8 +167,10 @@ union svc_req_t {
 struct sync_sched {
   fibre_t *current; // currently running fibre, nullptr if none
   active_set_t *active_set;  // chain of fibres ready to run
+  ~sync_sched() { active_set->forget(); }
 
-  sync_sched() : current(nullptr), active(nullptr) {}
+  sync_sched() : current(nullptr), active_set(new active_set_t) {}
+  sync_sched(active_set_t *a) : current(nullptr), active_set(a) {}
 
   void sync_run();
   void do_read(io_request_t *req);
@@ -171,7 +180,7 @@ struct sync_sched {
 
 // scheduler subroutine runs until there is no work to do
 void sync_sched::sync_run() {
-  current = pop(); // get some work
+  current = active_set->pop(); // get some work
   while(current) // while there's work to do 
   {
     svc_req_t *svc_req = current->run_fibre();
@@ -192,17 +201,18 @@ void sync_sched::sync_run() {
     {
       assert(!current->cc); // check it's adead fibre
       delete current;       // delete dead fibre
-      current = pop();      // get more work
+      current = active_set->pop();      // get more work
     }
   }
 }
 
 
 void sync_sched::do_read(io_request_t *req) {
-  while(lock.test_and_set(::std::memory_order_acquire); // spin
-  fibre_t *w = req->chan->pop_writer();
+  channel_t *chan = req->chan;
+  while(chan->lock.test_and_set(::std::memory_order_acquire)); // spin
+  fibre_t *w = chan->pop_writer();
   if(w) {
-    lock.clear(::std::memory_order_release); // release lock
+    chan->lock.clear(::std::memory_order_release); // release lock
     *current->cc->svc_req->io_request.pdata =
       *w->cc->svc_req->io_request.pdata; // transfer data
 
@@ -210,22 +220,23 @@ void sync_sched::do_read(io_request_t *req) {
     w->cc->svc_req = nullptr;
     current->cc->svc_req = nullptr;
 
-    w->owner.push(w); // onto active list
+    w->owner->push(w); // onto active list
     // i/o match: reader retained as current
   }
   else {
-    req->chan->push_reader(current);
-    lock.clear(::std::memory_order_release); // release lock
-    current = pop(); // active list
+    chan->push_reader(current);
+    chan->lock.clear(::std::memory_order_release); // release lock
+    current = active_set->pop(); // active list
     // i/o fail: current pushed then set to next active
   }
 }
 
 void sync_sched::do_write(io_request_t *req) {
-  while(lock.test_and_set(::std::memory_order_acquire); // spin
+  channel_t *chan = req->chan;
+  while(chan->lock.test_and_set(::std::memory_order_acquire)); // spin
   fibre_t *r = req->chan->pop_reader();
   if(r) {
-    lock.clear(::std::memory_order_release); // release lock
+    chan->lock.clear(::std::memory_order_release); // release lock
     *r->cc->svc_req->io_request.pdata = 
       *current->cc->svc_req->io_request.pdata; // transfer data
 
@@ -238,21 +249,22 @@ void sync_sched::do_write(io_request_t *req) {
       current = r; // make reader current
     }
     else {
-      r->owner.push(r);
+      r->owner->push(r);
       // writer remains current if reader is foreign
     }
   }
   else {
-    req->chan->push_writer(current); // i/o fail: push current onto channel
-    lock.clear(::std::memory_order_release); // release lock
+    chan->push_writer(current); // i/o fail: push current onto channel
+    chan->lock.clear(::std::memory_order_release); // release lock
     current = active_set->pop(); // reset current from active list
   }
 }
 
 
 void sync_sched::do_spawn_fibre(spawn_fibre_request_t *req) {
+  req->tospawn->owner = active_set;
   current->cc->svc_req=nullptr;
-  push(current);
+  active_set->push(current);
   current = req->tospawn;
 }
 
@@ -413,9 +425,9 @@ int main() {
   fibre_t *cons = new fibre_t ((new consumer)->call(nullptr, &outlst, &chan2));
 
   // push initial fibres onto scheduler active list
-  sched.push(prod);
-  sched.push(trans);
-  sched.push(cons);
+  sched.active_set->push_new(prod);
+  sched.active_set->push_new(trans);
+  sched.active_set->push_new(cons);
  
   // run it
   sched.sync_run();
