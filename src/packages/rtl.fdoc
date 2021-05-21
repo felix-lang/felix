@@ -326,50 +326,30 @@ template<class R>
 struct _type1 {
  typedef R (*cfun)(void);
  typedef void (*cproc)(R);
-#ifdef __clang__
- typedef R (^bfun)(void);
- typedef void (^bproc)(R);
-#endif
 };
 
 template<class R,class P1>
 struct _type2 {
  typedef R (*cfun)(P1);
  typedef void (*cproc)(R,P1);
-#ifdef __clang__
- typedef R (^bfun)(P1);
- typedef void (^bproc)(R,P1);
-#endif
 };
 
 template<class R,class P1, class P2>
 struct _type3 {
  typedef R (*cfun)(P1,P2);
  typedef void (*cproc)(R,P1,P2);
-#ifdef __clang__
- typedef R (^bfun)(P1,P2);
- typedef void (^bproc)(R,P1,P2);
-#endif
 };
 
 template<class R,class P1, class P2, class P3>
 struct _type4 {
  typedef R (*cfun)(P1,P2,P3);
  typedef void (*cproc)(R,P1,P2,P3);
-#ifdef __clang__
- typedef R (^bfun)(P1,P2,P3);
- typedef void (^bproc)(R,P1,P2,P3);
-#endif
 };
 
 template<class R,class P1, class P2, class P3, class P4>
 struct _type5 {
  typedef R (*cfun)(P1,P2,P3,P4);
  typedef void (*cproc)(R,P1,P2,P3,P4);
-#ifdef __clang__
- typedef R (^bfun)(P1,P2,P3,P4);
- typedef void (^bproc)(R,P1,P2,P3,P4);
-#endif
 };
 
 
