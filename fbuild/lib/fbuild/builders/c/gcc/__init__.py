@@ -250,7 +250,7 @@ class Gcc(fbuild.db.PersistentObject):
             if parent not in libpaths:
                 libpaths.append(parent)
 
-            lib = lib.name[len('lib'):]
+            lib = lib.lstrip("lib")
             lib = lib.rsplit('.', 1)[0]
 
             new_libs.append(lib)
