@@ -451,7 +451,7 @@ The term <em>post</em> is derived from the idea of posting a flag.
 
 The counting feature of a semaphore is analogous to shoppers
 in a store. The  :code:`sem_post` function puts products on the shelf,
-whilst the the  :code:`sem_wait` function represents an order on which
+whilst the  :code:`sem_wait` function represents an order on which
 the customer is waiting due to unavailable stock .. and  :code:`sem_trywait`
 is the customer that, seeing there is no available stock, decides
 to go elsewhere!

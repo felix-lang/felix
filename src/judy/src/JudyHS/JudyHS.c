@@ -83,7 +83,7 @@
    It could foil hackers that exploit the slow synonym (linked-list)
    collision handling property used with most hashing algorithms.  If
    this is not a necessary property, then a simpler ADT "JLHash" that is
-   documented the the test program "StringCompare.c" may be used with a
+   documented the test program "StringCompare.c" may be used with a
    little loss of memory efficiency (because it includes the string
    length with the ls_t structure).  JudyHS was written to be the
    fastest, very scalable, memory efficient, general purpose string ADT

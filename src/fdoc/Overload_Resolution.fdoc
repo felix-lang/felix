@@ -104,7 +104,7 @@ fun g[r] (x:r)=> f[r*r]((x,x),(x,x)); // specialised w->r*r
 @h2 Specialisation of signatures
 Felix then examines the argument of the call and attempts to
 find a substitution of the type variables of the candidate which
-make the resulting type  a generalisation of the the first argument.
+make the resulting type  a generalisation of the first argument.
 If no such substitution is found, the candidate is removed from
 the set of candidates. Note that a call like <code>f (1,2)</code>
 only involves a single argument, namely the tuple <code>(1,2)</code>

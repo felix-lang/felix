@@ -67,7 +67,7 @@ The nesting is just syntactic sugar for:
     y: int;
   }
 
-  fun pythag (self: Point) => max(self.x, self.y);
+  fun norm (self: Point) => max(self.x, self.y);
   proc reset (self: &Point) { self.x <- 0; self.y <- 0; }
   proc set (self: &Point) (a:int, b:int) { self.x <- a; self.y <- b; } 
 

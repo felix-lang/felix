@@ -604,7 +604,7 @@ Faio I/O
     LPOVERLAPPED olp, int err)
   {
     // fprintf(stderr,"wsa_socketio wakeup, nb: %li, err: %i\n", nbytes, err );
-  // Doing the handling myself - this can restart the the op giving us
+  // Doing the handling myself - this can restart the op giving us
   // a possible race condition... or not? It should be sync with this call.
     // wsasocketio_control_block::iocp_op_finished(nbytes, udat, olp, err);
   

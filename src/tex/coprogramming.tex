@@ -1921,7 +1921,7 @@ If the eager chip starves on either the read of the true value
 or the false value, then any reader of the result also starves,
 no matter what is read for the condition. However the lazy
 chip only ever reads the value it is required to output,
-and so only starves if the the read on that channel starves.
+and so only starves if the read on that channel starves.
 If it doesn't, then it doesn't matter if a read on the
 other channel starves, because we never actually read it.
 

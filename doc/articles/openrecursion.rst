@@ -238,9 +238,9 @@ the leaves up to the root. Lets make another extension:
      )
     ;
 
-    fun eval3'[T] (eval3: T-> int) (term: subable'[T]) : int =>
+    fun eval3'[T] (eval3: T-> int) (term: mulable'[T]) : int =>
       match term with
-      | `Sub (t1, t2) => eval3 t1 - eval3 t2
+      | `Mul (t1, t2) => eval3 t1 * eval3 t2
       | (addable'[T] :>> y) => eval' eval3 y
     ;
 

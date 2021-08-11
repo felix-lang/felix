@@ -32,7 +32,7 @@ seem like an unusual feature in isolation, it is needed to support
 polyrecords (row polymorphism).
 
 There is a special case: if all the field names are blank,
-the the record is a tuple. So in fact tuples are just a special
+the record is a tuple. So in fact tuples are just a special
 case of records.
 
 Function Application

@@ -11,7 +11,7 @@
 # For caller convenience, if a "dir" argument ends in "/README", that part is
 # ignored and the rest is taken as the directory name.
 
-# Checks the current directory by default, else the the named directories.
+# Checks the current directory by default, else the named directories.
 # Reads $file (see below) in each directory.  Takes the first field of each
 # line which starts in column 1 and is not a comment ("#") as a filename, and
 # compares it (or its basename) against the files in the directory, except for
