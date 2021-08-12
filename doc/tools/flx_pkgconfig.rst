@@ -127,8 +127,8 @@ Path
 
 The `--path=` and `--path+=` switches are used to set the search path
 used by flx_pkgconfig. The first switch specifies the first directory
-on the search path. The second can be used to add directoris to the
-end of the the search path. When looking for a package, the directories
+on the search path. The second can be used to add directories to the
+end of the search path. When looking for a package, the directories
 are searched in order.
 
 The `--extension=` switch species the extension of the filename to

@@ -14,7 +14,7 @@
 and then, it has to actually replace virtual types we monomorphic
 ones as well. Normally virtual to instance mapping would not occur
 here, but it really is a substitution for a type variable,
-its just the the type variable is a virtual, a different kind
+its just the type variable is a virtual, a different kind
 of type variable (in fact, existential).
 
 FIXME: Its NOT clear to me why the result of that operation has to actually

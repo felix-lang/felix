@@ -2590,7 +2590,7 @@ static void do_check_malloced_chunk(mchunkptr p, INTERNAL_SIZE_T s) {
     always true of any allocated chunk; i.e., that each allocated
     chunk borders either a previously allocated and still in-use
     chunk, or the base of its memory arena. This is ensured
-    by making all allocations from the the `lowest' part of any found
+    by making all allocations from the `lowest' part of any found
     chunk.  
   */
 

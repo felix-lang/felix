@@ -690,7 +690,7 @@ println$ x;
 ++i;
 println$ x;
 @
-which is clearly just an expansion of the the first two
+which is clearly just an expansion of the first two
 iteration of the previously given for loop. However in
 this case there is no assurance @{x} will change after @{i}
 is incremented because the compiler is free to replace

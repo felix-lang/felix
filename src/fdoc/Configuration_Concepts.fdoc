@@ -49,7 +49,7 @@ to build the run time libraries.
 
 The build platform also requires an Ocaml compiler targetting
 the host platform. If a native code cross compiler is not available 
-the the bytecode generating tools must be used.
+the bytecode generating tools must be used.
 
 The host platform does not require a C++ compiler. It runs
 flx_pkgconfig (built on the build platform) and the command

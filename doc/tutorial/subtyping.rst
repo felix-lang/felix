@@ -202,7 +202,7 @@ exact C signed integer types.
 .. code-block:: felix
 
   supertype int64: int32 = "(int64_t)$1";
-  supertype int32 : int16 = "(nt32_t)$1";
+  supertype int32 : int16 = "(int32_t)$1";
   supertype int16 : int8  "(int16_t)$1";
 
 however there are no conversions between signed and unsigned types,
