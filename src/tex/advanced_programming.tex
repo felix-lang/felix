@@ -77,6 +77,112 @@ only that the variable did not change during a single iteration
 of the loop, whereas, due to scoping rules, the modification
 tells us it does not change in the \verb%main% function.
 
+\subsection{Public Invariants}
+Public invariants or {\em semantic laws}, are rules which 
+define properties of one or more types in the abstract.
+
+{\em Abstract} has a technical meaning which is not well understood
+so we need to spell it out: abstract means that the semantics
+are defined in terms of the interactions of functions.
+
+In particular an {\em abstract data type} or ADT is defined
+by a collection of functions and types. This notion of abstraction
+is compounded with a notion of functional composition to provide
+a {\em category theoretic model of computing}.
+
+\subsubsection{Group}
+Let us consider a single type as follows:
+
+\begin{minted}{c++}
+class G {
+public:
+  G operator +(G) const;
+  G operator -() const;
+  static G Zero()const;
+}
+\end{minted}
+
+The following laws are written as executable code on values of G,
+with an assumption with have an equality operator:
+
+\begin{minted}{c++}
+  // unit law
+  assert (Zero() + g == g);     
+
+  // associatibity
+  assert (g1 + (g2 + g3) == (g1 + g2) + g3); 
+
+  // inverse
+  assert (g + -g == Zero());  
+\end{minted}
+
+A type which obeys these laws is called a {\em group}. If the following
+law is also obeyed:
+
+\begin{minted}{c++}
+  // symmetry
+  assert (g1 + g2 = g2 + g1);
+\end{minted}
+
+then it is called a symmetric or Abelian group. When the operator
+is given as plus, it is called an additive group.  Multiplicative
+groups use a multiply operator and One() as the unit and the inverse
+would be written as a method named \verb%reciprocal%.
+
+You will probably
+recognise that, within the limitation of size, \verb%int% is an
+additive group but it is not multiplicative group. 
+
+You may think, floating point numbers form a multiplicative group
+if you take out zero. This is not the case! Floating point operations
+are not associative, so in fact floats do not even form an additive group!
+
+
+\subsubsection{Equivalence relation}
+This is a fundamental abstraction that must be fully understood
+because it defines what equality means.
+
+\begin{minted}{c++}
+  // reflexivity
+  assert (v == v);
+
+  // symmetry 
+  assert ((v1 == v2) ? v2 == v1) : true);
+
+  // transitivity
+  assert (v1 == v2 && v2 == v3 ? v1 == v3 : true);
+\end{minted}
+
+The C conditional operator is used here so we can write the law
+as an expression which can be asserted.
+
+
+\subsubsection{Stack}
+A more computer science based example is the definition of a stack.
+
+\begin{minted}{c++}
+   stack s ...
+   ssave = s;
+   s.push(v);
+   vnew = stack.pop();
+   assert (v == vnew);
+   assert (s == ssave);
+\end{minted}
+
+This says if you push something onto a stack then do a pop, you get
+the last thing you pushed back, and, the stack is in the same state
+as before the push.  These assertions apply to any type S like:
+
+\begin{minted}{c++}
+class S {
+public:
+  void push(V);
+  V pop();
+};
+\end{minted}
+
+noting again the requirement we have an equality operator.
+
 \subsection{Representation Invariants}
 Another popular example of the utility of the concept of an invariant
 is shown here:
@@ -404,67 +510,6 @@ new to initialise a variable two threads have access to you
 before initialisation even starts. The point is, the functional code
 cannot introduce any new problems,
 
-\section{Public Invariants}
-Public invariants or {\em semantic laws}, are rules which 
-define properties of one or more types in the abstract.
-
-{\em Abstract} has a technical meaning which is not well understood
-so we need to spell it out: abstract means that the semantics
-are defined in terms of the interactions of functions.
-
-In particular an {\em abstract data type} or ADT is define
-by a collection of functions and types. This notion of abstraction
-is compounded with a notion of functional composition to provide
-a {\em category theoretic model of computing}.
-
-Let us consider a single type as follows:
-
-\begin{minted}{c++}
-class G {
-public:
-  G operator +(G) const;
-  G operator -() const;
-  static G Zero()const;
-}
-\end{minted}
-
-The following laws are written as executable code on values of G,
-with an assumption with have an equality operator:
-
-\begin{minted}{c++}
-  // unit law
-  assert (Zero() + g == g);     
-
-  // associatibity
-  assert (g1 + (g2 + g3) == (g1 + g2) + g3); 
-
-  // inverse
-  assert (g + -g == Zero());  
-\end{minted}
-
-A type which obeys these laws is called a {\em group}. If the following
-law is also obeyed:
-
-\begin{minted}{c++}
-  // symmetry
-  assert (g1 + g2 = g2 + g1);
-\end{minted}
-
-then it is called a symmetric or Abelian group. When the operator
-is given as plus, it is called an additive group.  Multiplicative
-groups use a multiply operator and One() as the unit and the inverse
-would be written as a method named \verb%reciprocal%.
-
-You will probably
-recognise that, within the limitation of size, \verb%int% is an
-additive group but it is not multiplicative group. 
-
-You may think, floating point numbers form a multiplicative group
-if you take out zero. This is not the case! Floating point operations
-are not associative, so in fact floats do not even form an additive group!
-
-
-
 \section{Optimisation}
 Optimisation is a process whereby a human programmer of compiler
 is able to improve the performance of a program by modifications
@@ -480,6 +525,244 @@ There are specialised tools to help identify performance issues
 called {\em profilers}. They are generally easy to deply to check for
 bottlenecks but quite difficult to use for tuning.
 
+\section{Localisation}
+{\em Localisation} is an important technique to improve the ability
+to reason about code. For example consider the following
+
+\begin{minted}{c++}
+struct X {
+  int y;
+  void inc();
+};
+void X::inc(){ ++y; }
+\end{minted} 
+
+compared to
+
+\begin{minted}{c++}
+struct X {
+  int y;
+  void inc(){ ++y; }
+};
+\end{minted} 
+
+The second case is shorter and the encoding of the \verb%inc% method 
+involves incrementing the non-static member \verb%y% which is defined
+on the line above. In the first case we have to look three lines up
+to find \verb%y% is an \verb%int% and two lines down from the declaration
+of \verb%inc% to find its definition. Worse, if the signature of
+\verb%inc% changes we also have to change the definition. In addition,
+the name of the struct, \verb%X% has to be repeated and so when seeing
+the out of line definition we have to again look up to find the 
+struct declaration.
+
+Another example:
+
+\begin{minted}{c++}
+mutex lock;
+void f() {
+  lock_guard<mutex> locked(lock); 
+  // do stuff holding mutex
+}
+\end{minted}
+
+illustrates the Resource Acquisition Is Initialisation (RAII)
+idea in C++. Using the guard not only acquires the lock, it
+ensures the lock is held for the whole scope of the function 
+\verb%f%, and what's more, it is correctly released when the
+function exits, even if it does so as the result of an exception
+being thrown. In this case a single line not only acquires
+the lock, but also ensures its release. Compare this with:
+
+\begin{minted}{c++}
+mutex lock;
+void f() {
+  try {
+    lock.lock();
+    // do stuff holding mutex
+    lock.unlock();
+  }
+  catch (...){ 
+    lock.unlock(); throw; 
+  }
+}
+\end{minted}
+
+I hope this is equivalent but it could fail is the locking
+the lock throws an exception! Can this happen? I have to look
+up the C++ Standard to find out. TL;DR. The code is unreliable.
+It is longer, it is clearly harder to decide if the code is correct,
+and the code is fragile because we have to be careful modifying it.
+What if we needed to lock two locks? What happens if the unlock
+operation fails? Can that throw an exception? Does it matter?
+
+The utility of localisation is not merely a coding technique
+for it depends on the language design supporting it. In C++
+the coupling of object destruction to release associated
+resources with the release of the object memory in the
+the \verb%delete% expression and the ability to define for
+a class the destructor performing the relevant operations
+inside the class and lexically close to constructor and 
+data members holding the resources is a significant aid
+to reasoning. It is certainly better than writing the release
+code every time an object is freed!
+
+Such is the strength of belief in localisation of this kind
+that many languages have been designed to support this kind
+of localisation, and in other cases, new versions of the language
+added support later.
+
+Here's an example from Java:
+\begin{minted}{java}
+class TestFinallyBlock {    
+  public static void main(String args[]){    
+    try{    }    
+    catch(NullPointerException e){  }    
+    finally {  }
+  }
+};
+\end{minted}
+The \verb%finally% clause is part of the \verb%try/catch/finally% statement,
+and provides a local assurance some code will be executed whether
+or not an exception is thrown, in other words {\em always.} Knowing
+something always happens is easier to understand than something that
+happens depending on a condition.
+
+The same idea in golang:
+\begin{minted}{go}
+package main
+import "fmt"
+func main() {
+	defer fmt.Println("world")
+	fmt.Println("hello")
+}
+\end{minted}
+
+The deferred operation is invoked at the end of its containing scope,
+but it written at the start.
+
+A related notion is that of a lexical closure. In Ocaml for example:
+
+\begin{minted}{ocaml}
+let f x = let g y = x + y in g
+\end{minted}
+
+the function \verb%g% is returned from \verb%f%, closed over
+its environment, which contains the parameter \verb%x% of f,
+as well as its own parameter \verb%y%. The point of a lexical
+closure is that by specification it implies proximity of physical
+code, that is, the actual characters of text: that's what lexical means.
+So the idea of a lexical closure is you can reason about what the
+function does only looking in a small space in the text file.
+
+In summary, localisation is a way of enabling {\em local reasoning.}
+We need to complete our survey with a counter example! Hindley Milner
+type inference is our example .. and it explains why I hate it!
+From Ocaml:
+
+\begin{minted}{ocaml}
+let f g = g 1 in
+let h g = g 42.3 in
+let k g1 g2 x = g1 x + g2 x in
+let g i = k f h i in
+g 1
+\end{minted}
+
+This gives an error but it is not clear unless you duplicate
+the compilers reasoning. The function \verb%f% accepts a function which
+accepts an integer, and \verb%h% accepts a function which accepts a float.
+The function k takes two functions which accept the same type and return
+an int. Now, when k is applied inside g it passes f and h which apply each
+to the same value parameter x must be both a float and an int which is
+impossible so we get an error in function \verb%k%. But actually we meant to write:
+
+\begin{minted}{ocaml}
+let f g = g 1.0 in
+\end{minted}
+
+as the first line. So the error message is entirely wrong.
+the problem is the Ocaml compiler isn't smart enough to track
+how it made the inferences and report all the possible sources
+of the error, which is a good thing also since the inference
+is accumulated by refining the set of possible types on ever
+line of the program above.
+
+A proper error report would resemble the mess you get with
+template instantiation errors in C++: the compiler simply doesn't
+have any way to determine where the real error is because it
+is using global reasoning instead of local reasoning.
+
+When Microsoft introduced type inference into C# they took great
+care to ensure it only worked locally, precisely to prevent
+the above problem.
+
+It is instructive, in the Ocaml example, to learn how to find the
+error: one adds type annotations for example:
+
+\begin{minted}{ocaml}
+let f (g: int -> int) = g 1 in
+...
+\end{minted}
+
+and now we have localised the inference by forcing it to
+agree with the parameter immediately, which immediately
+finds the real error. The point again is that lexical
+proximity can provide local reasoning.
+
+There are many programmers like me, who do not actually read
+code! It's true, if you give me code to examine I won't read it.
+I just look at it wholistically. If it isn't indented properly
+I'll throw it back at you or immediately edit it so it is.
+I can't read code that doesn't have structure because I learn
+what the code does from its visual structure.
+
+Humans eyes do massively parallel processing and can see two
+dimensional patterns almost instantaneously. Reading code
+is a linear exercise which requires scanning laboriously
+and remembering what you've already read. The best way to
+understand code is to only read the bits you actually need to,
+and the wholistic pattern matching is how to identify which
+bits need further examination and thought.
+
+Unsurprisingly compilers are better at local reasoning too!
+In particular complex analyses such as data flow analysis
+are almost universally done locally, within a single function
+only, and then, the local results painfully coupled with some
+ad hoc algorithms, since the analysis is an intractible $O(N^3)$
+or worse. This is fine inside a small function, but we need to
+find a way to combine the results which is $O(N log N)$.
+This is the biggest number which is considered scalable.
+
+
+\section{Anonymity}
+\section{Indeterminacy}
+\section{Abstraction}
+\section{Reentrancy}
+
+\section{Principles}
+\subsubsection{Open/Closed Principle}
+\subsubsection{Principle of Explicit Interfaces}
+\subsubsection{SOLID}
+The so-called SOLID principles of object orientation are attributed
+to Robert Martin. These are:
+\begin{Itemize}
+\item[Single Responsibility Principle] states that a class should have only
+one responsibility.
+\item[Open/Closed Principle] we have already met and was first 
+espoused by Bertrand Meyer in Object Oriented Software Construction.
+The principle is a core principle of modularity and is not specific
+to object oriented programming.
+\item[Liskov Substitution Principle] is a behavioural specification
+of the notion of subtyping. It is often paraphrased by saying
+"if it looks like a duck and acts like a duck then it is a duck".
+Unfortunately whilst the idea seems good the technical details
+are suspect.
+\item[Interface Segregation Principle] claims that a client shouldn't
+for forced to implement an interface or method they do not need.
+\tem[Dependency Inversion Principle] states that entities should depend
+on abstractions not concretions.
+
+\end{itemize}
 
 \end{document}
 
