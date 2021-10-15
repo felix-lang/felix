@@ -26,227 +26,460 @@
 \begin{document}
 \maketitle
 \tableofcontents
+\chapter{Review}
+Here we are going to review some basic concepts you should already know.
 
-\chapter{High Performance Lists}
-\section{A naive list in Felix}
-\subsection{Definition}
-The usual definition of a purely functional list 
-looks like this:
+\section{Invariants}
+An {\em invariant} as you might expect is something which does not change.
 
-\begin{minted}{felix}
-variant list[T] = Empty | Cons of T * list[T];
+\subsection{Loop Invariants}
+
+Consider this code snippet:
+\begin{minted}{c++}
+int main() {
+  for(int i=0; i<100; ++i) {
+    int j  = 1;
+    int k = j + i;
+    cout << k << endl; 
+  }
+}
 \end{minted}
 
-This single line provides the complete functional specification.
+Here the variable j has the same value 1, no matter which iteration
+of the loop is being executed. So we can say j is a loop invariant.
+There is an optimisation known as {\em invariant code motion} which
+allows us to rewrite the code to be more efficient without changing
+the semantics:
+\begin{minted}{c++}
+int main() {
+  int j  = 1;
+  for(int i=0; i<100; ++i) {
+    int k = j + i;
+    cout << k << endl; 
+  }
+}
+\end{minted}
+So an advantage of recognising invariants is that doing so
+can lead to better performance by {\em optimisation}.
 
-\subsection{Constructors}
-For construction our defintion says:
+In this case we can make a further modification:
+\begin{minted}{c++}
+  int const j = 1;
+\end{minted}
+which probably has no impact on performance of the code but
+has a significant impact on ability to reason about the code.
+We are using a language feature which assures us that 
+the variable \verb%j% is indeed invariant.
 
-\begin{itemize}
-\item \verb%Empty[T]% is a list of T
-\item if $t$ is a list of T, and $h$ is a value of type T, then
-\verb%Cons(h,T)% is a list of T.
-\end{itemize}
+Notice we could have done this in the first program too.
+In that case, the \verb%const% qualification would have assured us
+only that the variable did not change during a single iteration
+of the loop, whereas, due to scoping rules, the modification
+tells us it does not change in the \verb%main% function.
 
-This is an inductive specification of how to create a list.
-For example the following are lists of int:
+\subsection{Representation Invariants}
+Another popular example of the utility of the concept of an invariant
+is shown here:
+\begin{minted}{c++}
+class rational {
+  int numerator;
+  int denominator;
+public:
+   rational(int num, int den) {
+     if(den == 0) throw "zero denominator";
+     int sign = sgn(num) * sgn(den);
+     unsigned int uden = abs(den);
+     unsigned int unum = abs(num);
+     unsigned int g = gcd(uden, unum);
+     numerator = sign * unum / g;
+     denominator = uden / g;
+   }
+   ...
+};
+\end{minted}
+Here the constructor is dynamically enforcing an invariant that
+the denominator of the representation is a positive integer
+which is relatively prime with respect to the numberator.
+This ensures the denominator cannot be zero, and if the rational
+number is negative the sign will be found in the numerator.
 
-\begin{minted}{felix}
-Empty[int]
-Cons (1, Empty[int])
-Cons (2, Cons (1, Empty[int]))
-Cons (3, Cons (2, Cons (1, Empty[int])))
+The division by the greatest common divisor of the the input
+values ensures the stored representation is minimal, that is,
+the values are as close to zero as possible. This increases the
+set of rational numbers available to the maximium possible
+with the given representation.
+
+Now we will write a method to multiple the value by another rational
+number:
+
+\begin{minted}{c++}
+  operator *= (rational other) { 
+    int num = numerator * other.numerator;
+    int den = denominator * other.denomintaor;
+    int g = gcd(num,den);
+    numerator = num / g;
+    denominator = den / g;
+  }
+\end{minted}
+First we need to check that the representation invariant is maintained.
+Clearly we have code there to ensure the relatively prime part is obeyed.
+But now we see the advantage of an invariant in two ways: we obtain
+both optimisation of the code {\em and} ease of reasoning as a result:
+the new denominator must be positive because the product of two positive
+values is positive, and because we assume the gcd of two integers is always
+positive.
+
+The reasoning is easy and the code is shorter than in the constructor
+so not only is our multiply likely to be correct, the resulting representation
+maintains the invariant.
+
+It may seem this is a perfect piece of code but alas it is a not,
+it is a very bad piece of code as we shall see in the next section!
+
+Here is why our code is bad:
+\begin{minted}{c++}
+int main(){
+   rational x(5,7);
+   void mulby(thread.id *pid, int n, int d) { 
+     pid = thread.get_id(); 
+     x *= rationaln,d);
+   }
+   thread.id id1;
+   thread.id id2;
+   thread (f, &id1, 42, 7);
+   thread (f, &id2, 16, 8);
+   thread.join(id1);
+   thread.join(id2);
+   cout << x << endl;
+}
 \end{minted}
 
-It is usual to provide some syntactic sugars for these list constructions:
+We spawn two threads, each of which multiplies x by a rational number,
+join the threads with the main thread and print the result.
 
-\begin{minted}{felix}
-([3,2,1])
-list (3,2,1)
-\end{minted}
-can be used in Felix.
+Unfortunately, the multiplication method is not thread safe, and there
+can be several {\em race} between the two multiplications. First,
+both threads could fetch the old value at the same time, do the multiplies
+in some order and store the results in order, but then the result would
+be the orginal value muliplied by one or other of the new values when
+we wanted it to be multiplied by both.
 
-\subsection{Destructors}
-Destructors typically use pattern matching and recursion:
+But worse is possible! When storing the new representation the first thread
+might store the numberator, then the second stores the numerator and
+denominator then the first finally stores the denominator. The result is not
+only wrong, there's no assurance the relatively prime invariant is maintained.
 
-\begin{minted}{felix}
-fun showlist (lst: list[int]) (init: string) =>
-  match lst with
-  | Empty => init
-  | Cons (h, t) => init + " " + h.str + showlist t
-  endmatch
-;
-\end{minted}
+We can fix this by adding a lock to the representation and
+locking it at the start of the multiplication method, releasing it
+when finished. But then we are paying a price: we're using extra
+space and incurring a performance hit, even if our application
+is single threaded.
 
-\subsection{Linearity}
-However the functional specification is not enough. To be complete
-we need to add an operational requirement: \verb%Cons(h,t)% must be $O(1)$.
-The destructor form used in a pattern match must also be $O(1)$.
-
-The constant time constraint ensures that a new list created
-by \verb%Cons% cannot copy the list, because that would be $O(N)$,
-therefore, the tail $t$ must be shared. To ensure referential transparency,
-it must therefore also be immutable. This means, indirection must be used
-in the representation, so that a list acts like a pointer.
-
-In Felix the C representation of a Cons node would be layout compatible with
-
-\begin{minted}{C}
-struct node_t { T data; node_t *next; };
-\end{minted}
-
-and a list would be a pointer to a \verb%node_t%, \verb%nullptr%
-if \verb%Empty%.
-
-As we will see next, the constant time constraint for the 
-core primitive \verb%Cons% leads to linear performance
-for most operations on lists. 
-
-\subsection{Operations}
-There is a set of operations usually provided with lists,
-these can all be defined with the constructors and destructors
-explained above.
-
-\subsubsection{fold\_left}
-This is one of the most fundamental operations on a list.
-\begin{minted}{felix}
-fun fold_left[T,U] (f:U->T->U) (accum:U) (x:list[T]):U =>
-  match x with
-  | Empty => accum
-  | Cons (h,t) => fold_left f (f accum h) t
-  endmatch
-;
-\end{minted}
-The function operand $f$ folds each element of the list into 
-the initial value \verb%accum%.
-
-The function is tail recursive and $O(N)$.
-
-\subsubsection{len}
-Calculating the length of a list is now easy:
-\begin{minted}{felix}
-fun len[T] (x:list[T]) => 
-  let fun add (x:int) (y:int) => x + y in
-  fold_left add 0 x
-;
+Instead, let us try to use inheritance to solve the problem:
+\begin{minted}{c++}
+class rational { ..
+protected:
+  void unsafe_mulby(rational other) {
+    int num = numerator * other.numerator;
+    int den = denominator * other.denomintaor;
+    int g = gcd(num,den);
+    numerator = num / g;
+    denominator = den / g;
+  }
+private:
+  virtual void mulby(rational other) { unsafe_mulby(other); }
+public:
+  void operator *= (rational other) { mulby(other); }
+};
+class ts_rational : public rational {
+  atomic<bool> lock;
+public:
+  ts_rational(int n, int d) : rational (n,d), lock(false) {}
+private:
+  override void mulby (rational other) {
+    while(lock.exchange(true, memory_order_acquire)); // lock
+    unsafe_mulby(other);
+    lock.store(false, memory_order_release); // unlock
+  }
+}; 
 \end{minted}
 
-\subsubsection{cons}
-A curried form of the Cons function:
-\begin{minted}{felix}
-  fun cons (h:T) (t:list[T]) => Cons (h,t);
+This code is a lot more complicated! The core multiplication is
+put in the \verb%unsafe_mulby% routine. This method is protected, so it
+cannot be called by the public, but it can be called in a derived class.
+
+We then define a virtual method \verb%mulby% which is entirely private,
+so it can only be called in the \verb%rational% class, and then we 
+define the public \verb%operator *=% method to call it.
+
+Finally in the derived class, we need only define the overriding
+\verb%mulby% method which calls the \verb%unsafe_mulby% method
+to do the work inside a critical section provided by the spinlock.
+
+The structure presented here is the {\em only} correct way to organise
+this. Note that contrary to popular myths propagated by some very
+well known authors, virtual functions in C++ should always be private!
+Furthermore, the basic public method of the base class should generally
+be wrappers dispatching to these virtuals. In pathicular overriding
+virtuals should never be called explicitly, and should actually be
+entirely hidden, only C++ provides no hidden access modifier.
+The only way the override should ever be invoked is by a virtual
+dispatch from the call in the base.
+
+Our code indicates an important principle: public constructors must
+establish public invariants, and public methods must maintain them.
+However,  public methods should only be called by the public!
+Never call public methods from any methods in your class!
+
+The reason for this rule is simple enough: public methods
+must do extra work establishing and maintaining representation
+invariants. In addition, the body of a public method may often
+be augmented with debugging code to trace the history of public
+access to the class, and we don't went internal calls to mess
+up the tracing.
+
+In fact, non-public methods need not maintain public invariants:
+public invariants are pre- and post-conditions on public methods.
+Once the pre-condition is established an inner call in a public
+method can assume the pre-condition rather than checking it.
+The post condition of an inner call need not obey any rules at
+all, because more work may be done.
+
+So, all in all, we appear to have solved the problem conditionally:
+we have imposed a responsibility on the programmer to use the
+\verb%rational% class if the application is single threaded,
+or use the \verb%ts_rational% class if multi-threaded.
+
+Also the code is more complex and harder to reason about.
+
+Don't believe me? Well you'd better because the code is {\em still wrong!}
+
+The problem is simple enough: there is an operation we are using
+implicitly which is provided by the compiler and the compiler
+implementation is not thread safe. Note we pass the argument to
+the multiplication method by value which might invoke the default
+copy constructor. This will copy the non-static data members
+\verb%num% and \verb%den% one after the other with a pre-emption
+possible in between so the values might be changed by another thread
+half way through. We have another data race!
+
+How can we fix this?
+
+You are going to hate the answer. It cannot be fixed!
+If you are a fan of object orientation it is about time
+you woke up. Object Orientation is a false paradigm.
+It must be abandoned because quite simply it does not work.
+This is not to say that classes and virtual dispatch are not
+useful! They certainly are, but they do not solve all problems.
+
+In particular any problem in which functions have two variant
+arguments cannot have an OO solution. This has been known for
+decades and is the problem is called the {\em covariance problem}.
+
+Let me elaborate the issue with our example. The default
+copy constructor for \verb%rational% is perfectly good in a single
+threaded context. However to maintain the representation invariants
+in a multithreaded context, not to mention actually getting the 
+right abstract value, it must do the copying atomically.
+
+To do this a lock is required and we have one! The problem is it
+is in the wrong place! It is in the object, not the argument,
+and the argument type \verb%rational% makes no provision for a lock!
+
+So we can fix that with a copy constructor for \verb%ts_rational%,
+right? Certainly we can do that:
+
+\begin{minted}{c++}
+  ts_rational(ts_rational const& other) { 
+    while(lock.exchange(true, memory_order_acquire)); // lock
+    numerator = other.numerator;
+    denonminator = other.denominator; 
+    lock.store(false, memory_order_release); // unlock
+  }
 \end{minted}
 
-\subsubsection{unroll}
-Unroll moves the value of its first argument
-onto the top of its second argument one at a time.
-\begin{minted}{felix}
-fun unroll[T] (inp:list[T]) (out:list[T]) =>
-  fold_left cons[T] out inp
-;
+The problem is, this constructor is not called passing a \verb%rational%
+argument, only a \verb%ts_rational% argument so lets change the argument
+types to \verb%ts_rational%, ok?
+
+Woops! Its not ok at all because now \verb%ts_rational::mulby% no longer
+overrides the base class virtual! And we can't change the base class virtual
+method either because that would break encapsulation and a lot of other
+basic principles.
+
+What's the solution? The answer is simple: abandon object orientation
+altogether and lets try another paradigm.
+
+\section{Functional Programming}
+Functional programming is ideal for performing calculations.
+One of the most basic principles is that objects are {\em immutable.}
+Combined with the idea that functions should be {\em pure}, this
+provides a powerful property known as {\em referential transparency}.
+
+Let us recode our example using functional programming concepts:
+\begin{minted}{c++}
+  rational operator * (rational other) const { 
+    int num = numerator * other.numerator;
+    int den = denominator * other.denomintaor;
+    int g = gcd(num,den);
+    int n = num / g;
+    int d = den / g;
+    return rational(n,d);
+  }
 \end{minted}
 
-This function is again $O(N)$, however from now we wish to be
-more precise in our costing. We shall count evaluations
-of the \verb%Cons% operation as a basis for a more precise
-performance measure because it requires the heap allocation
-of a new node to put at the head of the list. At some stage,
-at least by termination, the Felix garbage collector must reap 
-the node and there is a cost in freeing it, as well as a cost
-in keeping track of the node. So our count is both a measure
-of allocation, construction, and deallocation time as well
-as an approximation of the amount of store required.
+This code is not yet good. Let us assume the immutable property for the
+moment, noting that the \verb%const% qualifier on the method ensures
+that the object cannot be modified. The problem we have here is that
+the \verb%rational% constructor is invoked and although it does the right
+thing, it breaks the rule that public methods should never be called
+by any method. Consequently it does a useless check for zero,
+fiddles the sign calculation and find the gcd and divides by it
+pointlessly, because it is already done.
 
-If the two lists \verb%inp% and \verb%out% have length $N$ and $M$ respectively
-then \verb%unroll% costs $N$.
-
-\subsubsection{rev}
-Using unroll we can reverse a list:
-\begin{minted}{felix}
-fun rev[T] (x:list[T]) => unroll x Empty[T];
+To fix this, we need another constructor:
+\begin{minted}{c++}
+private:
+  rational(int n, int d, int dummy) : numerator(n), denominator(d) {}
 \end{minted}
 
-The cost is clearly N.
+We added a useless dummy argument because C++ doesn't provide another
+way to do this. In fact we are going to recode the public constructor
+to use it as well:
 
-\subsubsection{copy}
-We can copy a list by just reversing it twice.
-\begin{minted}{felix}
-fun copy[T] (x:list[T]) => rev (rev x);
+\begin{minted}{c++}
+class rational {
+  int const numerator;
+  int const denominator;
+public:
+   rational(int num, int den) {
+     if(den == 0) throw "zero denominator";
+     int sign = sgn(num) * sgn(den);
+     unsigned int uden = abs(den);
+     unsigned int unum = abs(num);
+     unsigned int g = gcd(uden, unum);
+     new(this) rational(
+       sign * unum / g,
+       denominator = uden / g,
+       0
+     );
+   }
+   ...
+};
 \end{minted}
 
-And now we have a cost of $2N$.
+This is a dirty technique! Languages have limitations and C++ many.
+Luckily there is a workaround! The problem is we want to make the
+non-static members \verb%const% to be sure they cannot be modified.
+Unfortunately this prevents assignment. But there is a loophole
+in the C++ type system, that inside a constructor the \verb%this%
+pointer is always non-const, precisely to allow assignments 
+in the body. In this case we still can't do assignments, but we can
+use a placement new calling our private constructor to do the job.
 
-\subsubsection{append}
-Append is now easy:
+It is not necessary to make the data members const, provided all
+the methods do not modify these values: this can be assured by
+making the methods const.
 
-\begin{minted}{felix}
-fun rev_append[T] (x:list[T]) (y:list[T])=> unroll (rev x) y;
-fun append[T] (x:list[T]) (y:list[T]) => rev (rev_append x y);
+However making the data const is a great aid to reasoning because
+it localises the assurance to two lines right at the top of the
+class, rather than having to troll through all the methods checking
+they're all const.
+
+{\em Localistion} is a powerful tool used to make reasoning simpler.
+
+Now you might say: well so what?
+
+Well, our class is now thread safe!
+
+Hey, what? Why? Well its clear, even if there is a race to get
+at the two data members when copying a value or otherwise, it doesn't
+matter because the variables cannot be changed! The only thing that
+matters is that the values are both set before we access them,
+and this is assured in normal good code because the constructor
+is always executed in a single thread and completes before a binding
+to the result is establshed. Of course, if you use say a placement
+new to initialise a variable two threads have access to you 
+{\em already} have a problem that the threads could look at the variable
+before initialisation even starts. The point is, the functional code
+cannot introduce any new problems,
+
+\section{Public Invariants}
+Public invariants or {\em semantic laws}, are rules which 
+define properties of one or more types in the abstract.
+
+{\em Abstract} has a technical meaning which is not well understood
+so we need to spell it out: abstract means that the semantics
+are defined in terms of the interactions of functions.
+
+In particular an {\em abstract data type} or ADT is define
+by a collection of functions and types. This notion of abstraction
+is compounded with a notion of functional composition to provide
+a {\em category theoretic model of computing}.
+
+Let us consider a single type as follows:
+
+\begin{minted}{c++}
+class G {
+public:
+  G operator +(G) const;
+  G operator -() const;
+  static G Zero()const;
+}
 \end{minted}
 
-If the two lists $x$ and $y$ have length $N$ and $M$ respectively
-then \verb%rev_append% costs $N+M$
+The following laws are written as executable code on values of G,
+with an assumption with have an equality operator:
 
-\subsubsection{map}
-An important function!
-\begin{minted}{felix}
-fun rev_map[T,U] (f:T -> U) (x:list[T]) : list[U] =>
-  let fun acc (out: list[U]) (h:T) => Cons (f h, out) in
-  fold_left acc Empty[U] x
-;
-fun map[T,U] (f:T -> U) (x:list[T]) : list[U] =>
-  rev (rev_map f x)
-;
+\begin{minted}{c++}
+  // unit law
+  assert (Zero() + g == g);     
+
+  // associatibity
+  assert (g1 + (g2 + g3) == (g1 + g2) + g3); 
+
+  // inverse
+  assert (g + -g == Zero());  
 \end{minted}
 
-Here \verb%rev_map% costs $N$ and \verb%map% costs $2N$.
+A type which obeys these laws is called a {\em group}. If the following
+law is also obeyed:
 
-\subsubsection{fold\_right}
-Similar to \verb%fold_left% except it start at the end of the list.
-\begin{minted}{felix}
-fun fold_right[T,U] (f:T->U->U) (x:list[T]) (init:U):U =>
-  let g(acc:U) (elt:T) : U => f elt acc in
-  fold_left g init (rev x)
-;
+\begin{minted}{c++}
+  // symmetry
+  assert (g1 + g2 = g2 + g1);
 \end{minted}
 
-This formulation of \verb%fold_right% is unconventional 
-because it is tail recursive but costs $2N$. 
+then it is called a symmetric or Abelian group. When the operator
+is given as plus, it is called an additive group.  Multiplicative
+groups use a multiply operator and One() as the unit and the inverse
+would be written as a method named \verb%reciprocal%.
 
-\subsection{Tail Recursion}
-A more conventional implementation of \verb%fold_right% uses the 
-machine stack to reverse the list structure:
+You will probably
+recognise that, within the limitation of size, \verb%int% is an
+additive group but it is not multiplicative group. 
 
-\begin{minted}{felix}
-fun fold_right[T,U] (f:T->U->U) (x:list[T]) (init:U):U =>
-  match x with
-  | Empty => init
-  | Cons (h,t) => f (fold_right f init) h
-;
-\end{minted}
+You may think, floating point numbers form a multiplicative group
+if you take out zero. This is not the case! Floating point operations
+are not associative, so in fact floats do not even form an additive group!
 
-This technically has cost of $N$, which is achieved by
-storing a pointer to each \verb%Cons% node on the machine
-stack as we traverse the list, seeking the end. We have to also
-store the program counter on the stack. When we get to the end
-we unwind the recursion, thereby processing the list in
-reverse order as required. The machine stack therefore
-holds $2N$ machine words when we hit the end of the list.
-This is cheaper than constructing a new list, which has 
-$N$ machine words and $N$ values of type $T$ if the size
-of a $T$ is larger than a machine word.
 
-However non-tail recursive list processing has a serious
-problem: on many systems the machine stack is much smaller
-than the heap, and on large lists, the function can
-crash with a stack overflow. In fact, the theoretical
-costs of the two methods are much the same, the in-practice
-costs is platform dependent but also requires costing
-the risk of a stack overflow.
 
-We should probably provide both methods, so we can use
-the conventional non-tail recursive implementation
-on small lists and the tail recursive one on big lists.
+\section{Optimisation}
+Optimisation is a process whereby a human programmer of compiler
+is able to improve the performance of a program by modifications
+to the code which do not change the semantics.
+
+One of the most common optimisations is to perform experiments on
+a program which has several parameters which mediate tradeoffs
+so find which combinations lead to the best performance for
+particular kinds of data sets. This is known as {\em parametric tuning}.
+It is very common to tune garbage collectors.
+
+There are specialised tools to help identify performance issues
+called {\em profilers}. They are generally easy to deply to check for
+bottlenecks but quite difficult to use for tuning.
+
 
 \end{document}
 
