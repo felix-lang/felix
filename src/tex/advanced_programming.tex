@@ -5,7 +5,16 @@
 \definecolor{emphcolor}{rgb}{0.5,0.0,0.0}
 \newcommand{\empha}{\bf\color{emphcolor}}
 \usepackage[framemethod=TikZ]{mdframed}
+
+% theorem like environments
+\usepackage{amsthm}
+\theoremstyle{plain}
 \newtheorem{example}{Example}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\theoremstyle{plain}
+\newtheorem{lemma}{Lemma}
+
 \mdfdefinestyle{MyFrame}{innerleftmargin=20pt}
 \newenvironment{myexample}%
   {\begin{mdframed}[style=MyFrame,backgroundcolor=exbg]}%
@@ -16,11 +25,14 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{amscd}
+
+% minted
 \usemintedstyle{friendly}
 \setminted{bgcolor=bg,xleftmargin=20pt}
 \usepackage{hyperref}
 \hypersetup{pdftex,colorlinks=true,allcolors=blue}
 \usepackage{hypcap}
+
 \title{Advanced Programming Technniques}
 \author{John Skaller}
 \begin{document}
@@ -107,6 +119,7 @@ with an assumption with have an equality operator:
 
 \begin{minted}{c++}
   // unit law
+  assert (g + Zero() == g);     
   assert (Zero() + g == g);     
 
   // associatibity
@@ -246,14 +259,14 @@ Here is why our code is bad:
 \begin{minted}{c++}
 int main(){
    rational x(5,7);
-   void mulby(thread.id *pid, int n, int d) { 
+   void mul(thread.id *pid, int n, int d) { 
      pid = thread.get_id(); 
-     x *= rationaln,d);
+     x *= rational(n,d);
    }
    thread.id id1;
    thread.id id2;
-   thread (f, &id1, 42, 7);
-   thread (f, &id2, 16, 8);
+   thread (mul, &id1, 42, 7);
+   thread (mul, &id2, 16, 8);
    thread.join(id1);
    thread.join(id2);
    cout << x << endl;
@@ -297,6 +310,12 @@ private:
 public:
   void operator *= (rational other) { mulby(other); }
 };
+\end{minted}
+
+Note the serious language design problem here: we had to invade
+and rewrite the original class so it is a suitable base class
+for the derived class:
+\begin{minted}{c++}
 class ts_rational : public rational {
   atomic<bool> lock;
 public:
@@ -325,12 +344,13 @@ to do the work inside a critical section provided by the spinlock.
 The structure presented here is the {\em only} correct way to organise
 this. Note that contrary to popular myths propagated by some very
 well known authors, virtual functions in C++ should always be private!
+
 Furthermore, the basic public method of the base class should generally
 be wrappers dispatching to these virtuals. In pathicular overriding
 virtuals should never be called explicitly, and should actually be
-entirely hidden, only C++ provides no hidden access modifier.
-The only way the override should ever be invoked is by a virtual
-dispatch from the call in the base.
+entirely hidden, only C++ provides no hidden access modifier: another
+design problem in C++.  The only way the override should ever be invoked 
+is by a virtual dispatch from the call in the base.
 
 Our code indicates an important principle: public constructors must
 establish public invariants, and public methods must maintain them.
@@ -365,12 +385,13 @@ implicitly which is provided by the compiler and the compiler
 implementation is not thread safe. Note we pass the argument to
 the multiplication method by value which might invoke the default
 copy constructor. This will copy the non-static data members
-\verb%num% and \verb%den% one after the other with a pre-emption
+\verb%numerator% and \verb%denominator% one after the other with a pre-emption
 possible in between so the values might be changed by another thread
 half way through. We have another data race!
 
 How can we fix this?
 
+\subsubsection{Object Orientation is Rubbish}
 You are going to hate the answer. It cannot be fixed!
 If you are a fan of object orientation it is about time
 you woke up. Object Orientation is a false paradigm.
@@ -380,7 +401,7 @@ useful! They certainly are, but they do not solve all problems.
 
 In particular any problem in which functions have two variant
 arguments cannot have an OO solution. This has been known for
-decades and is the problem is called the {\em covariance problem}.
+decades and is the problem is called the {\em covariance problem.}
 
 Let me elaborate the issue with our example. The default
 copy constructor for \verb%rational% is perfectly good in a single
@@ -405,8 +426,8 @@ right? Certainly we can do that:
 \end{minted}
 
 The problem is, this constructor is not called passing a \verb%rational%
-argument, only a \verb%ts_rational% argument so lets change the argument
-types to \verb%ts_rational%, ok?
+argument, but a \verb%ts_rational% argument so lets change the \verb%mulby%
+argument types to \verb%ts_rational%, ok?
 
 Woops! Its not ok at all because now \verb%ts_rational::mulby% no longer
 overrides the base class virtual! And we can't change the base class virtual
@@ -434,7 +455,11 @@ Let us recode our example using functional programming concepts:
   }
 \end{minted}
 
-This code is not yet good. Let us assume the immutable property for the
+Notice carefully this method multiplies the object by the other argument
+and returns a brand new value.
+]
+This code is not yet good because a data race still might be possible. 
+Let us assume the immutable property for the
 moment, noting that the \verb%const% qualifier on the method ensures
 that the object cannot be modified. The problem we have here is that
 the \verb%rational% constructor is invoked and although it does the right
@@ -508,7 +533,9 @@ to the result is establshed. Of course, if you use say a placement
 new to initialise a variable two threads have access to you 
 {\em already} have a problem that the threads could look at the variable
 before initialisation even starts. The point is, the functional code
-cannot introduce any new problems,
+cannot introduce any new problems!
+
+
 
 \section{Optimisation}
 Optimisation is a process whereby a human programmer of compiler
@@ -692,7 +719,7 @@ template instantiation errors in C++: the compiler simply doesn't
 have any way to determine where the real error is because it
 is using global reasoning instead of local reasoning.
 
-When Microsoft introduced type inference into C# they took great
+When Microsoft introduced type inference into C\# they took great
 care to ensure it only worked locally, precisely to prevent
 the above problem.
 
@@ -700,7 +727,7 @@ It is instructive, in the Ocaml example, to learn how to find the
 error: one adds type annotations for example:
 
 \begin{minted}{ocaml}
-let f (g: int -> int) = g 1 in
+let f (g: int \rightarrow  int) = g 1 in
 ...
 \end{minted}
 
@@ -735,34 +762,963 @@ This is the biggest number which is considered scalable.
 
 
 \section{Anonymity}
+It is said a witch is undone if here secret name is revealed.
+So too with programming, anonymity is power. Consider
+\begin{minted}{c++}
+auto x = 1 + g (f (a, b), c);
+\end{minted}
+
+There are two unknown functions and three unknown variables here,
+which is five non-local names we have to lookup so we can understand
+the computation. Also we are not sure what the resulting type is,
+but it must be something an \verb%int% can be added to.
+
+That's a lot of work but this is worse:
+\begin{minted}{c++}
+auto tmp1 = f (a, b);
+auto tmp2 = g (tmp1, c);
+auto x = 1 + tmp2;
+\end{minted}
+
+The lack of type information on the temporary variables is not new.
+But that's two additional variables we have to deal with.
+It may seem since their definition is local to their use,
+that this is not too bad, but in C++ we do not know how often
+or where a variable is used until the end of the scope it is
+declared in. The compiler may have difficulty too.
+
+A variable which is only used once as a function argument
+can be treated specially: it can be elided completely.
+This elision is apparent lexically by examining the first case
+again, where there are no variables named \verb%tmp1% or
+\verb%tmp2%. However the elision of the name is not all
+that happens: the store itself can be elided! In fact this
+is mandatory in C++20. 
+
+Instead, the result of computing \verb%f(a,b)% will initialise
+the first parameter of the function \verb%g% directly without
+first constructing a temporary, copying it to the parameter,
+and then later deleting it.
+
+It helps to understand the basic stack machine model. Here is
+what happens when you call a function:
+
+\begin{enumerate}
+\item Space is reserved on the machine stack for the result
+\item the return address is pushed onto the stack
+\item the arguments are pushed onto the stack
+\item the program counter is set to the function entry point
+\end{enumerate}
+
+Now to return a result here is what happens:
+
+\begin{enumerate}
+\item the result is stored in the reserved slot on the stack
+\item the program counter is set to the return address
+\item the stack is reset to point at the result concurrently
+\end{enumerate}
+
+The program now continues where it left off with the result
+on the top of the stack. Now if you consider the call of
+the function \verb%g% above in the first case, when it gets
+to pushing the first argument, namely \verb%f(a,b)% is recursively
+performs the call sequence, which invokes f and at the end of that
+leaves the result sitting on the stack exactly where \verb%g% needs
+its argument to be. In fact, that slot on the stack {\em is} the
+first parameter of \verb%g%: parameters of functions and fixed
+offsets from the stack pointer .. as is the result!
+
+The critical point is that, without optimisation in the second
+case, the variable \verb%tmp1% has to be copied onto the stack,
+and worse, the result of the computation of \verb%f% has to be
+copied into that variable as well. So two extra copies would be
+done!
+
 \section{Indeterminacy}
+Many programmers think indeterminacy is a bad thing, as do many
+language designers. This is a serious problem because the 
+indeterminacy is a key way to simplify code. Simple code is likely
+to be faster, use less resources, and be easier to reason about.
+
+Lets look at some examples and their consequences. In many languages
+the order of evaluation of function arguments is unspecified.
+In languages with eager application evaluation semantics like C,
+the arguments must all be evaluated before the function is called.
+Notice that evaluation of arguments is not entirely undefined!
+The order is unspecified but there must be some ordering which
+is bounded by something determinate: completion prior to calling
+the function. This is the Yin and Yang of indeterminacy: it is always
+bounded by something determinate.
+
+What are the consequences of the indeterminacy? Obviously the compiler
+can now choose any order. It may choose an order so it can push the arguments
+conveniently onto the stack. Or it may, if it can be sure of referential
+transparency, lift out common sub-expressions, or even interleave the computations.
+
+It is worth mentioning interleaving because it is a very powerful optimisation
+on modern processors. If you have two expressions to evaluate there will be
+some kind of tree of dependencies of inner function calls and their arguments
+which are also expressions. If you take all the arguments of the function
+call and unravel them into three address code into a sequence of assignments
+of simple operations, then you can see that the sequence can be reordered
+many ways to get the same result. Consider:
+
+\begin{minted}{c++}
+f (x + y * z, a + b * c)
+\end{minted}
+
+admits the ordering:
+
+\begin{minted}{c++}
+t1 = y * z
+t2 = x + t1
+r1 = b * c
+r2 = a + r1
+f (t2,r2)
+\end{minted}
+
+But this is a {\em bad} ordering because the evaluation
+of t2 must stop and wait for t1 to be evaluated, holding
+up the evaluations of r1 and r2. This is a much better
+ordering:
+
+\begin{minted}{c++}
+t1 = y * z
+r1 = b * c
+t2 = x + t1
+r2 = a + r1
+f (t2,r2)
+\end{minted}
+
+because the first two computations do not have any interdependencies
+and so can be done simultaneously. Modern CPUs have high speed
+pre-loaded instruction pipelines and multiple ALUs and can certainly
+do this kind of thing.
+
+Now, in a programming language like C++, expressions can have side
+effects. These effects may be coupled and depend on ordering.
+The compiler can always try to see if a deterministic ordering
+specification can be changed in a way the programmer cannot observe
+(in C++ this is called the {\em as if} rule). But doing so can 
+be hard.
+
+But it is not at all hard if the language {\em specifies} the ordering
+is indeterminate! In this case if the behaviour has changed,
+the programmer is responsible for incorrectly depending on something
+which was not assured. The compiler is absolved of all blame and
+is able to perform optimisations much more easily!
+
+
+
+
 \section{Abstraction}
 \section{Reentrancy}
+{\em Reentrancy} is a property of code that allows the code to be
+entered by any thread at any time so that elaborations of
+the code do not interfere.
 
-\section{Principles}
-\subsubsection{Open/Closed Principle}
-\subsubsection{Principle of Explicit Interfaces}
-\subsubsection{SOLID}
-The so-called SOLID principles of object orientation are attributed
-to Robert Martin. These are:
-\begin{Itemize}
-\item[Single Responsibility Principle] states that a class should have only
-one responsibility.
-\item[Open/Closed Principle] we have already met and was first 
-espoused by Bertrand Meyer in Object Oriented Software Construction.
-The principle is a core principle of modularity and is not specific
-to object oriented programming.
-\item[Liskov Substitution Principle] is a behavioural specification
-of the notion of subtyping. It is often paraphrased by saying
-"if it looks like a duck and acts like a duck then it is a duck".
-Unfortunately whilst the idea seems good the technical details
-are suspect.
-\item[Interface Segregation Principle] claims that a client shouldn't
-for forced to implement an interface or method they do not need.
-\tem[Dependency Inversion Principle] states that entities should depend
-on abstractions not concretions.
+If a function is fully reentrant it is {\em automatically} capable
+of recursion and execution by any number of threads simultaneously.
 
-\end{itemize}
+if a function is pure, depends only on value parameters, and
+uses only local storage, it will be re-entrant. Most implementations
+of mathematical functions like \verb%sin%, \verb%cos%, \verb%sqrt%
+are reentrant. Most reentrant functions can also be used in signal
+handlers because reentrancy guarrantees non-interference with other
+code, however, in some OS and with some hardware, interrupts do
+not save and restore the whole machine state. For example, expensive
+registers like floating point registers might not be saved to
+reduce interrupt service latency, and so aren't available for use
+at least unless saved by the interrupt service routine.
+
+Posix specifications will list which library functions can be used
+in signal handlers.
+
+\section{Boundary Conditions}
+For any algorithm there are found conditions:
+
+\begin{enumerate}
+\item the initial state used to get the algo rolling
+\item the usual processing step to progress the algorithm
+\item the terminal state when we have the solution
+\item special cases
+\end{enumerate}
+
+The hallmark of good design is then the boundary conditions,
+the initial and terminal states, are handled automatically
+by the usual processing step, and there are no special cases.
+
+A sign of poor design is the repetition of a test already done.
+
+It is not always so easy to see how to do this: design is hard!
+Consider the following almost trivial problem: you have two tapes
+with numbers written on them in ascending order, and a special
+value larger than any at the end which acts as an endmarker.
+You need to write the numbers out on a third tape in ascending
+order: this is a classic algorithm called merge sort.
+
+The body of the algorithm is clear:
+\begin{minted}{c++}
+if(v1 > v2) { write (3, v2); read(1, v2); }
+else { write (3, v1); read (2, v1); }
+\end{minted}
+
+Now the initial setup is clear as well:
+
+\begin{minted}{c++}
+read(1, v1); read(2, v2);
+\end{minted}
+
+The variables \verb%v1%, \verb%v2% are buffers and this step is known
+as priming the buffers.
+
+The terminal condition, however, is not handled correctly: it occurs
+when both variables contain the end marker. One way to do this 
+efficiently is as follows:
+
+\begin{minted}{c++}
+  read(1, v1);
+  read(2, v2);
+
+next:
+  if(v1 == endmarker) goto finish2;
+  if(v2 == endmarker) goto finish1;
+
+  if(v1 > v2) { write (3, v2); read(2, v2); }
+  else { write (3, v1); read (1, v1); }
+  goto next;
+
+finish1:
+  write(3, v1); read(1,v1);
+  if(v1 == endmarker) goto finish;
+  goto finish1;
+
+finish2:
+  write(3, v2); read(2,v2);
+  if(v2 == endmarker) goto finish;
+  goto finish2;
+
+finish:
+  write(v3, endmarker);
+  return;
+\end{minted}
+
+But this is not very nice! if on value if greater than the other
+we're writing out the smaller value, even if the larger one
+is the endmarker! So the normal processing suffices when
+at least one tape is still running:
+
+\begin{minted}{c++}
+next:
+  if(v1 > v2) { write (3, v2); read(2, v2); }
+  else if (v2 > v1) { write (3, v1); read (1, v1); }
+  else if (v1 == endmarker) goto finish;
+  write (3, v1); read(1, v1);
+  goto next;
+\end{minted}
+
+This is better because it only checks for an end marker
+wuen the two variables are equal. But there is still
+a code smell there, since the code to write v1 out is
+repeated. The trick is to notice we have to write
+the endmarker anyhow and when we do, we're done:
+
+\begin{minted}{c++}
+next:
+  if(v1 > v2) { 
+    write (3, v2); 
+    read(2, v2); 
+  }
+  else {
+    write (3, v1);
+    if (v1 == endmarker) return;
+    read(1, v1);
+  }
+  goto next;
+\end{minted}
+
+This seems optimal! The variable \verb%v1% is examined twice
+and \verb%v2% only once.
+
+But is it? In the old days data was entered by keypunch operators onto
+punch cards during the day. Then the night operator grabbed all the cards
+and put them in a card sorting machine. Finally the cards are sorted
+and put into the card reader, the master input tape is mounted, and a fresh
+output tape is mounted. Now the merge sort is run. 
+
+The master tape contains a full year of data,
+and the output tape contains the data updated with the days new input.
+The point is the master tape is big, but the input is relatively small.
+When the cards are all read, the rest of the input tape could be fast copied
+to the output, saving time. The original algorithm does this: once one input
+is exhausted the other can be copied without any comparison except for a check
+for the end of the tape.
+
+In addition, althougth considerably longer the original algorithms
+is "obviously" correct whereas the final algorithm requires some thought
+to verify its correctness. In particular the termination condition
+that \verb%v1% is the endmarker requires an additional non-local clue
+to verify: the previous condition that \verb%v1 > v2% when reversed
+yields the condition \verb%v1 <= v2% which when combined with the fact
+that the endmarker is larger than all values other than itself,
+implies that \verb%v2% must contain the endmarker also. For, were this
+not the case, it would have to be less than the endmarker, and therefore
+less than \verb%v1% contrary to the reversed condition which says it
+is greater or at least equal! 
+
+We have proven the correctness of the termination condition,
+but the point is we had to work hard to do so. It is not obvious
+at the first glance! How can we chose the best algorithm?
+
+It is not clear! It is a style issue, perhaps we may side for
+the longer more obvious algorithm based on the {\em KISS} principle:
+Keep It Simple, Stupid! But perhaps we prefer the more compact 
+solution. In the latter case it would be a good idea to add
+comments suggesting the proof of correctness, which would
+make the algorithm longer!
+
+
+\section{Bounds}
+Computers are finite state machines and this means everything is
+bounded. Consider for example our representation of rational
+numbers. Since the numerator is an \verb%int% it is bounded above
+by \verb%INT_MAX% and bounded below by \verb%INT_MIN%, inclusive.
+Clearly, the rational numbers represented are also bounded
+above and below by the same values.
+
+When you write a loop like:
+\begin{minted}{c++}
+for(int i= 0; i < 20; ++i) ...
+\end{minted}
+
+then variable \verb%i% is called the {\em loop variant} because it
+changes, the initial value of \verb%i% is 0, and the final value is 20,
+and these are bounds on the variant. Note that the loop body executes from
+the lower bound up to but not including the upper bound.
+
+In many algorithms, we have a bound on the number of iterations,
+which the algorithm may not actually reach. For example consider
+the computation of the square root of a large integer $K$. The method
+is to guess at $Q=K/2$ and see if it is too big or too small or spot on
+by squaring it.
+
+If it is too small, add one and try again, until it is too large.
+Now we know the answer is between our current guess and the previous one.
+
+Similarly, if it is to large subtract one and try again, until it is
+too small, then the answer is between the current guess and the
+previous one.
+
+In both cases we do not know the exact answer but we have a lower 
+and upper bound for it.
+
+Another question to ask is: how many iterations do we do?
+We do not know the exact number. But we must do at least two, to find
+the upper then lower bound, or lower then upper, unless we hit the exact
+answer immediately. On the other hand, we cannot do more than $K/2+1$
+iterations because the lower bound on the square root of a positive integer
+has to be at least 1, and cannot be more than the number itself,
+and since we started in the middle, we'd run out of options after that.
+
+So we also have bounds on the number of iterations.
+
+This method may be bad, and the bounds may be weak estimates,
+but the point is, we have bounds. A bound is not an average
+value it is a hard limit. It is often the case an algorithm is
+too complex, or the inputs may vary in some range, so we
+cannot know exactly how long it will take, or how much storage it
+will use. But we should always be able to calculate an upper bound,
+otherwise we cannot know when a bug has forced it into an infinite
+loop.
+
+By far the most important general case of this which is regularly
+ignored are bounds on recursion. All recursions should be bounded!
+If the bound cannot be proven, a run time test should be used
+to report the expected bound is exceeded.
+
+For example consider a parser processing a program which recurses
+into nested blocks. It is reasonable to set a bound of 50 on
+the recursion as a way of trapping a syntax error: no sane
+programmer would write code with 50 levels of nested blocks!
+
+
+
+\chapter{Math Review}
+This is the bit many feared would come and here it is!
+The maths we need for programming generally, however
+is not linear algebra, nor calculus .. but really quite
+basic algebra.
+
+However, we will be introducing something most programmers
+need to know but probably don't: {\em category theory.}
+But first ..
+
+\section{Set theory}
+Most programmers think they know the basics of set theory:
+sets, intersections, unions, maps. Actually most fail to
+understand the core idea of set theory as a way of dealing
+with equality.
+
+\subsubsection{Equivalence Relation}
+\begin{definition}
+A relation $A\sim B$ is an {\em equivalence relation}
+if it is {\em reflexive} $A\sim A$, {\em symmetric} $A\sim B$ implies
+$B\sim A$ and {\em transitive} $A\sim B$ and $B\sim C$ implies $A\sim C$.
+\end{definition}
+\begin{lemma}
+Let S be any set with an equivalence relation defined
+on it, then the set can be {\em partitioned} into subsets
+called {\em classes} which are pairwise disjoint,
+and the union of which is the whole set $S$.A
+\end{lemma}
+
+Now if someone asks you what equality is the complete
+answer is {\em any equivalence relation}. It's somewhat
+surprising but there is no deeper possible definition.
+
+Now, you will guess correctly, this means there can
+be more than one notion of equality and this is correct.
+Indeed, this is a key factor in the notion of abstraction!
+
+\begin{definition}
+Suppose we have two equivalence relations on the same set,
+$A\sim B$ and $A=B$ then there is an equivalence relation
+$A\equiv B$ defined to hold if, and only if, both $A\sim B$ and
+$A=B$. This is the {\em product} of the two relations. 
+\end{definition}
+
+It is immediately evident the corresponding partition
+consists of all the intersections of the classes of both partitions,
+with the property that any class is a subset of a class of both
+argument partitions. Such a relation or partition is a called
+a {\em refinement} of each of the argument partitions. Importantly
+no class of the refinement overlaps a class of the input, each
+class is equal to or wholly contained.
+
+What this means is that for any two definitions of equality
+there is always a refinement which satisfies both.
+
+\subsubsection{Maps}
+In set theory a map, sometimes called a function,
+is a special kind of binary relation with the property
+that each value of the left hand set, called the {\em domain,}
+is associated with exactly one element of the right hand
+set, called the {\em codomain.}
+
+Its very important to note that the domain is a single set.
+Mathematics has no support at all for functions with multiple
+arguments. Very large numbers of programming languages get
+this wrong and it always leads to serious design faults 
+in the language.
+
+There are three special kinds of maps you need to know.
+\begin{definition}
+An {\em injection} is a map that carries every element
+of the domain to unique element of the codomain. It is
+sometimes called a 1 to 1 map.
+\end{definition}
+\begin{definition}
+A {\em surjection} is a map that targets every element of
+the codomain. Thus for each element of the codomain
+there is at least one element of the domain which maps to it.
+\end{definition}
+\begin{definition}
+An {\em bijection} is both an injection and surjection and
+is sometimes called a 1 to 1 correspondence. It has the special
+property that there is an {\em inverse} map going in the other direction
+that "undoes" the original map.
+\end{definition}
+
+\subsection{Representations}
+The math above is very important. Lets consider our rational
+numbers again, with the form $(p,q)$ representing the fraction $p/q$
+where $q$ is not zero, but as yet the other rules we used before are not 
+there.
+
+Our objective to that this pair of integers be a representation
+of the rational numbers. This means we have to write operations
+like multiply and add, that work the same way on the representation
+as the abstraction. To be specific consider the representation
+map $R: int * int \rightarrow  Q$ then say, addition on the representation
+must obey the rule:
+
+$$R(a) + R(n) = R(a + b)$$
+
+In other words, if you add the rational numbers associated with
+the representations $a$ and $b$ together, you should get the
+same rational number you would get but adding the representation
+using the add method you coded, and then figuring out which rational
+number the result represents.
+
+We will see later how to express this in a high level way.
+For now I want to consider that $(1,2)$ and $(2,3)$ represemnt
+the same rational number. The representations are not equal,
+but they are equivalent in some sense.
+
+More generally given any map $f:A\rightarrow B$ at all, we can define
+an equivalence relation on A by the rule $a~b$ if and only
+if $f(a) = f(b)$. Immediately, we have a partition on A.
+
+Now, we can define an {\em injection} from the partition on
+A to B, by saying each class in A maps to the element of
+B any value in the class does: they all map to the same
+element because that was the very definition of the equivalence
+relation.
+
+It's common to denote the class that an element $a$ is in
+with the notation $[a]$. Now sometimes we want to give
+a specific name to the class, and it is common practice
+to systematically pick a particular element of each class
+as the name: this element is called the {\em canonical
+representative} of the class.
+
+For rationals lets pick the canonical representative
+as the value of $p$ and $q$ where $q$ is positive and
+$p$ and $q$ are relatively prime. We can do that because
+those integers are unique within the class of equivalent
+pairs representiung the same rational.
+
+Hey! That's the invariant we chose before!
+
+So now you know what a representation invariant is
+and why it's useful. More precisely, a representation invariant is
+the logical condition describing a subset of the set of all possible
+values of a representation. It acts as a pre- and post- condition on
+public mutators, a post condition of constructors, and a pre-condition
+of destructors.
+
+Restricting valid state of a representation to canonical values
+is generally good practice because it reduces the complexity
+of computations, improves performance, makes reasoning easier,
+and can extend the range of abstract values represented.
+
+Chosing representations and their invariants is a design challenge.
+
+\chapter{Category Theory}
+It is now time to meet the {\em universal algebra} which is the
+{\em theory of abstraction.} It is called category theory.
+
+\section{The category {\bf Set}}
+Consider a collection of sets, and all the functions between them.
+We will have an operator on the function, namely function composition.
+Because I said all the functions are included in the collection,
+the composite of any two functions, it it exists, must also be
+in the collection. For a composite $h:A\rightarrow D$ of the functions $f:A\rightarrow B$ and
+$g:C\rightarrow D$ to exist, defined by $h(a)=g(f(a))$ it is necessary that $B=C$.
+The composite in the usual notation is written
+
+$$h=g\circ f$$
+
+which is the forward notation. However we much prefer reverse composition
+
+$$h = f \odot g$$
+
+in which it is more obvious f is applied first, then g.
+
+You should observe composition is associative, so that because
+
+$$(f \odot g) \odot k = f \odot (g \odot k)$$
+
+we can omit the parentheses and just write
+
+$$f \odot g \odot k$$
+
+Since the all the functions are there, for every set $X$ there will be
+the identity function $1_X$ which maps each element of X to itself.
+
+What we have described is an example of a traditional category.
+More generally, categories are any collection of {\em objects}
+and {\em arrows} with an associative binary composition
+operator, identities, and such that the set of arrows are
+closed under composition; that is, every composite is actually
+in the collection.
+
+\section{The Category {\bf Monotype}}
+The main computer science category we will be considering is closely
+related: it is the collection of {\em types} and {\em functions.}
+
+The key idea of category theory is that we work {\em only} with
+the arrows. The collection of objects are in a one to one
+correspondence with identity arrows, and their only purpose is
+to tell which arrows join up, that is, can be composed.
+
+It is vital to understand this concept. There is a related
+construction called an {\em arrows only category} which has
+no objects at all, but the construction is more technical
+so we usually allow the objects with the caveat that they
+are merely a convenience and have no properties of interest.
+
+Lets translate that into the computer science example:
+in a categorical interpretation of computing, types have
+are of no interest!
+
+What, you say? You thought types were important. That
+integers were interesting. No! Integers have no structure.
+In the abstract viewpoint {\em only} the functions operating
+on integers .. and on other types .. have any significance.
+
+This is a radical viewpoint for most programmers! There are
+no values of type, because types are not sets of values,
+they're merely a way of telling which functions can be
+composed. It is the functions which have structure!
+
+I am going to show you that category theory subsumes set theory,
+and that it is a powerful new way of thinking. In the tradition
+of Einstein, we have to show two things with thought experiements:
+that we do not in fact lose anything we already know with this
+new perspective, but rather, the paradigm shift allows us to generalise
+that knowlege to new cases.
+
+\section{Isomorphisms}
+Let us begin with an easy example. The examples will get harder
+for a while until the paradigm shift kicks in. Lets start with
+the idea of a bijection. Given two sets $A$ and $B$ a bijection
+is a function $f:A\rightarrow B$ such that each element $a$ of $A$ maps
+to a {\em unique} element $b=f(a)$ of B, and, in addition,
+for every element $b$ of $B$ there is an $a$ in $A$ that
+$f$ maps to $b$. Therefore there is a one to one correspondence
+between the elements of $A$ and $B$.
+
+
+The uniqueness condition assures us that if $f(a1) = f(a2)$ then
+we must have that $a1=a2$, the onto condition, that every element
+of $B$ is mapped to, means for every element $b$ we can pick out at
+least one element $A$ that is mapped to that $b$, and together,
+these conditions assure us that the $a$ involved is unique.
+
+In other words, there is a function, written $f^{-1}$ which goes
+back in the other direction, and is also a bijection. Furthermore,
+there is only one such function, for the rules clearly determine it.
+
+So now we can restate that by saying that if $f$ is a bijection
+then it is invertible.
+
+Wait there! Read that again!  Did I mention any set elements
+in that property? No! Invertibility is a property of the function
+which does not mention any values of the sets!
+
+In category theory, an arrow which is invertible has a special name:
+it is called an {\em isomorphism.}  Iso in Latin just means equal
+or equivalent. 
+
+But we haven't defined what invertible means in terms of arrows!
+Lets do that now: the functions $f:A\rightarrow B$ and $g:B\rightarrow A$ are said to
+be inverses if and only if:
+
+$$f \odot g = 1_A {\ \rm and\ } g \odot f = 1_B$$
+
+This just says the composite of $f$ followed by $g$ gets you back
+where you started, because it is the identity function for $A$,
+and the composite $g$ followed by $f$ is the identity function
+for $B$ because it gets you back where you started.
+
+It is a fact you can prove that, if $f$ is invertible, its inverse
+is unique. There is only one inverse. This allows use to write
+it as $f^{-1}$.
+
+Now the point here is that the set theoretic notion of an bijection,
+based on how a function maps set elements, is fully described
+in categorical terms, that is, in the abstract, by simply saying
+the function is invertible: every invertible function in the category
+{\bf Set} is a bijection, and every bijection is invertible.
+
+We have dispensed with all that talk about set elements and given
+an {\em abstract} specification, meaning, one characterised entirely
+in terms of functions and composition in the category.
+
+Now we can generalise! An arrow is called an isomorphism,
+in {\em any} category, if it is invertible. 
+
+\section{Monomorphism}
+Now let us consider the notion of an injection. This is a one to one map 
+$f:A \rightarrow B$ 
+with the property that if $f$ maps two values $a1$ and $a2$ to the same
+element $b$ in $B$, then $a1$ and $a2$ must be equal, that is, 
+$f(a1) = f(a2)$ implies $a1=a2$.
+
+The corresponding categorical notion is that of a {\em monomorphism},
+and we can say that an arrow is {\em monic}. How can we charcterise
+this in the abstract, as a property of the arrows alone, without
+mentioning set elements?
+
+Suppose we have two maps $g1:X\rightarrow A$ and $g2:X\rightarrow A$
+and suppose $g1$ takes $x$ to $a1$ and then $f$ takes it to $b$.
+Now suppose $g2$ takes $x$ to $a2$ and then $f$ takes it to $b$ again.
+It follows that $a1=a2$ because, since $f$ is an injection, distinct
+elements go to distinct elements, and so since its the same $b$,
+the two $a$'s must be the same too.
+
+So in terms of maps, this is saying that if $g1 \odot f = g2 \odot f$ then
+it follows $g1 = g2$. Hey, we said that without mentioning any set elements!
+It is an abstract definition, we will take this as the definition
+of a monomorphism.
+ 
+
+\section{Epimorphism}
+Finally consider a surjection. This is a map $f:A\rightarrow B$ that covers
+all of $B$, that is, for any element $b$ in $B$ there is an element $a$ in $A$
+such that $f(a)=b$.
+
+Suppose we have two maps $h1:B\rightarrow C$ and $h2:\rightarrow C$ and suppose
+$f \odot h1 = f \odot h2$ then it follows by considering elements
+that $h1=h2$. We take this abstract requirement in terms of functions
+as the definition of an {\em epimomophism}, and also say $f$ is {\em epic}
+as this is a quality item!
+
+\section{Application to types}
+In the category {\bf Set} if $A$ is a subset of $B$, then there is
+a monomorphism from $A$ to $B$ which takes each element to itself.
+More generally, with renaming of elements, any injection defines
+its domain as a kind of subset of the codomain.
+
+In the category {\bf MonoType}, if there is a monomorphism from
+$A$ to $B$ we can consider $A$ to be a subtype of $B$. In practice,
+these monomorphisms may actually exist as functions which are
+called {\em coercions}.
+
+\section{Products}
+We are familiar with the binary cartesian product of two sets, $A$ and $B$ which is notated
+$A\times B$ and defined as the set of all pairs $(a,b)$ where $a$ is in $A$ and $b$ 
+in $B$.
+
+In category theory a product is a pair of morphisms $\pi_1: A \times B \rightarrow A$ and
+$\pi_2: A \times B \rightarrow B$ called {\em projections} satisfying the following rule: for every pair
+of functions $f1: C \rightarrow A$ and $f2: C \rightarrow B$ there is a unique
+function $f:C \rightarrow A \times B$ called the {\em mediating morphism}
+such that $f1 = f \odot \pi_1$ and $f2 = f \odot \pi_2$.
+
+As an example consider the function \verb%english% which maps natural
+numbers to their english name as a string, and \verb%roman% which
+maps them to their roman numberals as a string then clearly the
+mediating morphism is just the function which maps a natural number
+to the pair consisting of the english spelling of the number as the
+first componant and the roman numerals as the second.
+
+The mediating morphism of the two functions is written $\left < f1, f2 \right >$.
+In Felix, like this:
+
+\begin{verbatim}
+\langle f1, f2 \rangle
+\end{verbatim}
+
+and the projections are actual functions:
+
+\begin{minted}{felix}
+proj 0 of string * string
+proj 1 of string * string
+\end{minted}
+
+so that the following function always returns \verb%true%:
+\begin{minted}[escapeinside=||]{felix}
+fun check[A,B,C] (f1:C->A, f2: C->B, c:C) => 
+  let med = |${\pmb\langle\,}$|f1, f2|$\,\pmb\rangle$| in 
+    (proj 0 of A * B) (med c) == f1 c and
+    (proj 1 of A * B) (med c) == f2 c 
+;
+fun square(x:int) => x * x;
+fun cube(x:int) => x * x * x;
+println$ check(square, cube, 42);
+\end{minted}
+
+\section{Products of Categories}
+Given two categories $A$ and $B$ there is an obvious "set theoretic"
+product $A \times B$ consisting of all pairs of objects $(a,b)$ and with arrows 
+also being paired up: an arrow between $(a,b)$ and $(c,d)$ is just a pair 
+of arrows $(f:a\rightarrow c, g:b\rightarrow d)$. This is known 
+as {\em parallel composition.} 
+
+In Felix, you can write this kind of code:
+\begin{minted}{felix}
+fun f(x:int):long =>x.long + 1l; 
+fun g(x:double):string => x.str;
+var h = \prod(f,g);
+println$ h (1,42.7);
+\end{minted}
+
+where the \verb%\prod% operator which renders as $\prod$ converts a tuple of functions
+to a function of tuples.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% FUNCTOR
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Functors}
+This leads to the following vital idea, that you can have maps between
+categories. A function from one category to another maps each object
+of the domain category to an object of the codomain category,
+and each arrow of the domain to an arrow of the codomain, subject
+to the requirement that the maps of objects must agree with the
+maps on identities. This requirement comes from the fact that
+in a category the identies and objects are really the same thing.
+
+Now a map can satisfy a much stronger requirement: that it be
+{\em structure preserving.} This means triangles map to (possibly
+degenerate) triangles. 
+\begin{definition} Let $A$ and $B$ be categories, and $F:A\rightarrow B$
+be a map from $A$ to $B$, then $F$ is called a {\em functor} if
+
+$$F (a1 \circ_A a2) = F(a1) \circ_B F(a2)$$
+
+In other words, the composite of two arrows in the domain category maps
+to the composite of the mapped arrows in the codomain category.
+\end{definition}
+
+It has
+been said the {\em whole purpose of category theory is to define functors.}
+
+\begin{definition}
+If $F:A\rightarrow B$ and $G:B\rightarrow C$ are functors, we
+can define a map $H:A\rightarrow C$ by 
+$$H(f) = G(F(f))$$
+called the composite of the two functors and written
+$$H(f) = G \circ F \ F \odot G$$
+\end{definition}
+\begin{lemma}
+The composite of two functors is a functor.
+\end{lemma}
+
+The reason functors are so totally important is this:
+
+\begin{lemma}[Scalability]
+A collection of categories and functors between them closed under
+functor composition is itself a category.
+\end{lemma}
+ 
+This is the most important idea in all of mathematics
+and especially in programming. The scalability lemma says
+that categories are their own meta-language; that the relations
+between categories is modular and these modules are scalable
+in that they can be combined to form the same kind of module 
+again.
+
+In programming terms this gives rise to the idea that abstractions
+themselves can be abstracted, and makes it clear, conversely,
+that instances of an abstraction are still abstract,
+at a lower level.
+
+\begin{definition}
+If $A$ and $B$ are categories the collection of all functors
+from $A$ to $B$ is a category called the {\em functor category}
+from $A$ to $B$. It is written, variously,
+$$B^A = {\bf Func}(A,B)$$
+\end{definition}
+
+\section{Polymorphic Data Types}
+Now I am going to explain what it means for programming.
+
+{\em A polymorphic data type is precisely a functor.}
+
+Consider a C++ data structure like say \verb%std::list%.
+What does it do? If you have it a data type like \verb%int%
+it will give you a new data type \verb%list<int>% which is a list
+of ints! This is exactly what a functor does! 
+
+Ok, so how about \verb%std::map%? It has two parameters for
+the key and value. Well, duh, the domain category is just a
+product, right!
+
+Data functors usually go from products of $\bf MonoType$
+to $\bf MonoType$.
+
+Now, we have not covered the important property: structure
+preservation. What this says for \verb%list% is that if you have
+a function \verb$f$ from \verb%int% to \verb%double%, for example,
+then there is a function in the image of the functor
+from \verb%list<int>% to \verb%list<double>% where if the i-th
+element of the first list is $a_i$ then the i-th element
+of the second list will be $f(a_i)$.
+
+This justifies saying the function $f$ can be applied directly
+to the list, meaning, it makes a list of the applications of the
+function to each element. In most languages, we write this
+as \verb%map f%. In Haskell it is \verb%fmap% which is the sole
+method of type class \verb%Functor%. In C++, however, there
+is no mapping function for \verb%list%, instead, you do it using
+iterators and the \verb%transform% algorithm.
+\begin{minted}{c++}
+// empty list
+list<int> int_list = list<int> {1,2,3,4}; 
+
+// result list
+list<double> double_list = list<double>();
+
+// mapping function
+double f(int x) { return double (x + 42); }
+
+// do the mapping
+transform (int_list.begin(), int_list.end(), f, double_list.begin());
+\end{minted}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% TUPLE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Tuples}
+Most programmers know what a tuple is even if they just wish
+their programming language had them. C and C++ do not have
+tuples! 
+
+We know already a tuple is a product. The projections are
+numbered, in Felix from 0 up. But how do we {\em make} a tuple?
+
+Of course you know, a pair is a binary tuple with a type like \verb%int * long%
+and the values are just pairs like \verb%(1, 2L)%, so it appears the
+type constructor is the usual product symbol $\times$ written in 
+programs with an infix \verb%*%, and the value constructor is the
+\verb%,% operator comma. But what is this comma??
+
+You guessed it! It's a functor! In particular, for pairs
+its a {\em bifunctor} meaning a functor from a product of
+two categories. In fact:
+
+$$pair: {\bf Monotype } \times {\bf MonoType } \rightarrow {\bf MonoType}$$
+
+What does this do? It takes two types and produces a single type.
+The value constructor takes two values, and produces a single value.
+
+The use of tuples is absolutely critical. Functors with more
+than one argument do not exist. In programming languages like C,
+where it appears they do, every function is ALSO a functor!
+The separate arguments are combined into a tuple which passed to
+the underlying actual functions.
+
+This is extremely bad language design! The function and tuple
+construction should be decoupled. You can see this is so in Felix:
+
+\begin{minted}{felix}
+fun f(x:int, y: double) => x.double + y;
+var arg = 1, 42.7;
+println$ f arg;
+\end{minted}
+ 
+See? The function f only takes one argument.
+We have decoupled the argument construction from the function
+calling. The function has type:
+\begin{minted}{felix}
+int * double -> double
+\end{minted}
+where the domain type is a single type, that happens to
+be a tuple type.
+
+The decoupling is mandated by the basic design principles
+of programming: {\em separation of responsibility,} one of the
+SOLID principles.
+
+\section{Subcategories}
+\begin{definition} A {\em subcategory} $S$ of a category $A$ is any collection
+of objects and arrows which form a category.
+\end{definition}
+\begin{definition} There is a natural map called the {\em subcategory embedding} from
+$S$ into $A$ written
+$$S\hookrightarrow A$$
+which takes each object of S to the same object of $A$, and each
+arrow of $S$ to the same arrow of $A$.
+\end{definition}
+
+\begin{lemma} 
+The subcategory embedding is a functor.
+\end{lemma}
 
 \end{document}
 
