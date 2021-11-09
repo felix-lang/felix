@@ -42,18 +42,18 @@
 Here we are going to review some basic concepts you should already know.
 
 \section{Invariants}
-An {\em invariant} as you might expect is something which does not change.
+\begin{definition}
+An {\em invariant} is a quantity which does not change.
+\end{definition}
 
 \subsection{Loop Invariants}
-
+\subsubsection{Invariant Variable}
 Consider this code snippet:
 \begin{minted}{c++}
-int main() {
-  for(int i=0; i<100; ++i) {
-    int j  = 1;
-    int k = j + i;
-    cout << k << endl; 
-  }
+for(int i=0; i<100; ++i) {
+  int j  = 1;
+  int k = j + i;
+  cout << k << endl; 
 }
 \end{minted}
 
@@ -61,14 +61,12 @@ Here the variable j has the same value 1, no matter which iteration
 of the loop is being executed. So we can say j is a loop invariant.
 There is an optimisation known as {\em invariant code motion} which
 allows us to rewrite the code to be more efficient without changing
-the semantics:
+the semantics, by moving the invariant out of the loop body:
 \begin{minted}{c++}
-int main() {
-  int j  = 1;
-  for(int i=0; i<100; ++i) {
-    int k = j + i;
-    cout << k << endl; 
-  }
+int j  = 1;
+for(int i=0; i<100; ++i) {
+  int k = j + i;
+  cout << k << endl; 
 }
 \end{minted}
 So an advantage of recognising invariants is that doing so
@@ -81,120 +79,102 @@ In this case we can make a further modification:
 which probably has no impact on performance of the code but
 has a significant impact on ability to reason about the code.
 We are using a language feature which assures us that 
-the variable \verb%j% is indeed invariant.
+the variable \verb%j% is indeed invariant. This makes
+reasoning about the code easier, in otherwords it is
+a {\em reasoning optimisation}.
 
-Notice we could have done this in the first program too.
-In that case, the \verb%const% qualification would have assured us
-only that the variable did not change during a single iteration
-of the loop, whereas, due to scoping rules, the modification
-tells us it does not change in the \verb%main% function.
+A theme throught this book is that performance optimisations
+accompany reasoning optimisations. If you can reason better
+about some code after a change the compiler probably can too,
+and can use this to improve performance.
 
-\subsection{Public Invariants}
-Public invariants or {\em semantic laws}, are rules which 
-define properties of one or more types in the abstract.
-
-{\em Abstract} has a technical meaning which is not well understood
-so we need to spell it out: abstract means that the semantics
-are defined in terms of the interactions of functions.
-
-In particular an {\em abstract data type} or ADT is defined
-by a collection of functions and types. This notion of abstraction
-is compounded with a notion of functional composition to provide
-a {\em category theoretic model of computing}.
-
-\subsubsection{Group}
-Let us consider a single type as follows:
-
+\subsubsection{Invariant Condition}
+Now consider this code:
 \begin{minted}{c++}
-class G {
-public:
-  G operator +(G) const;
-  G operator -() const;
-  static G Zero()const;
+int j  = 100;
+for(int i=0; i<100; ++i, --j {
+  assert(j + i == 100);
+  cout << j << "," << i << endl; 
 }
 \end{minted}
 
-The following laws are written as executable code on values of G,
-with an assumption with have an equality operator:
+Here, the loop invariant is that $j+i$ is always 100 inside
+the loop, in every pass. This is checked by the \verb%assert%
+statement. We believe the invariant because, initially, $i=0$ 
+and $j=100$ so $i+j=100$ and every iteration, $i$ is incremented by
+1, but j is decremented by 1, and so the change in the sum is the
+sum of the changes: \verb%+1 + -1% which is, of course, zero.
+Since there is no change, the sum of $i$ and $j$ is invariant.
+
+In this case, we could dispense with the \verb%j%
+variable provided we don't need it outside the loop, and replace
+it with a calculation based on the inveriant:
 
 \begin{minted}{c++}
-  // unit law
-  assert (g + Zero() == g);     
-  assert (Zero() + g == g);     
-
-  // associatibity
-  assert (g1 + (g2 + g3) == (g1 + g2) + g3); 
-
-  // inverse
-  assert (g + -g == Zero());  
+for(int i=0; i<100; ++i) 
+  cout << 100 - i << "," << i << endl; 
 \end{minted}
 
-A type which obeys these laws is called a {\em group}. If the following
-law is also obeyed:
+This requires a {\em proof of correctness,} which is
+seems fairly trivial: since $j+i=100$ then subtracting $i$
+from both sides gives us that $j=100 - i$. So the combination
+of an invariant, or law, pertaining to the original loop
+body, together with some mathematics, yields an optimisation
+which can be proven correct.
+
+\subsection{Incremental Programming}
+Optimising code believed to be correct by applying
+successive small changes which can be proven to
+preserve the semantics, is a powerful technique
+I call {\em incremental programming.} It allows
+code to be written which is first proven correct,
+but may have poor performance, and then improving
+the performance whilst continuing to maintain
+correctness.
+
+This technique is very valuable because the original
+reasoning establishes correctness, and then small
+easily proven steps are used for optimisation,
+where the steps are basically proven easily by
+showing invariants are maintained, or, as in
+the example above by using the invariant as
+the basis of the transformation.  
+
+A related technique involves changing the semantics.
+Again, we change a small part of the code, assuming
+the rest of program semantics are invariant. Then if
+something goes wrong, it is most likely in the code
+we just changed.
+
+\subsection{Representation Independence}
+Consider:
+\begin{minted}{c++}
+vector<int> x = ...
+for(int v : x) {
+  // complicated calculations
+}
+\end{minted}
+
+We don't like using \verb%vector% so we change it to \verb%list%.
 
 \begin{minted}{c++}
-  // symmetry
-  assert (g1 + g2 = g2 + g1);
+list<int> x = ...
+for(int v : x) {
+  // complicated calculations
+}
 \end{minted}
 
-then it is called a symmetric or Abelian group. When the operator
-is given as plus, it is called an additive group.  Multiplicative
-groups use a multiply operator and One() as the unit and the inverse
-would be written as a method named \verb%reciprocal%.
+We reason this is safe, and preserves correctness, because the iteration
+still scans all the values of the data structures in the same order,
+and the calculation only sees the values. We may need to change
+how we put things into the data structures, but if we get the 
+same order, the complicated calculations should still produce
+the same result. 
 
-You will probably
-recognise that, within the limitation of size, \verb%int% is an
-additive group but it is not multiplicative group. 
-
-You may think, floating point numbers form a multiplicative group
-if you take out zero. This is not the case! Floating point operations
-are not associative, so in fact floats do not even form an additive group!
-
-
-\subsubsection{Equivalence relation}
-This is a fundamental abstraction that must be fully understood
-because it defines what equality means.
-
-\begin{minted}{c++}
-  // reflexivity
-  assert (v == v);
-
-  // symmetry 
-  assert ((v1 == v2) ? v2 == v1) : true);
-
-  // transitivity
-  assert (v1 == v2 && v2 == v3 ? v1 == v3 : true);
-\end{minted}
-
-The C conditional operator is used here so we can write the law
-as an expression which can be asserted.
-
-
-\subsubsection{Stack}
-A more computer science based example is the definition of a stack.
-
-\begin{minted}{c++}
-   stack s ...
-   ssave = s;
-   s.push(v);
-   vnew = stack.pop();
-   assert (v == vnew);
-   assert (s == ssave);
-\end{minted}
-
-This says if you push something onto a stack then do a pop, you get
-the last thing you pushed back, and, the stack is in the same state
-as before the push.  These assertions apply to any type S like:
-
-\begin{minted}{c++}
-class S {
-public:
-  void push(V);
-  V pop();
-};
-\end{minted}
-
-noting again the requirement we have an equality operator.
+This is an example where the loop and calculations are {\em 
+representation independent,} which is a kind of invariance.
+In this case the C++ language is providing direct support
+for this idea with templates and iterators.
 
 \subsection{Representation Invariants}
 Another popular example of the utility of the concept of an invariant
@@ -762,7 +742,7 @@ This is the biggest number which is considered scalable.
 
 
 \section{Anonymity}
-It is said a witch is undone if here secret name is revealed.
+It is said a witch is undone if her secret name is revealed.
 So too with programming, anonymity is power. Consider
 \begin{minted}{c++}
 auto x = 1 + g (f (a, b), c);
@@ -1705,6 +1685,16 @@ The decoupling is mandated by the basic design principles
 of programming: {\em separation of responsibility,} one of the
 SOLID principles.
 
+\subsection{Unit Tuple}
+\begin{definition} 
+The {\em unit tuple} is a product of nothing. It has no components,
+and is usually written \verb%()% and has type \verb%unit%. 
+It has no projections. 
+\end{definition}
+
+Units in a category need not be unique, however they are all isomorphic.
+With sets, any set with one element is a unit.
+
 \section{Subcategories}
 \begin{definition} A {\em subcategory} $S$ of a category $A$ is any collection
 of objects and arrows which form a category.
@@ -1719,6 +1709,5 @@ arrow of $S$ to the same arrow of $A$.
 \begin{lemma} 
 The subcategory embedding is a functor.
 \end{lemma}
-
 \end{document}
 

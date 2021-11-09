@@ -24,13 +24,13 @@ open Flx_bsym_table
 
 
 
-(* A path item is either the final Uniq component, or a tuple component index.
-  We need to handle records as well.
+(* A path item is either the final Uniq or share component, a tuple component index
+or a record name. 
 *)
 
-type item_t = [`Uniq | `Tup of int]
+type item_t = [`Uniq | `Share | `Tup of int | `Rec  of string | `Struct of string ]
 
-(* A path is just an item list, ending in Uniq *)
+(* A path is just an item list, ending in Uniq or Share *)
 type path_t = item_t list 
 
 (* and paths are just a list of paths .. *)
@@ -40,7 +40,7 @@ type paths_t = path_t list
 type chain_t = bid_t * path_t 
 
 (* The chain2ix datum is the actual variable index and
-a path to a uniq component, followed by the identifying fairy variable index
+a path to a uniq or share component, followed by the identifying fairy variable index
 *)
 type chain2ix_t = (chain_t * bid_t) list
 
@@ -50,7 +50,10 @@ type ix2chain_t = (bid_t * chain_t) list
 (* Pretty printintg paths *)
 let string_of_item item = match item with
   | `Uniq -> ":U"
+  | `Share -> ":S"
   | `Tup i -> "." ^ string_of_int i
+  | `Rec s -> "." ^ s 
+  | `Struct s -> "." ^ s 
 
 let string_of_path (p:path_t) =
   List.fold_left (fun acc item -> acc ^ string_of_item item) "" p
@@ -130,7 +133,74 @@ let rec uniq_anal_aux (path:path_t) typ (paths:paths_t): paths_t =
     paths 
     ts (Flx_list.nlist (List.length ts))
 
+  | BTYP_array (t,BTYP_unitsum n) -> 
+     if n > 20 then begin (* 
+        print_endline ("Flx_fairy: Array size "^string_of_int n^" too big for fairy variable construction, ignoring");
+        *)
+        paths
+     end
+     else List.fold_left (fun acc n -> 
+       let path = `Tup n :: path in
+       uniq_anal_aux path t acc
+    )
+    paths
+    (Flx_list.nlist n)
+     
+  | BTYP_record rs ->
+    List.fold_left (fun acc (s,t) ->
+      let path = `Rec s :: path in
+      uniq_anal_aux path t acc
+    )
+    paths
+    rs
+
+  (* Note: the path is dropped! *)
   | _ -> paths
+
+(* shared variable analysis of products, it is the same as the
+uniq_anal except the roles of the default non-product and uniq type 
+constructor are reversed
+*)
+
+let rec shared_anal_aux (path:path_t) typ (paths:paths_t): paths_t = 
+print_endline ("Shared anal aux " ^ Flx_btype.str_of_btype typ);
+  match typ with
+  | BTYP_uniq t -> paths (* the path is dropped *)
+
+  | BTYP_tuple ts ->
+    List.fold_left2 (fun acc t n -> 
+      let path = `Tup n :: path in
+      shared_anal_aux path t acc
+    )
+    paths 
+    ts (Flx_list.nlist (List.length ts))
+
+  | BTYP_array (t,BTYP_unitsum n) -> 
+     if n > 20 then begin (* 
+        print_endline ("Flx_fairy: Array size "^string_of_int n^" too big for fairy variable construction, ignoring");
+        *)
+        paths
+     end
+     else List.fold_left (fun acc n -> 
+       let path = `Tup n :: path in
+       shared_anal_aux path t acc
+    )
+    paths
+    (Flx_list.nlist n)
+     
+  | BTYP_record rs ->
+    List.fold_left (fun acc (s,t) ->
+      let path = `Rec s :: path in
+      shared_anal_aux path t acc
+    )
+    paths
+    rs
+
+  | t ->
+    let path = `Share :: path in 
+    path :: paths
+ 
+
 
 (* this routine reverses the paths so they're in the correct order.
 It also adds every extension of the reversed paths to the set, uniquely.
@@ -152,6 +222,11 @@ containing one, directly or indirectly.
 let uniq_anal typ : paths_t =
   let rps = uniq_anal_aux [] typ [] in
   List.map (fun lst -> List.rev (List.tl lst)) rps
+
+let shared_anal typ : paths_t =
+  let rps = shared_anal_aux [] typ [] in
+  List.map (fun lst -> List.rev (List.tl lst)) rps
+
 
 let find_entries bsym_table (chain2ix:chain2ix_t) bid : chain2ix_t = 
   let paths = List.filter (fun ((bid2,path),ix) -> bid2 = bid) chain2ix in
@@ -189,6 +264,18 @@ let build_once_maps bsym_table counter vidx typ : chain2ix_t * ix2chain_t =
   let chain2ix = List.map2 (fun path idx -> (vidx,path),idx) paths uxs in
   let ix2chain = List.map2 (fun path idx -> idx,(vidx,path)) paths uxs in
   chain2ix,ix2chain
+
+
+let build_shared_maps bsym_table counter vidx typ : chain2ix_t * ix2chain_t =
+(*
+print_endline ("Building shared maps for " ^string_of_int vidx ^ " type " ^ Flx_print.sbt bsym_table typ);
+*)
+  let paths = shared_anal typ in
+  let uxs = List.map (fun _ -> Flx_bid.fresh_bid counter) paths in
+  let chain2ix = List.map2 (fun path idx -> (vidx,path),idx) paths uxs in
+  let ix2chain = List.map2 (fun path idx -> idx,(vidx,path)) paths uxs in
+  chain2ix,ix2chain
+
 
 
 
