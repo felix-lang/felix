@@ -124,7 +124,7 @@ static ::flx::gc::generic::offset_data_t const async_sched_offset_data = { 1, as
 // ***************************************************
 
 thread_kind_t async_sched::get_thread_kind() const { 
-  thread_data->thread_kind;
+  return thread_data->thread_kind;
 }
 
 // ***************************************************

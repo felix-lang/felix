@@ -397,6 +397,7 @@ DWORD WINAPI flx_pthread_start_wrapper(LPVOID e)
 {
   void *stack_base = get_stack_pointer();
   tstart_t *ehd = (tstart_t*)e;
+  thread_kind_t k = ehd->thread_kind;
   thread_control_base_t *tc = ehd -> tc;
   if(tc == 0)
   {
@@ -536,7 +537,7 @@ flx_thread_t::init(void (*fn)(void*), void *lParam, thread_control_base_t *tc)
   DWORD thread_id = 0;
   thr= (HANDLE)CreateThread(NULL, 0,
     (LPTHREAD_START_ROUTINE)nonflx_pthread_start_wrapper,
-    new tstart_t(fn,lParam, tc,NULL,NULL,NULL), 0,
+    new tstart_t(fn,lParam, tc,NULL,NULL,NULL,joinable), 0,
     &thread_id
   );
 
