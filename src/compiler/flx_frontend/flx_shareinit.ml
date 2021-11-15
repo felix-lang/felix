@@ -27,6 +27,7 @@ Note, with address taking, we ignore it!
 
 *)
 
+(*
 open Flx_bsym
 open Flx_bsym_table
 open Flx_bbdcl
@@ -134,60 +135,57 @@ print_endline ("Newlive= " ^ Flx_bid.str_of_bidset live);
 *)
   live
 
-(* we shouldn't call this function, it checks if a unique variable
-is dead at the end of a routine .. that's not required for
-shared variables .. HOWEVER we could issue an "unused variable" warning! 
+(* call at end of routine, to see if there are unused variables,
+warn if there are
 *)
-let check_liveness bsym_table ix2chain liveset : stack_t =
-(* THIS DOESNT APPY TO SHARED VARIABLES
-  if not (BidSet.is_empty liveset) then begin
-    print_endline ("Once error: Once variables unused!");
-    print_endline (def_of_vars bsym_table ix2chain liveset);
-    assert false
-  end;
+(* We need to pass "all" variable set here but don't have it at the moment *)
+(*
+let check_unused bsym_table ix2chain all liveset : unit =
+  let unused = BidSet.minus all liveset in
+  if not (BidSet.is_empty unused) then begin
+    print_endline ("Warning: unused variables");
+    print_endline (def_of_vars bsym_table ix2chain unused);
+  end
 *)
-  [] (* end of path *)
-
-let check_reentry bsym_table ix2chain previous current label : stack_t=
-  if previous <> current then begin
-    print_endline ("Once error: Inconsistent liveness re-entering path at label " ^ 
-      string_of_int label ^ " "^ str_of_label bsym_table label 
-    );
-    let diffset = BidSet.diff (BidSet.union previous current) (BidSet.inter previous current) in
-    print_endline (def_of_vars bsym_table ix2chain diffset);
-    assert false
-  end;
-  [] (* end of path *)
 
 (* handle gotos, including nonlocal gotos *)
 let rec goto bsym_table ix2chain (stack:stack_t) (liveness:BidSet.t) (label:bid_t) : stack_t =
   match stack with
-  | [] -> check_liveness bsym_table ix2chain liveness  (* exit *)
+  | [] -> [] (* exit *)
   | head :: tail -> 
     match find_label head.frame.code label with
     | Some bexes -> 
       let visited = head.frame.visited in
       if List.mem_assoc label visited then
-        let old_liveness = List.assoc label visited in
-        check_reentry bsym_table ix2chain old_liveness liveness label (* path merge *)
-      else
-        let _ = head.frame.visited <- (label,liveness)::visited in (* continue recording liveness at label *)
-        { head with current=bexes } :: tail
+        begin 
+          let old_liveness = List.assoc label visited in
+          let new_liveness = BidSet.inter old_liveness liveness in
+          if new_liveness = old_liveness then tail (* reached fixpoint, finish *)
+          else begin (* continue with current continuation at code after label *)
+            (* remove old state at label *)
+            let new_state = List.filter (fun (lab,_) -> label <> lab) head.frame.visited in
+            (* re-insert label with new state *)
+            let _ = head.frame.visited <- (label,new_liveness)::visited in (* continue recording liveness at label *)
+            { head with current=bexes } :: tail
+          end
+        end
     | None -> goto bsym_table ix2chain tail liveness label (* look for label in parent *)
 
 (* handle return instruction *)
 let return bsym_table ix2chain (stack:stack_t) (liveness:BidSet.t) : stack_t =
   match stack with 
   | [] -> assert false
-  | callee :: [] -> check_liveness bsym_table ix2chain liveness
+  | callee :: [] -> [] (* check_unused bsym_table ix2chain liveness *)
   | callee :: caller :: chain ->
     let visited = callee.frame.visited in
-    if List.mem_assoc exit_label visited then
-      let old_liveness = List.assoc exit_label visited in
-      check_reentry bsym_table ix2chain old_liveness liveness exit_label (* path merge *)
-    else
-      let _ = callee.frame.visited <- (exit_label,liveness)::visited in
-      caller :: chain
+    let liveness = 
+      if List.mem_assoc exit_label visited then (List.assoc exit_label visited) BidSet.inter liveness
+      else liveness
+    in
+    (* check_unused bsym_table ix2chain liveness exit_label *) 
+    (* exit subroutine *)
+    let _ = callee.frame.visited <- (exit_label,liveness)::visited in
+    caller :: chain
 
 (*********************************************************************) 
 (* flow analysis *)
@@ -237,9 +235,11 @@ if debug then print_endline ("flow: function return");
 if debug then print_endline ("flow: descendant procedure call " ^ string_of_int pidx);
       begin match rec_entry stack pidx with
       | Some old_liveness -> 
-if debug then print_endline ("flow: recursive procedure re-entry " ^ string_of_int pidx);
-        (* dummy path termination *)
-        flow liveness (check_reentry bsym_table ix2chain old_liveness liveness entry_label);
+if debug then print_endline ("flow: ignoring recursive procedure re-entry " ^ string_of_int pidx);
+        (* re-entry can, at worse, liven something dead. Since we already processed this entry
+           point there's no point doing so again
+        *)
+        (* flow liveness (check_reentry bsym_table ix2chain old_liveness liveness entry_label); *)
 
         (* continue past recursive call now *)
         begin match rec_exit stack pidx with
@@ -265,11 +265,17 @@ if debug then print_endline ("flow: procedure initial entry " ^ string_of_int pi
 
         (* must  be external function *)
         | _ -> 
+          (* ignore the call because it cannot change any variables
+         [other than via a pointer which we cannot handle at the moment]
+         *)
 if debug then print_endline ("flow: external procedure " ^ string_of_int pidx);
           flow liveness (return bsym_table ix2chain stack liveness)
         end
       end
     end else begin
+      (* ignore non-descendant procedure calls, because they cannot change any variables
+         [other than via a pointer which we cannot handle at the moment]
+      *)
 if debug then print_endline ("flow: non-descendant procedure call " ^ string_of_int pidx);
       flow liveness (return bsym_table ix2chain stack liveness)
     end
@@ -356,16 +362,8 @@ if debug then print_endline ("flow: conditional branch ok")
       
   | BEXE_label (_,lidx) ->
 if debug then print_endline ("flow: label " ^ string_of_int lidx);
-    let visited = cc.frame.visited in
-    if List.mem_assoc lidx visited then begin
-if debug then print_endline ("flow: merge at label  " ^ str_of_label bsym_table lidx);
-      let old_liveness = List.assoc lidx visited in
-      flow liveness (check_reentry bsym_table ix2chain old_liveness liveness lidx) (* path merge *)
-    end else begin
-if debug then print_endline ("flow: first entry at label  " ^ str_of_label bsym_table lidx);
-      let _ = cc.frame.visited <- (lidx,liveness)::visited in (* continue recording liveness at label *)
-      next();
-    end
+(* dropping into a label is the same as doing a goto to the label *)
+  flow liveness bsym_table is2chain (goto bsym_table ix2chain stack liveness lidx)
 
   | BEXE_jump (_,_,_)  ->
     flow liveness (return bsym_table ix2chain stack liveness)
@@ -542,8 +540,9 @@ end;
 
   (* Ignore non-function *)
   | _ -> ()
-
-let shareinit_bsym_table phase bsym_table counter = 
+*)
+let shareinit_bsym_table phase bsym_table counter = ()
+(*
   try
 print_endline "Doing share init";
     Flx_bsym_table.iter (shareinit_bsym bsym_table counter) bsym_table
@@ -551,4 +550,4 @@ print_endline "Doing share init";
     print_endline ("ERROR in init share variable before use verification phase " ^ phase);
     raise exn
 
-
+*)
