@@ -140,19 +140,8 @@ this should work on OS X with Nix, but needs to be tested.
 
 
 #### Windows
-Make sure git, Python3 and Ocaml are on your PATH.
-You can download a pre-built [Ocaml 4.06.1 for Windows](https://github.com/felix-lang/win64ocaml).
 
-Open a cmd.exe console with Visual Studio 2015 or above
-environment established or run vcvarsall x86. See [vcvarsall](https://msdn.microsoft.com/en-us/library/f2ccy3wt.aspx).
-
-```
-git clone https://github.com/felix-lang/felix.git
-cd felix
-. buildscript/winsetup.sh
-nmake  
-nmake install # optional!
-```
+Follow the instructions on [the Wiki](https://github.com/felix-lang/felix/wiki/Building-Felix-From-Source#windows-10-with-visual-studio-2022).
 
 ## Packages
 
