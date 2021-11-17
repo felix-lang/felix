@@ -11,12 +11,18 @@ let debug =
   try let _ = Sys.getenv "FLX_COMPILER_DEBUG_UNIQ" in true  
   with Not_found -> false 
 
-let show_getset_only = 
+let show_uniq_getset_only = 
   try let _ = Sys.getenv "FLX_COMPILER_DEBUG_UNIQ_GETSET" in true  
   with Not_found -> false 
 
+let show_share_getset_only = 
+  try let _ = Sys.getenv "FLX_COMPILER_DEBUG_SHARE_GETSET" in true  
+  with Not_found -> false 
 
-let show_getset = debug || show_getset_only
+
+
+let show_uniq_getset = debug || show_uniq_getset_only
+let show_share_getset = debug || show_share_getset_only
  
 (* This routine finds all the indexes of uniq expressions .. well
 at the moment this is just uniq variables and constant projections
@@ -48,6 +54,26 @@ print_endline ("Find once for expresssion " ^ Flx_print.sbe bsym_table e);
 
   | x -> Flx_bexpr.flat_iter ~f_bexpr:(find_once bsym_table chain2ix path b) x
 
+let rec find_share bsym_table (chain2ix:chain2ix_t) path (b:BidSet.t ref) e : unit =
+(*
+print_endline ("Find once for expresssion " ^ Flx_print.sbe bsym_table e);
+*)
+  match e with
+  | BEXPR_varname (i,_),_ -> 
+    let prefix = List.rev path in
+    List.iter  (fun ((j,path),ix) ->
+      if j = i then
+        if Flx_list.has_prefix prefix path then 
+          b := BidSet.add ix !b
+      )
+    chain2ix
+
+  | BEXPR_apply ( (BEXPR_prj (n,_,_),_), base ),_ ->
+    let path = `Tup n :: path in
+    find_share bsym_table chain2ix path b base 
+
+  | x -> Flx_bexpr.flat_iter ~f_bexpr:(find_share bsym_table chain2ix path b) x
+
 exception DuplicateSet of int * path_t
 
 let rec find_ponce bsym_table (chain2ix:chain2ix_t) path (b:BidSet.t ref) e : unit =
@@ -74,11 +100,39 @@ print_endline ("Find pointers to once for expresssion " ^ Flx_print.sbe bsym_tab
 
   | x -> Flx_bexpr.flat_iter ~f_bexpr:(find_ponce bsym_table chain2ix path b) x
 
+let rec find_pshare bsym_table (chain2ix:chain2ix_t) path (b:BidSet.t ref) e : unit =
+(*
+print_endline ("Find pointers to once for expresssion " ^ Flx_print.sbe bsym_table e);
+*)
+  match e with
+  | BEXPR_wref (i,_),_  
+  | BEXPR_ref (i,_),_ -> 
+    let prefix = List.rev path in
+    List.iter  (fun ((j,path),ix) ->
+      if j = i then
+        if Flx_list.has_prefix prefix path then 
+          b := BidSet.add ix !b;
+      )
+    chain2ix
+
+  | BEXPR_apply ( (BEXPR_prj (n,_,_),_), base ),_ ->
+    let path = `Tup n :: path in
+    find_pshare bsym_table chain2ix path b base 
+
+  (* Note: doesn't correctly account for duplicate fields, ignores index ..
+     the `Rec string constructor is inadequate ..
+   *)
+  | BEXPR_apply ( (BEXPR_rprj (n,_,_,_),_), base ),_ ->
+    let path = `Rec n :: path in
+    find_pshare bsym_table chain2ix path b base 
+
+  | x -> Flx_bexpr.flat_iter ~f_bexpr:(find_pshare bsym_table chain2ix path b) x
+
 
 
 (* Get and Set detectors for instructions *)
 
-let get_sets bsym_table chain2ix ix2chain bexe =
+let once_get_sets bsym_table chain2ix ix2chain bexe =
   let bidset = ref BidSet.empty in
   let f_bexpr e = 
     try find_once bsym_table chain2ix [] bidset e 
@@ -105,15 +159,60 @@ let get_sets bsym_table chain2ix ix2chain bexe =
   | _ ->  () 
   end;
 
-  if show_getset && not (BidSet.is_empty (!bidset)) then
-    print_endline ("  SETS: " ^ string_of_vars bsym_table ix2chain (!bidset));
+  if show_uniq_getset && not (BidSet.is_empty (!bidset)) then
+    print_endline ("  UNIQ SETS: " ^ string_of_vars bsym_table ix2chain (!bidset));
   !bidset
 
-let get_gets bsym_table chain2ix ix2chain bexe = 
+(* In this routine ALL W or RW address taking is counted as a write.
+The reason is we have cases in the library in which a procedure closure is formed
+in an expression by a function application, which captures a RW pointer
+that is later called, causing a write: in particular, unravelling the read
+primitive seems to do this. 
+
+We need to do something better, but for now there is no choice if the existing
+code is to pass.
+*)
+let share_get_sets bsym_table chain2ix ix2chain bexe =
+  let bidset = ref BidSet.empty in
+  let f_bexpr e = 
+    find_pshare bsym_table chain2ix [] bidset e 
+  in
+  (* HACK because i couldn't figure the types .. *)
+  let f_lval e = 
+    find_share bsym_table chain2ix [] bidset e 
+  in
+  begin match bexe with 
+  | BEXE_init (_,i,(_,vt as e)) -> f_lval (bexpr_varname vt (i,[])); f_bexpr e
+  | BEXE_assign (_,((BEXPR_varname (i,[]) ,_) as l),r) -> f_lval l; f_bexpr r 
+(*
+  | BEXE_storeat (_,l,r) -> 
+      find_pshare bsym_table chain2ix [] bidset l;
+      f_bexpr r
+
+  (* if we pass a RW or WO pointer to a routine, count it as a set *)
+  (* Note this is all covered by the wildcard branch below anyhow .. *)
+  | BEXE_call_with_trap (_,_,e)
+  | BEXE_call_direct (_,_,_,e)
+  | BEXE_jump_direct (_,_,_,e)
+  | BEXE_call_stack(_,_,_,e)
+  | BEXE_call_prim(_,_,_,e)
+  | BEXE_jump (_,_,e)
+  | BEXE_call (_,_,e) ->
+      find_pshare bsym_table chain2ix [] bidset e
+*)
+  | _ -> Flx_bexe.iter ~f_bexpr bexe 
+  end;
+
+  if show_share_getset && not (BidSet.is_empty (!bidset)) then
+    print_endline ("  SHARE SETS: " ^ string_of_vars bsym_table ix2chain (!bidset));
+  !bidset
+
+let once_get_gets bsym_table chain2ix ix2chain bexe = 
   let bidset = ref BidSet.empty in
   let f_bexpr e = 
      match e with
-     | BEXPR_ref (i,_),_ -> ()
+     | BEXPR_ref (i,_),_ 
+     | BEXPR_wref (i,_),_ -> ()
      | _ -> 
        try find_once bsym_table chain2ix [] bidset e 
        with DuplicateGet (i,ix) ->
@@ -136,8 +235,34 @@ let get_gets bsym_table chain2ix ix2chain bexe =
   | _ -> Flx_bexe.iter ~f_bexpr bexe
   end;
 
-  if show_getset && not (BidSet.is_empty (!bidset)) then
-    print_endline ("  GETS: " ^ string_of_vars bsym_table ix2chain (!bidset));
+  if show_uniq_getset && not (BidSet.is_empty (!bidset)) then
+    print_endline ("  UNIQ GETS: " ^ string_of_vars bsym_table ix2chain (!bidset));
+  !bidset
+
+
+let share_get_gets bsym_table chain2ix ix2chain bexe = 
+  let bidset = ref BidSet.empty in
+  let f_bexpr e = 
+     match e with
+     | BEXPR_ref (i,_),_ -> ()
+     | _ -> 
+       find_share bsym_table chain2ix [] bidset e 
+  in
+  begin match bexe with 
+  (* storing at a pointer is still a get on the pointer! *)
+  | BEXE_storeat (_,l,e)  -> (* f_bexpr l; *) f_bexpr e
+
+  (* if the target of an assignment is a variable, is not a get *)
+  | BEXE_assign (_,(BEXPR_varname _,_),e) 
+  | BEXE_assign (_,(BEXPR_deref (BEXPR_varname _,_),_),e) 
+
+  (* nor is the target of an initialisation *)
+  | BEXE_init (_,_,e) -> f_bexpr e
+  | _ -> Flx_bexe.iter ~f_bexpr bexe
+  end;
+
+  if show_share_getset && not (BidSet.is_empty (!bidset)) then
+    print_endline ("  SHARE GETS: " ^ string_of_vars bsym_table ix2chain (!bidset));
   !bidset
 
 (* Full unravelling removes expressions from instructions so all arguments
@@ -225,7 +350,7 @@ let make_augexes bsym_table counter chain2ix ix2chain get_sets get_gets bexes : 
   List.map 
   (
     fun bexe -> 
-      if show_getset then
+      if show_share_getset_only || show_uniq_getset_only then
         print_endline ("instruction " ^ Flx_print.string_of_bexe bsym_table 0 bexe);
       bexe, 
       {

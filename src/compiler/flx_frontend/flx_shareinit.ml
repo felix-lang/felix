@@ -27,7 +27,6 @@ Note, with address taking, we ignore it!
 
 *)
 
-(*
 open Flx_bsym
 open Flx_bsym_table
 open Flx_bbdcl
@@ -38,7 +37,7 @@ open Flx_btype
 open Flx_fairy
 open Flx_getset
 
-let debug = true (* Flx_getset.debug *)
+let debug = Flx_getset.debug 
 
 exception CompleteFlow
 exception IncompletePriorFlow
@@ -98,6 +97,8 @@ let rec find_label augexes lab =
   | (BEXE_label (_,cand), data) :: tail when lab = cand -> Some tail
   | _ :: tail -> find_label tail lab
 
+exception UseBeforeInitError
+
 (* Fixup diagnostics later *)
 let live bsym_table ix2chain sr bexe live {sets=set; gets=get} =
 (*
@@ -112,7 +113,7 @@ print_endline ("Calculate liveness: old= " ^ Flx_bid.str_of_bidset old ^ ", gets
     print_endline (def_of_vars bsym_table ix2chain getdead);
     print_endline ("In instruction " ^ Flx_print.string_of_bexe bsym_table 0 bexe);
     print_endline ("Detected at" ^ Flx_srcref.long_string_of_src sr);
-    assert false;
+    (* raise UseBeforeInitError *)
   end;
 (* THIS DOES'T APPLY TO SHARED VARIABLES
   (* kill used variables *)
@@ -150,6 +151,7 @@ let check_unused bsym_table ix2chain all liveset : unit =
 
 (* handle gotos, including nonlocal gotos *)
 let rec goto bsym_table ix2chain (stack:stack_t) (liveness:BidSet.t) (label:bid_t) : stack_t =
+(* print_endline ( "goto " ^ string_of_int label);  *)
   match stack with
   | [] -> [] (* exit *)
   | head :: tail -> 
@@ -157,18 +159,34 @@ let rec goto bsym_table ix2chain (stack:stack_t) (liveness:BidSet.t) (label:bid_
     | Some bexes -> 
       let visited = head.frame.visited in
       if List.mem_assoc label visited then
-        begin 
-          let old_liveness = List.assoc label visited in
-          let new_liveness = BidSet.inter old_liveness liveness in
-          if new_liveness = old_liveness then tail (* reached fixpoint, finish *)
-          else begin (* continue with current continuation at code after label *)
+(*        let _ = print_endline ("Already visited") in *) 
+        let old_liveness = List.assoc label visited in
+        let new_liveness = BidSet.inter old_liveness liveness in
+(*
+        let _ = print_endline ("  OLD live=" ^ Flx_bid.str_of_bidset old_liveness) in
+        let _ = print_endline ("  NEW live=" ^ Flx_bid.str_of_bidset new_liveness) in
+        let _ = print_endline ("  " ^ if new_liveness = old_liveness then " EQUAL" else "NOT EQUAL") in
+        let _ = print_endline ("  " ^ if BidSet.equal old_liveness new_liveness then " EQUAL" else "NOT EQUAL") in
+*)
+        if BidSet.equal new_liveness old_liveness then 
+(*          let _ = print_endline ("Reached fixpoint, terminating") in  *)
+          tail (* reached fixpoint, finish *)
+        else (* continue with current continuation at code after label *)
+(*            let _ = print_endline ("Updating visit data") in *)
             (* remove old state at label *)
-            let new_state = List.filter (fun (lab,_) -> label <> lab) head.frame.visited in
+            let stripped = List.filter (fun (lab,_) -> label <> lab) head.frame.visited in
             (* re-insert label with new state *)
-            let _ = head.frame.visited <- (label,new_liveness)::visited in (* continue recording liveness at label *)
+(*
+            let _ = print_endline ("  OLD live=" ^ Flx_bid.str_of_bidset old_liveness) in
+            let _ = print_endline ("  NEW live=" ^ Flx_bid.str_of_bidset new_liveness) in
+*)
+            let _ = head.frame.visited <- (label,new_liveness)::stripped in (* continue recording liveness at label *)
             { head with current=bexes } :: tail
-          end
-        end
+      else 
+(*        let _ = print_endline ("first visit") in *) 
+        let _ = head.frame.visited <- (label,liveness) :: head.frame.visited in (* continue recording liveness at label *)
+        { head with current=bexes } :: tail
+
     | None -> goto bsym_table ix2chain tail liveness label (* look for label in parent *)
 
 (* handle return instruction *)
@@ -179,7 +197,7 @@ let return bsym_table ix2chain (stack:stack_t) (liveness:BidSet.t) : stack_t =
   | callee :: caller :: chain ->
     let visited = callee.frame.visited in
     let liveness = 
-      if List.mem_assoc exit_label visited then (List.assoc exit_label visited) BidSet.inter liveness
+      if List.mem_assoc exit_label visited then BidSet.inter (List.assoc exit_label visited) liveness
       else liveness
     in
     (* check_unused bsym_table ix2chain liveness exit_label *) 
@@ -211,7 +229,7 @@ if debug then print_endline ("flow: end of procedure or return");
   let sr = get_srcref bexe in
   let liveness = live bsym_table ix2chain sr bexe liveness deltalife in
   let next () =  flow liveness ({cc with current=tail} :: caller) in
-  let final () = flow liveness (check_liveness bsym_table ix2chain liveness) in
+  let final () = flow liveness [] in
   let abort () = flow liveness [] in
 
   let lno = Flx_srcref.first_line_no sr in
@@ -290,10 +308,11 @@ if debug then print_endline ("flow: non-descendant procedure call " ^ string_of_
 if debug then print_endline ("flow: descendant procedure call " ^ string_of_int pidx);
       begin match rec_entry stack pidx with
       | Some old_liveness -> 
-if debug then print_endline ("flow: recursive procedure re-entry " ^ string_of_int pidx);
+if debug then print_endline ("flow: ignoring recursive procedure re-entry " ^ string_of_int pidx);
         (* dummy path termination *)
+(*
         flow liveness (check_reentry bsym_table ix2chain old_liveness liveness entry_label);
-
+*)
         (* continue past recursive call now *)
         begin match rec_exit stack pidx with
         | Some liveness ->
@@ -363,7 +382,7 @@ if debug then print_endline ("flow: conditional branch ok")
   | BEXE_label (_,lidx) ->
 if debug then print_endline ("flow: label " ^ string_of_int lidx);
 (* dropping into a label is the same as doing a goto to the label *)
-  flow liveness bsym_table is2chain (goto bsym_table ix2chain stack liveness lidx)
+  flow liveness (goto bsym_table ix2chain stack liveness lidx)
 
   | BEXE_jump (_,_,_)  ->
     flow liveness (return bsym_table ix2chain stack liveness)
@@ -464,7 +483,7 @@ let shareinit_check bsym_table counter ix2chain chain2ix bid name bexes =
       " shared variables in function " ^ name ^ "<" ^ string_of_int bid^ ">");
 
   (* map the exes of the function into augmented exes *)
-  let make_augexes bexes = make_augexes bsym_table counter chain2ix ix2chain get_sets get_gets bexes in
+  let make_augexes bexes = make_augexes bsym_table counter chain2ix ix2chain share_get_sets share_get_gets bexes in
   let bexes = make_augexes bexes in
   if debug then
     print_endline ("Calculated shared use per instruction of " ^ name ^ ":" ^ string_of_int bid);
@@ -540,14 +559,18 @@ end;
 
   (* Ignore non-function *)
   | _ -> ()
-*)
-let shareinit_bsym_table phase bsym_table counter = ()
-(*
+
+let shareinit_bsym_table phase bsym_table counter = 
   try
+(*
 print_endline "Doing share init";
+*)
     Flx_bsym_table.iter (shareinit_bsym bsym_table counter) bsym_table
-  with exn ->
+  with 
+  | UseBeforeInitError ->
+    failwith ("ERROR in init share variable before use verification phase " ^ phase);
+    
+  | exn ->
     print_endline ("ERROR in init share variable before use verification phase " ^ phase);
     raise exn
 
-*)

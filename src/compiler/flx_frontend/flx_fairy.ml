@@ -163,7 +163,7 @@ constructor are reversed
 *)
 
 let rec shared_anal_aux (path:path_t) typ (paths:paths_t): paths_t = 
-print_endline ("Shared anal aux " ^ Flx_btype.str_of_btype typ);
+(* print_endline ("Shared anal aux " ^ Flx_btype.str_of_btype typ); *)
   match typ with
   | BTYP_uniq t -> paths (* the path is dropped *)
 

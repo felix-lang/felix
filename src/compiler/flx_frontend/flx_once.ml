@@ -505,7 +505,7 @@ let once_check bsym_table counter ix2chain chain2ix bid name bexes =
       " once variables in function " ^ name ^ "<" ^ string_of_int bid^ ">");
 
   (* map the exes of the function into augmented exes *)
-  let make_augexes bexes = make_augexes bsym_table counter chain2ix ix2chain get_sets get_gets bexes in
+  let make_augexes bexes = make_augexes bsym_table counter chain2ix ix2chain once_get_sets once_get_gets bexes in
   let bexes = make_augexes bexes in
   if debug then
     print_endline ("Calculated once use per instruction of " ^ name ^ ":" ^ string_of_int bid);
