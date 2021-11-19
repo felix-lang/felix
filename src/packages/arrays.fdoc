@@ -571,6 +571,7 @@ open class Farray
   fun rev[T, N:COMPACTLINEAR] (x:array[T, N]): array[T, N] = {
     var o : array[T, N];
     var n = len x;
+    C_hack::ignore(&o); // to fool use before init
     if n > 0uz
       for var i:size in 0uz upto n - 1uz
         call set(&o,n - 1uz - i, x.i)
