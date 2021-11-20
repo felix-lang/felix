@@ -113,7 +113,7 @@ print_endline ("Calculate liveness: old= " ^ Flx_bid.str_of_bidset old ^ ", gets
     print_endline (def_of_vars bsym_table ix2chain getdead);
     print_endline ("In instruction " ^ Flx_print.string_of_bexe bsym_table 0 bexe);
     print_endline ("Detected at" ^ Flx_srcref.long_string_of_src sr);
-    (* raise UseBeforeInitError *)
+    raise UseBeforeInitError 
   end;
 (* THIS DOES'T APPLY TO SHARED VARIABLES
   (* kill used variables *)
@@ -552,7 +552,15 @@ end;
     *)
     if (List.length chain2ix <> 0) then
       begin try shareinit_check bsym_table counter ix2chain chain2ix bid (Flx_bsym.id bsym) exes 
-      with exn ->
+      with UseBeforeInitError ->
+        print_endline ("In function with code ");
+        begin if List.length exes <= 20 then
+          List.iter (fun bexe -> print_endline (Flx_print.string_of_bexe bsym_table 2 bexe)) exes
+        else 
+          print_endline (string_of_int (List.length exes) ^ " instructions, too many to list (limit 20)")
+        end;
+        () (* kills remainder of analysis *)
+      | exn ->
         print_endline ("Shared Variable used before set Error in function " ^ Flx_bsym.id bsym);
         raise exn
       end

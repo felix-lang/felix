@@ -1,3 +1,8 @@
+(* Eliminate unused non-parameter variables
+   cf flx_elim??
+*)
+
+
 open List
 
 open Flx_ast

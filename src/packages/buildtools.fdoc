@@ -741,6 +741,8 @@ class FlxPrepBuild
       done
 
       println$ 'Copying platform macro ..';
+      // Felix platform macro
+      var fmacs = ([cmd.os+'/([^/]*\\.flxh)']);
       for pattern in fmacs perform
         CopyFiles::copyfiles(cmd.repo/'src'/'config', pattern,
           cmd.target_dir/cmd.target_bin/'lib'/'plat'/'${1}',true,cmd.debug);
@@ -773,9 +775,6 @@ class FlxPrepBuild
       fpcs += cmd.os/'([^/]*\\.fpc)';
       fpcs += (cmd.os+cmd.bits)/'([^/]*\\.fpc)';
       fpcs += cmd.os/'([^/]*\\.fpc)';
-
-      // Felix platform macro
-      var fmacs = ([cmd.os+'/([^/]*\\.flxh)']);
 
       // setup header files to copy
       // os/bits/compiler config

@@ -374,10 +374,10 @@ class Serialise
       var n = ss.len;
       var i = 0uz;
       var pnew : &word;
+      var head: address = NULL;
       while i != n do
         // get header data
         var shape: gc_shape_t;
-        var head: address;
         var maxslots : size;
         var usedslots: size;
         i = unblit (&shape, s, i);

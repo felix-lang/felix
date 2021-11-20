@@ -461,6 +461,7 @@ open class Farray
   //$ Array map.
   fun map[V,N:COMPACTLINEAR,U] (_f:V->U) (x:array[V,N]):array[U,N] = {
     var o : array[U,N];
+    C_hack::ignore(&o); // fool use before init algo
     val n = x.len;
     if n > 0uz 
       for var i: size in 0uz upto n - 1uz
@@ -481,7 +482,7 @@ open class Farray
   //$ Join two arrays (functional).
   fun join[T, N:UNITSUM, M:UNITSUM] (x:array[T, N]) (y:array[T, M]):array[T, N `+ M] = {
     var o : array[T, N `+ M];
-
+    C_hack::ignore(&o); // fool use before init algo
     if x.len > 0uz
       for var i in 0uz upto len(x) - 1uz
         call set (&o, i,x.i)
@@ -510,6 +511,7 @@ open class Farray
   (a:T^N) : T ^ K
   = 
   {
+    C_hack::ignore(&o); // fool use before init algo
     var o : T ^ K;
     for i in ..[K] do
       var first = Typing::arrayindexcount[FIRST].int;
@@ -524,6 +526,7 @@ open class Farray
   //$ Append value to end of an array (functional).
   fun join[T, N:UNITSUM] (x:array[T, N]) (y:T):array[T, N `+ 1] = {
     var o : array[T, N `+ 1];
+    C_hack::ignore(&o); // fool use before init algo
 
     if x.len > 0uz
       for var i in 0uz upto len(x) - 1uz
@@ -555,6 +558,7 @@ open class Farray
   //$ Example: transpose ( (1,2,3), (4,5,6) ) = ( (1,4), (2,5), (3,6) ).
   fun transpose[T,N:COMPACTLINEAR,M:COMPACTLINEAR] (y:array[array[T,M],N]) : array[array[T,N],M] = {
     var o : array[array[T,N],M];
+    C_hack::ignore(&o); // fool use before init algo
     var n = len y;
     var m = len y.0;
     for var i in 0uz upto n - 1uz 
@@ -721,9 +725,9 @@ open class Varray
     val n = x.len.size;
     var a = varray[t] n;
     iter (proc (v:t) { 
-    if a.len >= a.maxlen do
-      eprintln ("ctor3: attempt to push_back on full varray size " + a.maxlen.str);
-    done
+      if a.len >= a.maxlen do
+        eprintln ("ctor3: attempt to push_back on full varray size " + a.maxlen.str);
+      done
       push_back(a,v); 
      }) x;
     return a;

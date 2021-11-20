@@ -1,3 +1,6 @@
+(* Eliminate unused non-parameter variables
+*)
+
 open Flx_bid
 
 type elim_state_t = {

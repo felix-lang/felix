@@ -1,3 +1,10 @@
+(* Clean up control flow. 
+Remove duplicate labels.
+Replace call/return with jump
+Discard comments/nops
+*)
+
+
 open Flx_types
 open Flx_bexe
 open List
