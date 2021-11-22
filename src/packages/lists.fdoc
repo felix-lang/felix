@@ -721,6 +721,7 @@ Returns option.
   instance[T] Iterable[list[T],T] {
   //$ Convert a list to a stream.
     gen iterator (var xs:list[T]) () = {
+      C_hack::ignore(&xs); // fool use before init
       while true do
         match xs with
         | Snoc(t,h) => xs = t; yield Some h;

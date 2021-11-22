@@ -54,26 +54,6 @@ print_endline ("Find once for expresssion " ^ Flx_print.sbe bsym_table e);
 
   | x -> Flx_bexpr.flat_iter ~f_bexpr:(find_once bsym_table chain2ix path b) x
 
-let rec find_share bsym_table (chain2ix:chain2ix_t) path (b:BidSet.t ref) e : unit =
-(*
-print_endline ("Find once for expresssion " ^ Flx_print.sbe bsym_table e);
-*)
-  match e with
-  | BEXPR_varname (i,_),_ -> 
-    let prefix = List.rev path in
-    List.iter  (fun ((j,path),ix) ->
-      if j = i then
-        if Flx_list.has_prefix prefix path then 
-          b := BidSet.add ix !b
-      )
-    chain2ix
-
-  | BEXPR_apply ( (BEXPR_prj (n,_,_),_), base ),_ ->
-    let path = `Tup n :: path in
-    find_share bsym_table chain2ix path b base 
-
-  | x -> Flx_bexpr.flat_iter ~f_bexpr:(find_share bsym_table chain2ix path b) x
-
 exception DuplicateSet of int * path_t
 
 let rec find_ponce bsym_table (chain2ix:chain2ix_t) path (b:BidSet.t ref) e : unit =
@@ -100,10 +80,36 @@ print_endline ("Find pointers to once for expresssion " ^ Flx_print.sbe bsym_tab
 
   | x -> Flx_bexpr.flat_iter ~f_bexpr:(find_ponce bsym_table chain2ix path b) x
 
-let rec find_pshare bsym_table (chain2ix:chain2ix_t) path (b:BidSet.t ref) e : unit =
+let rec find_share bsym_table (chain2ix:chain2ix_t) path (b:BidSet.t ref) e : unit =
 (*
-print_endline ("Find pointers to once for expresssion " ^ Flx_print.sbe bsym_table e);
+print_endline ("Find once for expresssion " ^ Flx_print.sbe bsym_table e);
 *)
+  match e with
+  | BEXPR_varname (i,_),_ -> 
+    let prefix = List.rev path in
+    List.iter  (fun ((j,path),ix) ->
+      if j = i then
+        if Flx_list.has_prefix prefix path then 
+          b := BidSet.add ix !b
+      )
+    chain2ix
+
+  (* the guard is required because prj projections are used for structs and cstructs too 
+     but we don't split these into fairies at the moment
+  *)
+  | BEXPR_apply ( (BEXPR_prj (n,d,_),_), base ),_ when (match d with | BTYP_inst _ -> false  | _ -> true) ->
+    let path = `Tup n :: path in
+    find_share bsym_table chain2ix path b base 
+
+  | BEXPR_apply ( (BEXPR_rprj (n,_,d,_),_), base ),_  ->
+    let path = `Rec n :: path in
+    find_share bsym_table chain2ix path b base 
+
+
+  | x -> Flx_bexpr.flat_iter ~f_bexpr:(find_share bsym_table chain2ix path b) x
+
+
+let rec find_pshare bsym_table (chain2ix:chain2ix_t) path (b:BidSet.t ref) e : unit =
   match e with
   | BEXPR_wref (i,_),_  
   | BEXPR_ref (i,_),_ -> 
@@ -115,14 +121,20 @@ print_endline ("Find pointers to once for expresssion " ^ Flx_print.sbe bsym_tab
       )
     chain2ix
 
-  | BEXPR_apply ( (BEXPR_prj (n,_,_),_), base ),_ ->
+  (* the guard is required because prj projections are used for structs and cstructs too 
+     but we don't split these into fairies at the moment
+  *)
+  | BEXPR_apply ( (BEXPR_prj (n,BTYP_ptr(`RW,d,_),_),_), base ),_ 
+  | BEXPR_apply ( (BEXPR_prj (n,BTYP_ptr(`W,d,_),_),_), base ),_ 
+    when (match d with | BTYP_inst _ -> false  | _ -> true) ->
     let path = `Tup n :: path in
     find_pshare bsym_table chain2ix path b base 
 
   (* Note: doesn't correctly account for duplicate fields, ignores index ..
      the `Rec string constructor is inadequate ..
    *)
-  | BEXPR_apply ( (BEXPR_rprj (n,_,_,_),_), base ),_ ->
+  | BEXPR_apply ( (BEXPR_rprj (n,_,BTYP_ptr (`RW,d,_),_),_), base ),_
+  | BEXPR_apply ( (BEXPR_rprj (n,_,BTYP_ptr (`W,d,_),_),_), base ),_ ->
     let path = `Rec n :: path in
     find_pshare bsym_table chain2ix path b base 
 
