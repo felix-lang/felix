@@ -770,7 +770,7 @@ Given a registry, simulate dynamic linkage.
     var ppregistry : &&registry_t = #get_module_registry_address_address;
     var pregistry : &registry_t = *ppregistry;
     if C_hack::isNULL (pregistry) do
-      pregistry = new (StrDict::strdict[module_dictionary_t] ());
+      pregistry = unbox (new (StrDict::strdict[module_dictionary_t] ()));
       ppregistry <- pregistry;
       Gc::add_root (C_hack::cast[address] (pregistry));
     done

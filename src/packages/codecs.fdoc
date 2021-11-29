@@ -101,9 +101,10 @@ class Base64 {
     var i:int = 0;
     var j:int = 0;
     var in_ = 0;
-    var char_array_4:char^4;
-    var char_array_3:char^3;
-    var ret:string;
+    val sp = char " ";
+    var char_array_4:char^4 = sp, sp, sp, sp;
+    var char_array_3:char^3 = sp, sp, sp;
+    var ret:string="";
 
     while in_len > 0ui and ( enc_str.[in_] != char('=')) do 
       //(and is_base64(enc_str[in_])) 

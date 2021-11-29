@@ -251,7 +251,7 @@ fun merge (var p:gramlib_t): gramlib_t =
 {
  if p.len == 0uz return p;
 
- var out: gramlib_t;
+ var out: gramlib_t = Empty[gramentry_t];
 
  var key: string;
  var alts = Empty[prod_t];

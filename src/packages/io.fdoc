@@ -1219,13 +1219,12 @@ class Faio {
 */
 
   type sel_param = "flx::demux::sel_param";
-  type sel_param_ptr = "flx::demux::sel_param*";
 
-  fun get_bytes_done : sel_param_ptr -> int = '$1->bytes_written';
-  proc init_pb : sel_param*address*int
-  = '{$1.buffer=(char*)$2;$1.buffer_size=$3;$1.bytes_written=0;}';
+  fun get_bytes_done : &sel_param -> int = '$1->bytes_written';
+  proc init_pb : &sel_param*address*int
+  = '{$1->buffer=(char*)$2;$1->buffer_size=$3;$1->bytes_written=0;}';
 
-  proc calc_eof(pb: sel_param_ptr, len: &int, eof: &bool)
+  proc calc_eof(pb: &sel_param, len: &int, eof: &bool)
   {
       //println "Calc_eof ..";
       var bytes_done = pb.get_bytes_done;
@@ -1437,7 +1436,7 @@ type socketio_request = "::flx::faio::socketio_request";
 gen mk_socketio_request: demuxer * socket_t*address*int*bool -> socketio_request
     = '::flx::faio::socketio_request($1, $2, (char*)$3, $4, $5)';
 
-fun get_pb: socketio_request -> sel_param_ptr = '&$1.sv.pb';
+fun get_pb: socketio_request -> &sel_param = '&$1.sv.pb';
 
 // read & write differ only by a flag
 proc async_rw(fd: socket_t, len: &int, buf: address, eof: &bool, read_flag: bool)
@@ -1653,16 +1652,16 @@ proc ReuseSocket(s: SOCKET)
 }
 
 type wsa_socketio = "flx::faio::wsa_socketio";
-gen mk_wsa_socketio: demuxer * SOCKET*sel_param_ptr*bool->wsa_socketio = 'flx::faio::wsa_socketio($a)';
+gen mk_wsa_socketio: demuxer * SOCKET* &sel_param*bool->wsa_socketio = 'flx::faio::wsa_socketio($a)';
 
-private fun to_ptr : sel_param -> sel_param_ptr = '&$1';
+private fun to_ptr : sel_param -> &sel_param = '&$1';
 
 
 proc WSARecv(s: SOCKET, len: &int, buf: address, eof: &bool)
 {
     var pb: sel_param;
-    init_pb(pb, buf, *len);
-    var ppb: sel_param_ptr = to_ptr pb;
+    init_pb(&pb, buf, *len);
+    var ppb: &sel_param = &pb;
 
     var rev = mk_wsa_socketio(sys_demux,s, ppb, true);  // reading
     faio_req$ &rev;
@@ -1673,8 +1672,8 @@ proc WSARecv(s: SOCKET, len: &int, buf: address, eof: &bool)
 proc WSASend(s: SOCKET, len: &int, buf: address, eof: &bool)
 {
     var pb: sel_param;
-    init_pb(pb, buf, *len);
-    var ppb: sel_param_ptr = to_ptr pb;
+    init_pb(&pb, buf, *len);
+    var ppb: &sel_param = &pb;
 
     var rev = mk_wsa_socketio(sys_demux,s, ppb, false); // writing
     faio_req$ &rev;

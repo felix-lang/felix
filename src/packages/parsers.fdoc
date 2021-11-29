@@ -358,6 +358,7 @@ class Parsers
       parsr = read gro;
     };
     sched.run;
+    C_hack::ignore(&parsr); // fool init before use
     return parsr;
   }
 

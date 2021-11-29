@@ -1434,7 +1434,7 @@ class FlxGuiMenu
       //w.update(); 
     }
 
-    proc get_hotrecs(x:int, y:int, menu:menu_data_t, position:menu_position_t) 
+    proc get_hotrecs(x:int, var y:int, menu:menu_data_t, position:menu_position_t) 
       (revtrail: list[int]) 
       (photrecs:&list[rect_t * menu_position_t])=
     {
@@ -1730,7 +1730,7 @@ class FlxGuiMenu
               | _ => ;
               endmatch;
               var shots = smd.get_hotrects();
-              shots = map (fun (h:rect_t,pos:menu_position_t) => (h,Cons(counter,pos) )) shots;
+              shots = unbox$ map (fun (h:rect_t,pos:menu_position_t) => (h,Cons(counter,pos) )) shots;
               photrecs <- *photrecs + shots;
             done
           endmatch;
