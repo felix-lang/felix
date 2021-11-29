@@ -6,8 +6,6 @@
 include "stl/stl_vector";
 include "stl/stl_map";
 
-typedef ii = Stl_Vector::iterator[int];
-
 var v = Stl_Vector::create[int]();
 push_back (v,1);
 push_back (v,2);

@@ -747,6 +747,12 @@ class FlxPrepBuild
         CopyFiles::copyfiles(cmd.repo/'src'/'config', pattern,
           cmd.target_dir/cmd.target_bin/'lib'/'plat'/'${1}',true,cmd.debug);
 
+      // setup header files to copy
+      // os/bits/compiler config
+      var headers = ([(cmd.os+cmd.bits)/cmd.compiler/'rtl'/'([^/]*\\.hpp)']);
+      // socket config 
+      headers += (cmd.os+cmd.bits)/'rtl'/'([^/]*\\.hpp)';
+
       println$ 'Copying C++ headers ..';
       for pattern in headers perform
         CopyFiles::copyfiles(cmd.repo/'src'/'config', pattern,
@@ -775,12 +781,6 @@ class FlxPrepBuild
       fpcs += cmd.os/'([^/]*\\.fpc)';
       fpcs += (cmd.os+cmd.bits)/'([^/]*\\.fpc)';
       fpcs += cmd.os/'([^/]*\\.fpc)';
-
-      // setup header files to copy
-      // os/bits/compiler config
-      var headers = ([(cmd.os+cmd.bits)/cmd.compiler/'rtl'/'([^/]*\\.hpp)']);
-      // socket config 
-      headers += (cmd.os+cmd.bits)/'rtl'/'([^/]*\\.hpp)';
 
       // do the copying
       println$ 'Copying STANDARD fpcs ..';
