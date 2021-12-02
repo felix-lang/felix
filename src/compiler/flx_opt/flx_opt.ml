@@ -70,10 +70,9 @@ let optimize_bsym_table' syms bsym_table (root_proc: int option) =
   print_time syms "[flx_opt]; Polymorphic Uniqueness Verification" begin fun () ->
   Flx_once.once_bsym_table "Polymorphic" bsym_table syms.counter end;
 
-(*
   print_time syms "[flx_opt]; Polymorphic Shared variable initialisation Verification" begin fun () ->
   Flx_shareinit.shareinit_bsym_table "Polymorphic" bsym_table syms.counter end;
-*)
+
   if syms.compiler_options.doreductions then 
     print_time syms "[flx_opt]; Pre-monomorphisation user reductions" begin fun () ->
     Flx_reduce.reduce_all syms.counter bsym_table end; 

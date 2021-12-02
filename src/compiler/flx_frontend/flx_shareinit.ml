@@ -416,24 +416,26 @@ if debug then print_endline ("flow: label " ^ string_of_int lidx);
     (* We treat this as a procedure call on f for the moment! *)
     (* print_endline ("Found assign v = f a!"); *)
 
-    (* NOTE: recursion not handled yet *)
     if Flx_bsym_table.is_ancestor bsym_table pidx master then begin
-      let bsym = Flx_bsym_table.find bsym_table pidx in
-      let bbdcl = Flx_bsym.bbdcl bsym in
-      begin match bbdcl with
-      | BBDCL_fun (prop, bvs, ps, res, effects, bexes) ->
-        let continuation = {cc with current=tail} in
-        let augexes = make_augexes bexes in 
-        let new_frame = {index=pidx; code=augexes; visited=[entry_label,liveness] } in
-        let entry = {current=augexes; frame=new_frame} in
-        let stack = entry :: continuation :: caller in
-if debug then print_endline ("flow: SPECIAL function apply initial entry " ^ string_of_int pidx);
-        flow liveness stack 
-      | _ -> 
-if debug then print_endline ("flow: external function " ^ string_of_int pidx);
-        next();
-      end
-    end 
+      match rec_entry stack pidx with
+      | Some _ -> next()
+      | None ->
+        let bsym = Flx_bsym_table.find bsym_table pidx in
+        let bbdcl = Flx_bsym.bbdcl bsym in
+        begin match bbdcl with
+        | BBDCL_fun (prop, bvs, ps, res, effects, bexes) ->
+          let continuation = {cc with current=tail} in
+          let augexes = make_augexes bexes in 
+          let new_frame = {index=pidx; code=augexes; visited=[entry_label,liveness] } in
+          let entry = {current=augexes; frame=new_frame} in
+          let stack = entry :: continuation :: caller in
+  if debug then print_endline ("flow: SPECIAL function apply initial entry " ^ string_of_int pidx);
+          flow liveness stack 
+        | _ -> 
+  if debug then print_endline ("flow: external function " ^ string_of_int pidx);
+          next();
+        end
+      end 
     else
       next()
 
@@ -515,7 +517,7 @@ let shareinit_bsym bsym_table counter bid parent bsym =
   | BBDCL_fun(props, bvs, ps, res, effects, exes) ->
     let kids = Flx_bsym_table.find_children bsym_table bid in
     let linear = List.mem `LinearFunction props in
-if debug then
+if debug then 
 print_endline ("Shareinit check examining " ^ (if linear then "linear" else "nonlinear") ^ " function "^ Flx_bsym.id bsym);
 
     (* calculate fairy variables. For each variable which is a child of the function,
