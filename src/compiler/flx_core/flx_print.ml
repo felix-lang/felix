@@ -2430,11 +2430,11 @@ and string_of_bexe' se bsym_table level s =
     "non_return_code " ^ string_of_code_spec s ^ " " ^
     se e    
 
-  | BEXE_assign (_,l,r) -> spc ^
-    se l ^ " = " ^ se r ^ ";"
-
   | BEXE_storeat (_,l,r) -> spc ^
     se l ^ " <- " ^ se r ^ ";"
+
+  | BEXE_assign (_,l,r) -> spc ^
+    sid l ^ " = " ^ se r ^ ";"
 
   | BEXE_init (_,l,r) -> spc ^
     sid l ^ " := " ^ se r ^ ";"

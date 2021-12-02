@@ -26,7 +26,7 @@ type t =
   | BEXE_code of Flx_srcref.t * Flx_code_spec.t * Flx_bexpr.t
   | BEXE_nonreturn_code of Flx_srcref.t * Flx_code_spec.t * Flx_bexpr.t
 
-  | BEXE_assign of Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t
+  | BEXE_assign of Flx_srcref.t * bid_t * Flx_bexpr.t
   | BEXE_init of Flx_srcref.t * bid_t * Flx_bexpr.t
   | BEXE_storeat of Flx_srcref.t * Flx_bexpr.t * Flx_bexpr.t
 
@@ -66,10 +66,6 @@ let bexe_nop (sr,s) = BEXE_nop (sr,s)
 let bexe_code (sr,code,e) = BEXE_code (sr,code,e)
 let bexe_nonreturn_code (sr,code,e) = BEXE_nonreturn_code (sr,code,e)
 let bexe_assign (sr,e1,e2) = 
-  begin match e1 with
-  | Flx_bexpr.BEXPR_varname _, _ -> ()
-  | _ -> print_endline ("Warning, assign to non-variable")
-  end;
   BEXE_assign (sr,e1,e2)
 
 let bexe_init (sr,bid,e) = BEXE_init (sr,bid,e)
@@ -159,7 +155,6 @@ let iter
       f_bid i;
       List.iter f_btype ts;
       f_bexpr e2
-  | BEXE_assign (sr,e1,e2)
   | BEXE_storeat (sr,e1,e2)
   | BEXE_call (sr,e1,e2)
   | BEXE_call_with_trap (sr,e1,e2)
@@ -186,6 +181,7 @@ let iter
   | BEXE_nonreturn_code (_,_,e)
   | BEXE_assert (_,e) -> f_bexpr e
 
+  | BEXE_assign (sr,i,e)
   | BEXE_init (sr,i,e) -> f_bid i; f_bexpr e
   | BEXE_svc (sr,i) -> f_bid i
   | BEXE_catch (_, s, t) -> f_btype t
@@ -216,7 +212,6 @@ let map
       BEXE_call_direct (sr,f_bid i,List.map f_btype ts,f_bexpr e2)
   | BEXE_jump_direct (sr,i,ts,e2) ->
       BEXE_jump_direct (sr,f_bid i,List.map f_btype ts,f_bexpr e2)
-  | BEXE_assign (sr,e1,e2) -> BEXE_assign (sr,f_bexpr e1,f_bexpr e2)
   | BEXE_storeat(sr,e1,e2) -> BEXE_storeat(sr,f_bexpr e1,f_bexpr e2)
   | BEXE_call (sr,e1,e2) -> BEXE_call (sr,f_bexpr e1,f_bexpr e2)
   | BEXE_call_with_trap (sr,e1,e2) -> BEXE_call_with_trap (sr,f_bexpr e1,f_bexpr e2)
@@ -236,6 +231,7 @@ let map
       let e1 = match e1 with Some e1 -> Some (f_bexpr e1) | None -> None in
       BEXE_axiom_check2 (sr,sr2,e1,f_bexpr e2)
   | BEXE_axiom_check (sr,e) -> BEXE_axiom_check (sr,f_bexpr e)
+  | BEXE_assign (sr,i,e) -> BEXE_assign (sr,f_bid i,f_bexpr e)
   | BEXE_init (sr,i,e) -> BEXE_init (sr,f_bid i,f_bexpr e)
   | BEXE_svc (sr,i) -> BEXE_svc (sr,f_bid i)
   | BEXE_catch (sr,s,t) -> BEXE_catch (sr, s, f_btype t)

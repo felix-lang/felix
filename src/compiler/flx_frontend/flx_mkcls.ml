@@ -76,10 +76,10 @@ let process_exe ue syms bsym_table all_closures exe =
   | BEXE_fun_return (sr,e) -> ue sr e
   | BEXE_yield (sr,e) -> ue sr e
 
+  | BEXE_assign (sr,i,e)
   | BEXE_init (sr,i,e) -> ue sr e
   | BEXE_code (sr,s,e) -> ue sr e
   | BEXE_nonreturn_code (sr,s,e) -> ue sr e
-  | BEXE_assign (sr,e1,e2) -> ue sr e1; ue sr e2
   | BEXE_storeat (sr,e1,e2) -> ue sr e1; ue sr e2
   | BEXE_assert (sr,e) -> ue sr e
   | BEXE_axiom_check2 (sr,sr2,e1,e2) ->

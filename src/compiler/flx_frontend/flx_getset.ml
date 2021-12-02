@@ -156,8 +156,8 @@ let once_get_sets bsym_table chain2ix ix2chain bexe =
       failwith ("Flx_once: Duplicate Get of unique variable")
   in
   begin match bexe with 
-  | BEXE_assign (_,l,_) -> f_bexpr l
-  | BEXE_init (_,i,(_,vt as e)) -> f_bexpr (bexpr_varname vt (i,[]))
+  | BEXE_assign (_,i,(_,vt)) 
+  | BEXE_init (_,i,(_,vt)) -> f_bexpr (bexpr_varname vt (i,[]))
   | BEXE_storeat (_,l,r) -> 
     begin try
       find_ponce bsym_table chain2ix [] bidset l
@@ -194,8 +194,8 @@ let share_get_sets bsym_table chain2ix ix2chain bexe =
     find_share bsym_table chain2ix [] bidset e 
   in
   begin match bexe with 
+  | BEXE_assign(_,i,(_,vt as e))
   | BEXE_init (_,i,(_,vt as e)) -> f_lval (bexpr_varname vt (i,[])); f_bexpr e
-  | BEXE_assign (_,((BEXPR_varname (i,[]) ,_) as l),r) -> f_lval l; f_bexpr r 
 (*
   | BEXE_storeat (_,l,r) -> 
       find_pshare bsym_table chain2ix [] bidset l;
@@ -239,10 +239,8 @@ let once_get_gets bsym_table chain2ix ix2chain bexe =
   | BEXE_storeat (_,l,e)  -> f_bexpr l; f_bexpr e
 
   (* if the target of an assignment is a variable, is not a get *)
-  | BEXE_assign (_,(BEXPR_varname _,_),e) 
-  | BEXE_assign (_,(BEXPR_deref (BEXPR_varname _,_),_),e) 
-
   (* nor is the target of an initialisation *)
+  | BEXE_assign (_,_,e) 
   | BEXE_init (_,_,e) -> f_bexpr e
   | _ -> Flx_bexe.iter ~f_bexpr bexe
   end;
@@ -265,10 +263,8 @@ let share_get_gets bsym_table chain2ix ix2chain bexe =
   | BEXE_storeat (_,l,e)  -> (* f_bexpr l; *) f_bexpr e
 
   (* if the target of an assignment is a variable, is not a get *)
-  | BEXE_assign (_,(BEXPR_varname _,_),e) 
-  | BEXE_assign (_,(BEXPR_deref (BEXPR_varname _,_),_),e) 
-
   (* nor is the target of an initialisation *)
+  | BEXE_assign (_,_,e)
   | BEXE_init (_,_,e) -> f_bexpr e
   | _ -> Flx_bexe.iter ~f_bexpr bexe
   end;
@@ -317,7 +313,7 @@ let rec unrav sr counter extra e =
     let v = !counter in (* new temporary index *)
     incr counter;
     let lhs = bexpr_varname rt (v,ts) in
-    let instr = bexe_assign (sr, lhs, rhs) in
+    let instr = bexe_assign (sr, v, rhs) in
     extra := instr :: !extra;
     lhs  (* return variable *)
   | x -> x

@@ -257,7 +257,7 @@ let fixbexes bsym_table bexes =
   let unit_t = Flx_btype.btyp_unit () in
   let fbx x = fixbexe bsym_table x in
   let pr lst x = match fbx x with
-  | Flx_bexe.BEXE_assign (sr,(a,at),(_,t)) when t = unit_t -> assert (t=at); lst
+  | Flx_bexe.BEXE_assign (sr,_,(_,t))
   | Flx_bexe.BEXE_init (sr,_,(_,t)) when t = unit_t -> lst
   | y -> y::lst
   in

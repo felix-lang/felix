@@ -335,6 +335,7 @@ and process_exe syms bsym_table weak ref_insts1 ts hvarmap exe =
      begin match e1 with Some e -> ue sr e | None -> () end;
      ue sr e2
 
+  | BEXE_assign (sr,i,e)
   | BEXE_init (sr,i,e) ->
     (*
     print_endline ("[flx_inst] Initialisation " ^ si i ^ " := " ^ sbe bsym_table e);
@@ -353,8 +354,6 @@ and process_exe syms bsym_table weak ref_insts1 ts hvarmap exe =
     uis sr i ts; (* this is wrong?: initialisation is not use .. *)
     ue sr e
 
-  | BEXE_assign (sr,e1,e2) -> 
-    ue sr e1; ue sr e2
 
   | BEXE_storeat (sr,e1,e2) -> 
     ue sr e1; ue sr e2

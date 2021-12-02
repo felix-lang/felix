@@ -446,7 +446,7 @@ let rec can_stack_proc
 
     (* assignments to a local variable are safe *)
     | BEXE_init (_,j,_)
-    | BEXE_assign (_,(BEXPR_varname (j,_),_),_)
+    | BEXE_assign (_,j,_)
       when BidSet.mem j children -> ()
 
     (* NEW: direct calls, we have to analyse the argument as if the call were an assignment *)
@@ -456,7 +456,9 @@ let rec can_stack_proc
 
     (* assignments not involving pointers or functions are safe *)
     | BEXE_init (sr,_,(_,t))
-    | BEXE_assign (sr,(_,t),_)
+    | BEXE_assign (sr,_,(_,t))
+
+    (* ER ... but this one does involve pointers ..? *)
     | BEXE_storeat (sr,(_,t),_) ->
       if 
         let has_vars = has_var_children bsym_table children in

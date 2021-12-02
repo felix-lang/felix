@@ -75,7 +75,7 @@ let rec check_ahead i n ls res =
   | h :: t ->  match h with
   | BEXE_init (_,k, ( BEXPR_apply ((BEXPR_prj (p,_,_),_),(BEXPR_varname (j,[]),_)),typ))
 
-  | BEXE_assign (_,(BEXPR_varname (k,[]),_), ( BEXPR_apply ((BEXPR_prj (p,_,_),_),(BEXPR_varname (j,[]),_)),typ))
+  | BEXE_assign (_,k, ( BEXPR_apply ((BEXPR_prj (p,_,_),_),(BEXPR_varname (j,[]),_)),typ))
     when i = j -> check_ahead i (n-1) t ((k,p,typ)::res)
 
   | _ -> []
@@ -531,11 +531,27 @@ print_endline ("tailit:asgn2 assign to projection");
       ->
         cal_par i t ls h tail
 
-    | (BEXE_assign (sr,(BEXPR_varname (i,[]),_),(BEXPR_tuple ls,t)) as h) :: tail
+    | (BEXE_assign (sr,i,(BEXPR_tuple ls,t)) as h) :: tail
       ->
        cal_par i t ls h tail
 
-    | (BEXE_assign (sr,x,(BEXPR_tuple ls,t)) as h) :: tail
+(* THIS CASE IS COMMENTED OUT BECAUSE IT CAN'T HAPPEN NOW 
+
+   However, it's the primary case we need to handle, e.g.
+
+  x,y = y,x
+
+  This might be screwed up now with actual assignments,
+  but for tail recursion what happens with
+
+  fun f(x,y) = ... f(y,x)
+
+  ?? We seem now to have no way to represent this ???
+
+  Suspect we need a parallel assignment operation ...
+*)
+(*
+    | (BEXE_assign (sr,k,(BEXPR_tuple ls,t)) as h) :: tail
       ->
       let rec unproj e = match Flx_bexpr.map ~f_bexpr:unproj e with
       | BEXPR_apply ((BEXPR_prj (k,_,_),_),(BEXPR_tuple ls,_)),_ -> nth ls k
@@ -547,7 +563,7 @@ print_endline ("tailit:asgn2 assign to projection");
       let i = !(syms.counter) in incr (syms.counter);
       let n = length ls in
       let pbase = !(syms.counter) in syms.counter := !(syms.counter) + n;
-      let me e = match Flx_unify_expr.expr_maybe_matches bsym_table syms.counter [] [] x e with
+      let me e = match Flx_unify_expr.expr_maybe_matches bsym_table syms.counter [] [] k e with
         | Some ([],[]) -> true
         | None -> false
         | _ -> assert false
@@ -635,7 +651,7 @@ print_endline ("tailit: assign to projection: FIXME");
       end
       else
       aux tail (h::res)
-
+*)
 
     | h :: t  -> aux t (h::res)
     in

@@ -16,17 +16,10 @@ let make_elim_state syms bsym_table =
   }
 
 
-let rec lvof x =
-  match x with
-  | Flx_bexpr.BEXPR_varname (i, _), _ -> i
-  | Flx_bexpr.BEXPR_apply ((Flx_bexpr.BEXPR_prj _,_), e), _ -> lvof e
-  | _ -> dummy_bid
-
-
 let eliminate_init maybe_unused exes =
   List.filter begin function
+    | Flx_bexe.BEXE_assign (_, i, _) 
     | Flx_bexe.BEXE_init (_, i, _) -> not (BidSet.mem i maybe_unused)
-    | Flx_bexe.BEXE_assign (_, x, _) -> not (BidSet.mem (lvof x) maybe_unused)
     | _ -> true
   end exes
 

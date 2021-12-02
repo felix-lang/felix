@@ -812,17 +812,19 @@ print_endline ("BINDING ASSIGNMENT " ^ string_of_exe 0 exe);
 *)
       (* trick to generate diagnostic if l isn't an lvalue *)
       let lexpr,lhst as lx = be l in
-      begin match lexpr with
-      | BEXPR_varname (i,_) ->
-        let sym = Flx_sym_table.find state.lookup_state.sym_table i in
-        begin match sym.Flx_sym.symdef with
-        | SYMDEF_val _ ->
-          clierr sr ("Assign to val " ^ sym.Flx_sym.id ^ " not allowed");
-        | _ -> ()
-        end 
-      | _ -> 
-        clierr sr ("Assign to expression " ^ Flx_print.sbe bsym_table lx ^ " not allowed");
-      end;
+      let lhs_index = 
+        begin match lexpr with
+        | BEXPR_varname (i,_) ->
+          let sym = Flx_sym_table.find state.lookup_state.sym_table i in
+          begin match sym.Flx_sym.symdef with
+          | SYMDEF_val _ ->
+            clierr sr ("Assign to val " ^ sym.Flx_sym.id ^ " not allowed");
+          | _ -> i 
+          end 
+        | _ -> 
+          clierr sr ("Assign to expression " ^ Flx_print.sbe bsym_table lx ^ " not allowed");
+        end
+      in
       let _,rhst as rx = be r in
 (*
 print_endline ("assign: LHS=" ^ sbe bsym_table lx ^ ", LHST = " ^ sbt bsym_table lhst);
@@ -841,10 +843,10 @@ print_endline ("assign:  RHS=" ^ sbe bsym_table rx ^ ",RHST = " ^ sbt bsym_table
 print_endline ("assign after beta-reduction: RHST = " ^ sbt bsym_table rhst);
 *)
       if type_match bsym_table state.counter lhst rhst
-      then [(bexe_assign (sr,lx,rx))]
+      then [(bexe_assign (sr,lhs_index,rx))]
       else 
       if ge bsym_table state.counter lhst rhst then
-        let bexe = bexe_assign (sr,lx,bexpr_coerce (rx, lhst)) in
+        let bexe = bexe_assign (sr,lhs_index,bexpr_coerce (rx, lhst)) in
         [bexe]
       else
       clierrx "[flx_bind/flx_bind_bexe.ml:867: E36] " sr

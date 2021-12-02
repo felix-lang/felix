@@ -124,6 +124,7 @@ let flat_poly_fixup_exe syms bsym_table polyinst parent_ts mt exe =
   | BEXE_call_stack (sr, i,ts,a) -> assert false
 
   (* this is deviant case: implied ts is vs of parent! *)
+  | BEXE_assign (sr,i,e)
   | BEXE_init (sr,i,e) ->
 (*
     print_endline ("[flat_poly_fixup_exe: init] Deviant case variable " ^ si i);

@@ -149,19 +149,9 @@ and uses_bexe' add bsym_table count_inits exe =
   in
   match exe,count_inits with
   | BEXE_init (_,i,rhs),_ 
-  | BEXE_assign (_,(BEXPR_varname (i,[]),_),rhs),_ ->
+  | BEXE_assign (_,i,rhs),_ ->
     if count_inits || is_once_param bsym_table i then add i;
     f_bexpr rhs 
-
-  | BEXE_assign (_,lhs,rhs),_ ->
-print_endline ("Flx_use: Assign to non variable detected!");
-print_endline (sbx bsym_table exe);
-assert false;
-    (* check is a term is a tuple projection of a variable *)
-    (*if count_inits then *) f_bexpr lhs
-    (* else chkl lhs *)
-    ;
-    f_bexpr rhs
 
   | BEXE_label _,false -> ()
   | _ ->
@@ -413,8 +403,8 @@ exception Bad
 
 let keep bsym_table bidset exe =
   match exe with
-  | BEXE_assign (sr,((_,t) as lhs),rhs) ->
-    if istriv t then false
+  | BEXE_assign (sr,v,(_,rhst)) ->
+    if istriv rhst then false
     else
     let add i = if BidSet.mem i bidset then () else raise Bad in
     begin try uses_bexe add bsym_table true exe; true

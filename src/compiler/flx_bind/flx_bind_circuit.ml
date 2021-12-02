@@ -503,7 +503,7 @@ print_endline ("SPawn Fthread svc call '_svc_fthread' is " ^ Flx_print.sbe bsym_
       let con_expr = Flx_bexpr.bexpr_apply continuation_type (start_continuation, device_closure) in
       let fthread_expr = Flx_bexpr.bexpr_apply fthread_type (mk_thread, con_expr) in
       let fvar = Flx_bexpr.bexpr_varname fthread_type (fibre_index, parent_ts) in
-      let assignment = Flx_bexe.bexe_assign (sr, fvar, fthread_expr) in
+      let assignment = Flx_bexe.bexe_assign (sr, fibre_index, fthread_expr) in
       let spawn = Flx_bexe.bexe_call (sr, svc_fthread, fvar) in
       exes := spawn :: assignment :: !exes (* reverse order of execution is reversed at the end *)
 (*

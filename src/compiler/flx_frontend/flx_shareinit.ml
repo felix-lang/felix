@@ -409,9 +409,9 @@ if debug then print_endline ("flow: label " ^ string_of_int lidx);
     final ()
 
   (* NOTE: we should only need one of these patterns, FIXME unravel *)
-  | BEXE_assign (sr, (BEXPR_varname (v,_),_),(BEXPR_apply ((BEXPR_closure (pidx,_),_),arg),_)) 
-  | BEXE_assign (sr, (BEXPR_varname (v,_),_),(BEXPR_apply_direct (pidx,_,arg),_)) 
-  | BEXE_assign (sr, (BEXPR_varname (v,_),_),(BEXPR_apply_stack (pidx,_,arg),_)) 
+  | BEXE_assign (sr, v,(BEXPR_apply ((BEXPR_closure (pidx,_),_),arg),_)) 
+  | BEXE_assign (sr, v,(BEXPR_apply_direct (pidx,_,arg),_)) 
+  | BEXE_assign (sr, v,(BEXPR_apply_stack (pidx,_,arg),_)) 
     ->
     (* We treat this as a procedure call on f for the moment! *)
     (* print_endline ("Found assign v = f a!"); *)

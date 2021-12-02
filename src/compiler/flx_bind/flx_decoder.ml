@@ -77,7 +77,7 @@ print_endline ("Output channel fields " ^ catmap "," (fun (s,t) -> s ^ ":" ^ Flx
 (*
 print_endline ("Read expr = " ^ Flx_print.sbe bsym_table read_expr);
 *)
-          let read_op = bexe_assign (sr,read_var, read_expr) in
+          let read_op = bexe_assign (sr,read_var_index, read_expr) in
           let case k = 
 (*
 print_endline ("Case " ^ string_of_int k);

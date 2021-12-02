@@ -250,8 +250,8 @@ let gen_body syms uses bsym_table id
 
   | BEXE_fun_return (sr,e) -> [bexe_fun_return (sr, ge e)]
   | BEXE_yield (sr,e) -> [bexe_yield (sr, ge e)]
-  | BEXE_assign (sr,e1,e2) -> [bexe_assign (sr, ge e1, ge e2)]
   | BEXE_storeat (sr,e1,e2) -> [bexe_storeat (sr, ge e1, ge e2)]
+  | BEXE_assign (sr,i,e) -> [bexe_assign (sr, revar i, ge e)]
   | BEXE_init (sr,i,e) -> [bexe_init (sr,revar i, ge e)]
   | BEXE_svc (sr,i)  -> [bexe_svc (sr, revar i)]
 

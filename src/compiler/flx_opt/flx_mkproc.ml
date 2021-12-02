@@ -335,7 +335,7 @@ let mkproc_gen syms bsym_table =
       let ts = List.map (fun (_,i,mt) -> btyp_type_var (i,mt)) vs in
       assert (ts = []);
       let dv = bexpr_deref ret (bexpr_varname (btyp_pointer ret) (vix,ts)) in
-      let exes = proc_exes syms bsym_table dv exes in
+      let exes = proc_exes syms bsym_table vix exes in
 
       let ps = Flx_bparams.bparams_of_list ps in
       (* save the new procedure *)

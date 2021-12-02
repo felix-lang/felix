@@ -53,10 +53,9 @@ let expand_exe syms bsym_table u exe =
       let e,xs = u sr e2 in
       bexe_jump_direct (sr,i,ts,e) :: xs
 
-    | BEXE_assign (sr,e1,e2) ->
-      let e1,xs1 = u sr e1 in
-      let e2,xs2 = u sr e2 in
-      bexe_assign (sr,e1,e2) :: xs2 @ xs1
+    | BEXE_assign (sr,i,e) ->
+      let e,xs = u sr e in
+      bexe_assign (sr,i,e) :: xs 
 
     | BEXE_storeat (sr,e1,e2) ->
       let e1,xs1 = u sr e1 in
