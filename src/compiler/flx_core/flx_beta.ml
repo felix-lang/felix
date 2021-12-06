@@ -325,6 +325,7 @@ print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
   | BTYP_vinst (i,ts,mt) -> btyp_vinst (i, List.map br ts,mt)
   | BTYP_rev t -> btyp_rev (br t)
   | BTYP_uniq t -> btyp_uniq (br t)
+  | BTYP_borrowed t -> btyp_borrowed (br t)
 
   | BTYP_compacttuple ls -> btyp_compacttuple (List.map br ls)
   | BTYP_compactarray (i,t) -> btyp_compactarray (br i, br t)

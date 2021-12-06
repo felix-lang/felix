@@ -4,14 +4,22 @@
 @tangle unique.flx
 open class Unique 
 {
-  // box up a value as a unique thing
+  // unsafely box up a value as a unique thing
   fun box[T] : T -> _uniq T = "($t)";
 
-  // unsafely unpack the unique box
+  // safely unpack the unique box
   gen unbox[T] : _uniq T -> T = "($t)";
 
   // kill a live unique value
   proc kill[T] : uniq T = ";";
+
+  // wrap a value so it's borrowed
+  fun wrap[T] : T -> _borrowed T = "($t)";
+
+  // load a boxed uniq
+  fun loan[T] : _uniq T -> _borrowed T = "($t)";
+
+  fun unwrap[T] : _borrowed T -> T = "($t)";
 
   // functor for typing
   typedef fun uniq (T:LINEAR):LINEAR => _uniq T;

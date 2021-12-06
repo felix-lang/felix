@@ -460,6 +460,7 @@ print_endline ("Flx_bind_type.TYP_typeof fixpoint metatype hack! Expression " ^ 
   | `TYP_rref t -> btyp_rref (bt t)
   | `TYP_wref t -> btyp_wref (bt t)
   | `TYP_uniq t -> btyp_uniq (bt t)
+  | `TYP_borrowed t -> btyp_borrowed (bt t)
 
   | `TYP_void _ -> btyp_void ()
 

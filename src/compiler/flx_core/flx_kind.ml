@@ -2,6 +2,7 @@
 type kind =
   | KIND_type    (* copyable *)
   | KIND_linear  (* copyable or unique *)
+  | KIND_borrowed (* copyable or shared *)
   | KIND_unitsum
   | KIND_compactlinear
   | KIND_bool
@@ -15,6 +16,7 @@ let rec sk k =
   match k with
   | KIND_type -> "TYPE"
   | KIND_linear -> "LINEAR"
+  | KIND_borrowed -> "BORROWED"
   | KIND_unitsum -> "UNITSUM"
   | KIND_compactlinear -> "COMPACTLINEAR"
   | KIND_bool -> "BOOL"
@@ -24,6 +26,7 @@ let rec sk k =
 
 let kind_type = KIND_type
 let kind_linear = KIND_linear
+let kind_borrowed = KIND_borrowed
 let kind_unitsum = KIND_unitsum
 let kind_compactlinear = KIND_compactlinear
 let kind_bool = KIND_bool
@@ -39,8 +42,18 @@ type bvs_t = bv_t list
 type keqn_t = kind * kind
 type keqns_t = keqn_t list
 
+(* lhs param type = supertype, rhs argtype = subtype 
+ subyping chain:
+ unitsum -> compactlinear -> linear -> type -> borrowed
+*)
 let ksolve_subtypes add_eqn lhs rhs =
   match lhs, rhs with
+  | KIND_borrowed, KIND_borrowed
+  | KIND_borrowed, KIND_type
+  | KIND_borrowed, KIND_linear
+  | KIND_borrowed, KIND_compactlinear
+  | KIND_borrowed, KIND_unitsum
+
   | KIND_linear, KIND_linear
   | KIND_linear, KIND_type
   | KIND_linear, KIND_unitsum

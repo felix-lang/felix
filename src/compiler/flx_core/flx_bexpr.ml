@@ -28,7 +28,7 @@ type bexpr_t =
   *)
   | BEXPR_cltpointer_prj of Flx_btype.t * Flx_btype.t * int list
 
-  | BEXPR_uniq of t
+  (* | BEXPR_uniq of t *)
   | BEXPR_likely of t
   | BEXPR_unlikely of t
   | BEXPR_address of t
@@ -206,7 +206,7 @@ let bexpr_ref t (bid, ts) =
   | Some k -> bexpr_unitptr k
   | _ -> BEXPR_ref (bid, complete_check_list ts), complete_check "bexpr_ref" t
 
-let bexpr_uniq ((x,t) as e) = BEXPR_uniq e, Flx_btype.btyp_uniq t
+(* let bexpr_uniq ((x,t) as e) = BEXPR_uniq e, Flx_btype.btyp_uniq t *)
 
 let bexpr_rref t (bid, ts) = 
   match Flx_btype.trivorder t with
@@ -391,6 +391,8 @@ let bexpr_prj n d c =
   else begin begin match d with
   | Flx_btype.BTYP_uniq _ ->
     failwith ("Projection from unique type " ^ Flx_btype.st d ^ " not allowed")
+  | Flx_btype.BTYP_borrowed _ ->
+    failwith ("Projection from borrowed type " ^ Flx_btype.st d ^ " not allowed")
  
   (* Arrays with unitsum indices *)
 
@@ -978,7 +980,7 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
   | BEXPR_closure (i,ts),BEXPR_closure (i',ts') ->
      i = i' && List.length ts = List.length ts' &&
      List.fold_left2 (fun r a b -> r && a = b) true ts ts'
-  | BEXPR_uniq e1, BEXPR_uniq e2 -> e1 = e2
+  (* | BEXPR_uniq e1, BEXPR_uniq e2 -> e1 = e2 *)
 
   (* Note any two distinct new expressions are distinct ...
    * not sure what is really needed here *)
@@ -1099,7 +1101,7 @@ let flat_iter
     f_btype a;
     f_btype b
 
-  | BEXPR_uniq e -> f_bexpr e
+  (* | BEXPR_uniq e -> f_bexpr e *)
   | BEXPR_likely e -> f_bexpr e
 
   | BEXPR_unlikely e -> f_bexpr e
@@ -1220,7 +1222,7 @@ let map
   | BEXPR_cltpointer (d,c,p,divisor) -> bexpr_cltpointer (f_btype d) (f_btype c) (f_bexpr p) divisor
   | BEXPR_cltpointer_prj (d,c,divisor) -> bexpr_cltpointer_prj (f_btype d) (f_btype c) divisor
 
-  | BEXPR_uniq e -> bexpr_uniq (f_bexpr e)
+  (* | BEXPR_uniq e -> bexpr_uniq (f_bexpr e) *)
   | BEXPR_new e -> bexpr_new t (f_bexpr e)
   | BEXPR_class_new (cl,e) ->  bexpr_class_new (f_btype cl) (f_bexpr e)
   | BEXPR_address e -> bexpr_address (f_bexpr e)

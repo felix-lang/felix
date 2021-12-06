@@ -14,6 +14,7 @@ and metatype' sr typ : kind =
   | BBOOL _ -> KIND_bool
   | BTYP_typeop (_,_,k) -> k
   | BTYP_uniq _ -> KIND_linear
+  | BTYP_borrowed _ -> KIND_borrowed
 
   | BTYP_type_match (_, bs)
   | BTYP_subtype_match (_, bs) ->

@@ -234,6 +234,7 @@ print_endline ("Flx_tgen.cpp_type_classname " ^ sbt bsym_table t);
   | BTYP_typeop _ -> assert false
   | BTYP_typeof _ -> assert false
   | BTYP_uniq _ -> assert false
+  | BTYP_borrowed _ -> assert false
   | BTYP_ptr (_,_,(_::_::_)) -> assert false
   | BTYP_ellipsis -> "..."
 

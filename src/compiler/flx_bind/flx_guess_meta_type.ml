@@ -48,6 +48,7 @@ nominal type alias BBDCL entry by a common index, in other words, a simple typed
 let rec guess_metatype sr t : kind =
   match t with
   | `TYP_uniq _ -> kind_linear
+  | `TYP_borrowed _ -> kind_borrowed
   | `TYP_bool _ -> kind_bool 
   | `TYP_typeop (sr,op,t,k) -> bmt "Flx_guess_meta_type" k 
   | `TYP_unitsum _ -> kind_unitsum

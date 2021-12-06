@@ -62,6 +62,7 @@ let fix i t =
     | BTYP_compactrptsum (a,b) -> btyp_compactrptsum (aux a, aux b)
     | BTYP_rev t -> btyp_rev (aux t)
     | BTYP_uniq t -> btyp_uniq (aux t)
+    | BTYP_borrowed t -> btyp_borrowed (aux t)
     | BTYP_typeop (op,t,k) -> btyp_typeop op (aux t) k
 
     | BTYP_record (ts) ->

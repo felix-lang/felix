@@ -180,6 +180,7 @@ let rec type_eq' sbt counter ltrail ldepth rtrail rdepth trail t1 t2 =
     List.fold_left (fun tr t -> tr && te t ta) true ts
 
   | BTYP_uniq p1,BTYP_uniq p2 -> te p1 p2
+  | BTYP_borrowed p1,BTYP_borrowed p2 -> te p1 p2
 
   | BTYP_ptr (m1,t1,ts1),BTYP_ptr (m2,t2,ts2) ->
     m1 = m2 && te t1 t2 && 

@@ -300,7 +300,7 @@ let rec gen_expr'
     | _ -> print_endline "Generating unitptr expr"; ce_atom ("NULL/*UNITPTR<"^string_of_int k^">*/")
     end
   | BEXPR_lambda _ -> assert false
-  | BEXPR_uniq _ -> assert false
+  (* | BEXPR_uniq _ -> assert false *)
   | BEXPR_funprod _ -> assert false
   | BEXPR_funsum _ -> assert false
   | BEXPR_lrangle _ -> assert false

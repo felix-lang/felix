@@ -99,6 +99,7 @@ and typecode_t = [
   | `TYP_rref of typecode_t                     (** read pointer type *)
   | `TYP_wref of typecode_t                     (** write pointer type *)
   | `TYP_uniq of typecode_t                     (** uniq type *)
+  | `TYP_borrowed of typecode_t                     (** uniq type *)
   | `TYP_array of typecode_t * typecode_t       (** array type base ^ index *)
   | `TYP_compactarray of typecode_t * typecode_t       (** array type base ^ index *)
   | `TYP_as of typecode_t * Flx_id.t            (** fixpoint *)
@@ -193,7 +194,7 @@ and expr_t = [
   | `EXPR_ref of Flx_srcref.t * expr_t
   | `EXPR_rref of Flx_srcref.t * expr_t
   | `EXPR_wref of Flx_srcref.t * expr_t
-  | `EXPR_uniq of Flx_srcref.t * expr_t
+  (* | `EXPR_uniq of Flx_srcref.t * expr_t *)
   | `EXPR_likely of Flx_srcref.t * expr_t
   | `EXPR_unlikely of Flx_srcref.t * expr_t
   | `EXPR_new of Flx_srcref.t * expr_t
@@ -789,6 +790,7 @@ let src_of_typecode = function
   | `TYP_rref _
   | `TYP_wref _
   | `TYP_uniq _
+  | `TYP_borrowed _
   | `TYP_compactarray _
   | `TYP_array _
   | `TYP_as _
@@ -843,7 +845,7 @@ let src_of_expr (e : expr_t) = match e with
   | `EXPR_ref (s,_)
   | `EXPR_rref (s,_)
   | `EXPR_wref (s,_)
-  | `EXPR_uniq (s,_)
+  (* | `EXPR_uniq (s,_) *)
   | `EXPR_likely (s,_)
   | `EXPR_unlikely (s,_)
   | `EXPR_literal (s,_)

@@ -12,7 +12,7 @@ type bexpr_t = private
   | BEXPR_cltpointer of Flx_btype.t * Flx_btype.t * t * int list 
   | BEXPR_cltpointer_prj of Flx_btype.t * Flx_btype.t * int list
 
-  | BEXPR_uniq of t
+  (* | BEXPR_uniq of t *)
   | BEXPR_likely of t
   | BEXPR_unlikely of t
   | BEXPR_address of t
@@ -98,7 +98,7 @@ val bexpr_wref :
 val bexpr_rref :
   Flx_btype.t -> bid_t * Flx_btype.t list -> t
 
-val bexpr_uniq: t -> t
+(* val bexpr_uniq: t -> t *)
 val bexpr_cltpointer_of_pointer:
   t -> t
 val bexpr_cltpointer:

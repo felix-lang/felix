@@ -26,6 +26,7 @@ let fixtype bsym_table t =
     match t with 
 (* Remove uniqueness types *)
     | BTYP_uniq t -> f_btype t
+    | BTYP_borrowed t -> f_btype t
 (* downgrade write pointers to ordinary pointers *)
     | BTYP_ptr (`W,t,ts ) -> btyp_ptr `RW (f_btype t) ts
     | BTYP_ptr (`R,t,ts ) -> btyp_ptr `R (f_btype t) ts
@@ -52,8 +53,9 @@ let rec fixexpr' bsym_table e =
   let f_btype t = fixtype bsym_table t in 
   let f_bexpr e = fixexpr' bsym_table e in
   match Flx_bexpr.map ~f_btype ~f_bexpr e with
-  | BEXPR_uniq e, _ -> e
+  (* | BEXPR_uniq e, _ -> e *)
   | e,BTYP_uniq t -> e,t
+  | e,BTYP_borrowed t -> e,t
   | e -> e
 
 let fixexpr bsym_table (_,tx as x) = 

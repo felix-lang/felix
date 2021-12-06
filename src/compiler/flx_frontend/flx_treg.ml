@@ -272,6 +272,11 @@ print_endline ("Array type " ^ sbt bsym_table t ^ " base type " ^ sbt bsym_table
 print_endline ("ERROR, trying to register uniq type " ^ Flx_btype.st t'); 
   assert false
 
+  | BTYP_borrowed t -> 
+print_endline ("ERROR, trying to register borrowed type " ^ Flx_btype.st t'); 
+  assert false
+
+
   | BTYP_ptr (`N,_,_) -> assert false
   | BTYP_ptr (_,_,(_::_::_)) -> assert false
 

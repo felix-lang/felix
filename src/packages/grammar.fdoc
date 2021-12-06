@@ -169,12 +169,13 @@ syntax types {
   t[sthename_pri] := "&" t[sthename_pri] =># "`(typ_ref ,_sr ,_2)";
 
   //$ Felix pointer type and address of operator.
-  t[sthename_pri] := "_uniq"   t[sthename_pri] =># "`(typ_uniq ,_sr ,_2)";
-  t[sthename_pri] := "_rref"   t[sthename_pri] =># "`(typ_rref ,_sr ,_2)";
-  t[sthename_pri] := "&<"      t[sthename_pri] =># "`(typ_rref ,_sr ,_2)";
-  t[sthename_pri] := "_wref"   t[sthename_pri] =># "`(typ_wref ,_sr ,_2)";
-  t[sthename_pri] := "&>"      t[sthename_pri] =># "`(typ_wref ,_sr ,_2)";
-  t[sthename_pri] := "@"       t[sthename_pri] =># "(tPrefix)";
+  t[sthename_pri] := "_uniq"       t[sthename_pri] =># "`(typ_uniq ,_sr ,_2)";
+  t[sthename_pri] := "_borrowed"   t[sthename_pri] =># "`(typ_borrowed ,_sr ,_2)";
+  t[sthename_pri] := "_rref"       t[sthename_pri] =># "`(typ_rref ,_sr ,_2)";
+  t[sthename_pri] := "&<"          t[sthename_pri] =># "`(typ_rref ,_sr ,_2)";
+  t[sthename_pri] := "_wref"       t[sthename_pri] =># "`(typ_wref ,_sr ,_2)";
+  t[sthename_pri] := "&>"          t[sthename_pri] =># "`(typ_wref ,_sr ,_2)";
+  t[sthename_pri] := "@"           t[sthename_pri] =># "(tPrefix)";
   t[sthename_pri] := squalified_name =># "_1";
 
 // TYPE MATCH HACKS .. FIX LATER
@@ -531,7 +532,10 @@ syntax expressions {
   x[sthename_pri] := "&" x[sthename_pri] =># "`(ast_ref ,_sr ,_2)";
 
   //$ Felix pointer type and address of operator.
-  x[sthename_pri] := "_uniq" x[sthename_pri] =># "`(ast_uniq ,_sr ,_2)";
+  // this shouldn't happen ....???
+  // x[sthename_pri] := "_uniq" x[sthename_pri] =># "`(ast_uniq ,_sr ,_2)";
+
+
   x[sthename_pri] := "_rref" x[sthename_pri] =># "`(ast_rref ,_sr ,_2)";
   x[sthename_pri] := "&<" x[sthename_pri] =># "`(ast_rref ,_sr ,_2)";
   x[sthename_pri] := "_wref" x[sthename_pri] =># "`(ast_wref ,_sr ,_2)";

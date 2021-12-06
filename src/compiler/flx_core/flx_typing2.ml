@@ -96,6 +96,7 @@ let string_of_type_name (t:typecode_t) = match t with
   | `TYP_rref _ -> "`TYP_rref"
   | `TYP_wref _ -> "`TYP_wref"
   | `TYP_uniq _-> "`TYP_uniq"
+  | `TYP_borrowed _-> "`TYP_borrowed"
   | `TYP_array _ -> "`TYP_array"
   | `TYP_compactarray _ -> "`TYP_compactarray"
   | `TYP_as _ -> "`TYP_as"

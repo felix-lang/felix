@@ -55,6 +55,7 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | `TYP_rref t -> `TYP_rref (f t)
   | `TYP_wref t -> `TYP_wref (f t)
   | `TYP_uniq t -> `TYP_uniq (f t)
+  | `TYP_borrowed t -> `TYP_borrowed (f t)
   | `TYP_array (t1, t2) -> `TYP_array (f t1, f t2)
   | `TYP_compactarray (t1, t2) -> `TYP_compactarray (f t1, f t2)
   | `TYP_as (t,s) -> `TYP_as (f t,s)
@@ -144,8 +145,9 @@ let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
   | `EXPR_coercion (sr, (x,t)) -> `EXPR_coercion (sr,(fe x, ft t))
   | `EXPR_variant_subtype_match_coercion (sr, (x,t)) -> `EXPR_variant_subtype_match_coercion (sr,(fe x, ft t))
   | `EXPR_suffix (sr,(qn,t)) -> `EXPR_suffix (sr,(qn, ft t))
+(*
   | `EXPR_uniq (sr,e) -> `EXPR_uniq (sr, fe e)
-
+*)
   | `EXPR_intersect (sr,es) -> `EXPR_intersect (sr, List.map fe es)
   | `EXPR_union (sr,es) -> `EXPR_union(sr, List.map fe es)
   | `EXPR_isin (sr,(a,b)) -> `EXPR_isin (sr, (fe a, fe b))
@@ -267,7 +269,9 @@ let iter_expr f (e:expr_t) =
   | `EXPR_get_tuple_last (_,x)
   | `EXPR_remove_fields (_,x,_)
   | `EXPR_getall_field (_,x,_)
+(*
   | `EXPR_uniq (_,x)
+*)
     -> f x
 
   | `EXPR_letin (_,(_,a,b))

@@ -10,6 +10,7 @@ let rec is_pod bsym_table t =
   match t with
   | BTYP_typeop _ -> assert false
   | BTYP_uniq _ -> assert false
+  | BTYP_borrowed _ -> assert false
 
   | BTYP_label
   | BTYP_unitsum _ 

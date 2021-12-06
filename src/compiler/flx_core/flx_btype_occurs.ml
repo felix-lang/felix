@@ -61,6 +61,7 @@ let var_occurs bsym_table t =
     | BTYP_rev a -> aux a
 
     | BTYP_uniq a -> aux a
+    | BTYP_borrowed a -> aux a
 
     | BTYP_instancetype _
     | BTYP_ellipsis

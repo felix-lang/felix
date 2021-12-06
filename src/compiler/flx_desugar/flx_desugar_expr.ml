@@ -260,10 +260,12 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
 
 
 
+(*
 
   | `EXPR_uniq (sr,e) ->
     let l1,x1 = rex e in
     l1, `EXPR_uniq (sr,x1)
+*)
 
   | `EXPR_not (sr,e) ->
     let l1, x1 = rex e in

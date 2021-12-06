@@ -179,7 +179,7 @@ and string_of_expr (e:expr_t) =
   | `EXPR_ref (_,e) -> "&" ^ "(" ^ se e ^ ")"
   | `EXPR_rref (_,e) -> "rref" ^ "(" ^ se e ^ ")"
   | `EXPR_wref (_,e) -> "wref" ^ "(" ^ se e ^ ")"
-  | `EXPR_uniq (_,e) -> "uniq(" ^ se e ^ ")"
+  (* | `EXPR_uniq (_,e) -> "uniq(" ^ se e ^ ")" *)
 
   | `EXPR_likely (_,e) -> "likely" ^ "(" ^ se e ^ ")"
   | `EXPR_unlikely (_,e) -> "unlikely" ^ "(" ^ se e ^ ")"
@@ -543,6 +543,7 @@ and st prec tc : string =
     | `TYP_rref t -> 1,"rref[" ^ st 1 t ^ "]"
     | `TYP_wref t -> 1,"wref[" ^ st 1 t ^ "]"
     | `TYP_uniq t -> 1,"uniq[" ^ st 0 t ^ "]"
+    | `TYP_borrowed t -> 1,"borrowed[" ^ st 0 t ^ "]"
 
     | `TYP_typeof e -> 0,"typeof(" ^ string_of_expr e ^ ")"
     | `TYP_as (t,s) -> 0, "([" ^ st 0 t ^ "] as " ^ string_of_id s ^ ")"
@@ -751,6 +752,7 @@ and sb bsym_table depth fixlist counter prec tc =
 
     | BTYP_rev t -> 0, "_rev(" ^ sbt 0 t ^ ")"
     | BTYP_uniq t -> 0, "uniq(" ^ sbt 0 t ^ ")"
+    | BTYP_borrowed t -> 0, "borrowed(" ^ sbt 0 t ^ ")"
       
 
     | BTYP_record (ls) ->
@@ -2218,7 +2220,7 @@ and string_of_bound_expression' bsym_table se e =
   | BEXPR_ref (i,ts) -> "&" ^ sid i ^ string_of_inst "ref" bsym_table ts
   | BEXPR_rref (i,ts) -> "rref(" ^ sid i ^ string_of_inst "rref" bsym_table ts^")"
   | BEXPR_wref (i,ts) -> "wref(" ^ sid i ^ string_of_inst "wref" bsym_table ts^")"
-  | BEXPR_uniq e -> "uniq(" ^ se e ^ ")"
+  (* | BEXPR_uniq e -> "uniq(" ^ se e ^ ")" *)
   | BEXPR_new e -> "new " ^ se e
   | BEXPR_class_new (t,e) -> "new " ^ sbt bsym_table t ^ "(" ^ se e ^ ")"
   | BEXPR_address e -> "&" ^ se e

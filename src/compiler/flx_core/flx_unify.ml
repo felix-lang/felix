@@ -51,6 +51,10 @@ let rec solve_subtypes nominal_subtype counter lhs rhs dvars (s:vassign_t option
   | BTYP_uniq t1, BTYP_uniq t2 ->
     add_ge (t1,t2)
 
+  | BTYP_borrowed t1, BTYP_borrowed t2 ->
+    add_ge (t1,t2)
+
+
   (* WARNING: HACK! SPECIAL RULES FOR UNIQUE TYPES.
 
     We want a function accepting a T value to also accept
@@ -75,6 +79,8 @@ let rec solve_subtypes nominal_subtype counter lhs rhs dvars (s:vassign_t option
 
   (* here we throw away uniq part of argument type passing a value *)
   | t1, BTYP_uniq t2 -> add_ge (t1,t2)
+  | BTYP_borrowed t1, BTYP_uniq t2 -> add_ge (t1,t2)
+  | BTYP_borrowed t1, t2 -> add_ge (t1,t2)
 
   (* argument type t must be a subtype of each type of the intersection parameter *)
   | BTYP_intersect ts, t ->

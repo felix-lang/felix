@@ -51,6 +51,7 @@ and t = private
   | BTYP_fix of int * kind 
   | BTYP_rev of t
   | BTYP_uniq of t
+  | BTYP_borrowed of t
   | BTYP_type_tuple of t list
   | BTYP_type_function of (bid_t * kind) list * kind * t
   | BTYP_type_var of bid_t * kind
@@ -133,6 +134,7 @@ val btyp_tuple : t list -> t
 val btyp_compacttuple : t list -> t
 val btyp_rev : t -> t
 val btyp_uniq : t -> t
+val btyp_borrowed : t -> t
 val btyp_tuple_cons : t -> t -> t
 val btyp_tuple_snoc : t -> t -> t
 val btyp_array : t * t -> t

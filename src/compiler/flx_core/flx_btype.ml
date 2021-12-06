@@ -70,6 +70,7 @@ and t =
   | BTYP_fix of int * kind (* meta type *)
   | BTYP_rev of t
   | BTYP_uniq of t (* unique type *)
+  | BTYP_borrowed of t (* unique type *)
 
   | BTYP_type_tuple of t list
   | BTYP_type_function of (bid_t * kind) list * kind * t
@@ -145,6 +146,7 @@ let flat_iter
   | BTYP_cfunction (a,b) -> f_btype a; f_btype b
   | BTYP_rev t -> f_btype t
   | BTYP_uniq t -> f_btype t
+  | BTYP_borrowed t -> f_btype t
 
   | BTYP_void -> ()
   | BTYP_fix _ -> ()
@@ -296,6 +298,7 @@ and str_of_btype typ =
 
   | BTYP_rev t -> "BTYP_rev("^ s t ^")" 
   | BTYP_uniq t -> "BTYP_uniq(" ^ s t ^ ")"
+  | BTYP_borrowed t -> "BTYP_borrowed (" ^ s t ^ ")"
 
   | BTYP_void -> "BTYP_void"
   | BTYP_label -> "BTYP_label" (* type of a label *)
@@ -375,6 +378,7 @@ let iscopyable_type t =
 
     (* | BTYP_void *)
     | BTYP_uniq _ -> raise Not_found
+    | BTYP_borrowed _ -> raise Not_found
     | BTYP_rptsum (_,t) 
     | BTYP_compactrptsum (_,t) 
     | BTYP_rev t 
@@ -464,6 +468,7 @@ let complete_type t =
  
     | BTYP_rev t -> uf t
     | BTYP_uniq t -> uf t
+    | BTYP_borrowed t -> uf t
  
     | BTYP_subtype_match (a,tts)
     | BTYP_type_match (a,tts) ->
@@ -674,6 +679,10 @@ let btyp_rev t =
 
 let btyp_uniq t = 
   BTYP_uniq t
+
+let btyp_borrowed t = 
+  BTYP_borrowed t
+
 
 
 (** Construct a BTYP_record type. *)
@@ -1045,6 +1054,7 @@ let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
 
   | BTYP_rev t -> btyp_rev (f_btype t)
   | BTYP_uniq t -> btyp_uniq (f_btype t)
+  | BTYP_borrowed t -> btyp_borrowed (f_btype t)
 
   | BTYP_void as x -> x
   | BTYP_fix _ as x -> x
