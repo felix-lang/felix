@@ -210,9 +210,14 @@ print_endline ("Case number " ^ si index);
   | `EXPR_cond (sr,(c,t,f)) ->
     bexpr_cond (be c) (be t) (be f)
 
-(*
-  | `EXPR_uniq (sr,e) -> bexpr_uniq (be e)
-*)
+  | `EXPR_loan (sr,e) -> 
+     let e,t = be e in 
+     begin match t with
+     | BTYP_uniq t -> 
+       bexpr_coerce ((e,t), btyp_borrowed t)
+     | BTYP_borrowed _ -> e,t
+     | t -> bexpr_coerce ((e,t), btyp_borrowed t)
+     end
 
   | `EXPR_label (sr,label) -> 
     let maybe_index = lookup_label_in_env state bsym_table env sr label in

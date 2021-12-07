@@ -441,8 +441,7 @@ print_endline ("Processing ast_name "^xid id^" in xexpr");
    `EXPR_deref (xsr sr,ex e)
  | Lst [Id "ast_ref"; sr; e] -> `EXPR_ref (xsr sr,ex e)
 
- (* this shouldn't happen *)
- (* | Lst [Id "ast_uniq"; sr; e] -> `EXPR_uniq (xsr sr, ex e) *)
+ | Lst [Id "ast_loan"; sr; e] -> `EXPR_loan (xsr sr, ex e)
 
  | Lst [Id "ast_rref"; sr; e] -> `EXPR_rref(xsr sr, ex e)
  | Lst [Id "ast_wref"; sr; e] -> `EXPR_wref(xsr sr, ex e)

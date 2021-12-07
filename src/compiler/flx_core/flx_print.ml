@@ -179,7 +179,7 @@ and string_of_expr (e:expr_t) =
   | `EXPR_ref (_,e) -> "&" ^ "(" ^ se e ^ ")"
   | `EXPR_rref (_,e) -> "rref" ^ "(" ^ se e ^ ")"
   | `EXPR_wref (_,e) -> "wref" ^ "(" ^ se e ^ ")"
-  (* | `EXPR_uniq (_,e) -> "uniq(" ^ se e ^ ")" *)
+  | `EXPR_loan (_,e) -> "loan(" ^ se e ^ ")" 
 
   | `EXPR_likely (_,e) -> "likely" ^ "(" ^ se e ^ ")"
   | `EXPR_unlikely (_,e) -> "unlikely" ^ "(" ^ se e ^ ")"

@@ -532,8 +532,7 @@ syntax expressions {
   x[sthename_pri] := "&" x[sthename_pri] =># "`(ast_ref ,_sr ,_2)";
 
   //$ Felix pointer type and address of operator.
-  // this shouldn't happen ....???
-  // x[sthename_pri] := "_uniq" x[sthename_pri] =># "`(ast_uniq ,_sr ,_2)";
+  x[sthename_pri] := "loan" x[sthename_pri] =># "`(ast_loan,_sr ,_2)";
 
 
   x[sthename_pri] := "_rref" x[sthename_pri] =># "`(ast_rref ,_sr ,_2)";

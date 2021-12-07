@@ -194,7 +194,7 @@ and expr_t = [
   | `EXPR_ref of Flx_srcref.t * expr_t
   | `EXPR_rref of Flx_srcref.t * expr_t
   | `EXPR_wref of Flx_srcref.t * expr_t
-  (* | `EXPR_uniq of Flx_srcref.t * expr_t *)
+  | `EXPR_loan of Flx_srcref.t * expr_t 
   | `EXPR_likely of Flx_srcref.t * expr_t
   | `EXPR_unlikely of Flx_srcref.t * expr_t
   | `EXPR_new of Flx_srcref.t * expr_t
@@ -845,7 +845,7 @@ let src_of_expr (e : expr_t) = match e with
   | `EXPR_ref (s,_)
   | `EXPR_rref (s,_)
   | `EXPR_wref (s,_)
-  (* | `EXPR_uniq (s,_) *)
+  | `EXPR_loan (s,_)
   | `EXPR_likely (s,_)
   | `EXPR_unlikely (s,_)
   | `EXPR_literal (s,_)

@@ -114,7 +114,7 @@ let rec subst (vars:psym_table_t) (e:expr_t) mv : expr_t =
   | `EXPR_union _
   | `EXPR_isin _ (* only used in type constraints *)
   | `EXPR_callback _
-  (* | `EXPR_uniq _ *)
+  | `EXPR_loan _
     ->
       let sr = src_of_expr e in
       clierrx "[flx_desugar/flx_desugar_pat.ml:107: E341] " sr 

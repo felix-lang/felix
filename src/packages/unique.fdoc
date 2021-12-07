@@ -16,9 +16,6 @@ open class Unique
   // wrap a value so it's borrowed
   fun wrap[T] : T -> _borrowed T = "($t)";
 
-  // load a boxed uniq
-  fun loan[T] : _uniq T -> _borrowed T = "($t)";
-
   fun unwrap[T] : _borrowed T -> T = "($t)";
 
   // functor for typing

@@ -31,6 +31,54 @@ of variables to uniq components
 
 exception DuplicateGet of int * path_t
 
+(* NOTE: this only checks if the domain of a function is a single parameter
+of borrowed type, it does not work if the domain is a tuple with borrowed
+components. The problem here is that the argument could be a tuple too,
+and then we have to examine projections.
+
+This creates problems, because could be passing an argument expression to
+a *component* of a tuple. So if the expression is a unique variable it is
+moved into the tuple, killing it, before we can check if the corresponding
+parameter is a borrow. This CAN work, if the argument is explicitly a tuple.
+
+It probably cannot work .. and should not .. if we first construct a tuple,
+because that really IS moving the variable. For example
+
+var x = box 1;
+f (x,1);
+
+should work, provided f's first parameter has borrowed type. But this
+will fail:
+
+var a = (x,1);
+f a;
+
+Here, x is killed by constructing the tuple a. However the function
+call should still work and leave the first component of a live.
+
+This should be handled by fairy variables but it requires unpacking
+the parameter type as well as the argument type.
+*)
+let domain_is_borrow bsym_table idx = 
+  try
+    let bsym = Flx_bsym_table.find bsym_table idx in
+    begin match bsym.bbdcl with
+    | BBDCL_fun (_,_,params,_,_,_)  -> 
+     begin match Flx_bparams.get_btype params with
+     | BTYP_borrowed _ -> true
+     | _ -> false
+     end
+    | BBDCL_external_fun (_,_,params, _,_,_,_) ->
+      begin match params with
+      | [BTYP_borrowed _] -> true
+      | _ -> false
+      end
+    | _ -> failwith ("Flx_getset: expected " ^ string_of_int idx ^ " to be function")
+    end
+  with
+    Not_found -> failwith ("Flx_getset: can't find index " ^ string_of_int idx ^ " in symbol table")
+ 
+
 let rec find_once bsym_table (chain2ix:chain2ix_t) path (b:BidSet.t ref) e : unit =
 (*
 print_endline ("Find once for expresssion " ^ Flx_print.sbe bsym_table e);
@@ -51,6 +99,20 @@ print_endline ("Find once for expresssion " ^ Flx_print.sbe bsym_table e);
   | BEXPR_apply ( (BEXPR_prj (n,_,_),_), base ),_ ->
     let path = `Tup n :: path in
     find_once bsym_table chain2ix path b base 
+
+  (* This will ONLY work correctly if coercions on tuples have
+     been expanded ...
+  *)
+  | BEXPR_coerce ((_,BTYP_uniq _), BTYP_borrowed _),_ -> ()
+
+(* 
+  | BEXPR_apply_prim (i,_,(_,argt)),_
+  | BEXPR_apply_stack (i,_,(_,argt)),_
+  | BEXPR_apply_direct (i,_,(_,argt)),_
+  | BEXPR_apply ((BEXPR_closure (i,_),_),(_,argt)),_ when domain_is_borrow bsym_table i ->
+    (* print_endline ("Function with domain of type borrow t, argument of type uniq would be borrowed"); *)
+    ()
+*)
 
   | x -> Flx_bexpr.flat_iter ~f_bexpr:(find_once bsym_table chain2ix path b) x
 
