@@ -29,7 +29,12 @@ let gen_get_case_index (ge:Flx_bexpr.t -> cexpr_t) bsym_table array_sum_offset_t
   | VR_clt -> 
     begin match ut with
     | BTYP_tuple [] -> ce_atom "0"
-    | BTYP_unitsum n -> ge e (* circular?? *)
+
+
+    (* NOTE: the index of a sum can be a tuple .. *)
+    | BTYP_compacttuple _ (* delegates to case BEXPR_compacttuple *)
+    | BTYP_unitsum _ -> ge e (* circular?? *)
+
     | BTYP_compactsum ts 
     | BTYP_sum ts ->  
 (*

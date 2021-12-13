@@ -1,0 +1,61 @@
+@title compact linear types
+@felix
+// [3] [2] int (array of arrays)
+var x : int ^ 2 ^ 3= 
+  (000,001),
+  (010,011),
+  (020,021)
+;
+println$ "Ex1: " + x._strr;
+
+// two loops, double indexing
+print "Ex2: ";
+for i in ..[3] do 
+  print " | ";
+  for j in ..[2] perform
+    print$ x.i.j.str + " ";
+done
+println "";
+
+// [2,3] int (matrix)
+print "Ex3: ";
+var y = x :>> int ^ (3 \* 2);
+for i in ..[3] do
+  print " | ";
+  for j in ..[2] perform
+    print$ y.(i\,j).str + " ";
+done
+println "";
+
+print "Ex4: ";
+begin
+  for i in ..[3] do
+    print " | ";
+    for j in ..[2] do 
+      var index: 3\*2 = i\,j; // compact linear tuple
+      print$ y.index.str + " ";
+    done
+  done
+  println "";
+end
+
+print "Ex5: ";
+for index in ..[3\*2] perform
+  print$ y.index.str + " ";
+println "";
+
+
+// linear array
+print "Ex6: ";
+var z = x :>> int ^ 6;
+for index in ..[6] perform
+  print$ z.index.str + " ";
+println "";
+@expect
+Ex1: ((0,1),(10,11),(20,21))
+Ex2:  | 0 1  | 10 11  | 20 21
+Ex3:  | 0 1  | 10 11  | 20 21
+Ex4:  | 0 1  | 10 11  | 20 21
+Ex5: 0 1 10 11 20 21
+Ex6: 0 1 10 11 20 21
+@

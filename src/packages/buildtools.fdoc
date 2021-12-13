@@ -242,6 +242,9 @@ println$ "-" * 20;
             var result = Shell::system$ list(
                "ocamlopt.opt", "-g", /* with exception tracing enabled */
                "-w", "-26", /* suppress unused variable warning */
+               "-w", "@8", /* bug out partial matches */
+               "-w", "@11", /* bug out unused cases */
+               "-w", "-21", /* shut up about non-returning statments like assert false */
                "-I",tmpdir, 
                "-I",tmpdir/dir, 
                "-I", entmp (Filename::dirname file)) +

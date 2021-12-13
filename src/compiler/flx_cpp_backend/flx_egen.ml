@@ -1175,9 +1175,9 @@ print_endline ("Generating class new for t=" ^ ref_type);
         | CS.Str c
         | CS.Str_template c when c = "#memcount" ->
           begin match ts with
-          | [BTYP_void] -> ce_atom "0"
-          | [BTYP_unitsum n]
+          | [t] when Flx_btype.islinear_type t -> ce_atom (string_of_int (Flx_btype.int_of_linear_type bsym_table t))
           | [BTYP_array (_,BTYP_unitsum n)] -> ce_atom (si n)
+
           | [BTYP_sum ls] 
           | [BTYP_tuple ls] -> let n = length ls in ce_atom (si n)
           | [BTYP_inst (i,_,_)] ->

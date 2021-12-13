@@ -450,6 +450,8 @@ and cpp_structure_name syms bsym_table t =
 
   | BTYP_cfunction (d,c) -> "_cft<" ^  tn d ^ "," ^ tn c ^">"
 
+  | BTYP_compactrptsum _
+  | BTYP_compactsum _
   | BTYP_compacttuple _
   | BTYP_compactarray _ -> "::flx::rtl::cl_t"
   

@@ -463,30 +463,30 @@ instance Str[unit] {
 }
 open Show[unit];
 
-instance[T:UNITSUM] Eq[T] {
+instance[T:COMPACTLINEAR] Eq[T] {
   fun == (x:T,y:T) => caseno x ==caseno y;
 }
-instance[T:UNITSUM] Tord[T] {
+instance[T:COMPACTLINEAR] Tord[T] {
   fun < (x:T,y:T) => caseno x < caseno y;
 }
-instance[T:UNITSUM] ForwardSequence[T] {
+instance[T:COMPACTLINEAR] ForwardSequence[T] {
   fun succ (x:T) => (caseno x + 1) :>> T;
 }
-instance[T:UNITSUM] BidirectionalSequence[T] {
+instance[T:COMPACTLINEAR] BidirectionalSequence[T] {
   fun pred (x:T) => (caseno x - 1) :>> T;
 }
-instance[T:UNITSUM] UpperBoundTotalOrder[T] {
+instance[T:COMPACTLINEAR] UpperBoundTotalOrder[T] {
   fun maxval () => (memcount[T].int - 1) :>> T;
 }
 
-instance[T:UNITSUM] LowerBoundTotalOrder[T] {
+instance[T:COMPACTLINEAR] LowerBoundTotalOrder[T] {
   fun minval () => 0 :>> T;
 }
 
-instance[T:UNITSUM] RandomSequence[T] {
+instance[T:COMPACTLINEAR] RandomSequence[T] {
   fun advance (amt: int,  pos:T) => (caseno pos + amt) :>> T;
 }
-open[T:UNITSUM] BoundRandomSequence[T];
+open[T:COMPACTLINEAR] BoundRandomSequence[T];
 
 
 typedef fun n"`+" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_add",(x,y),UNITSUM);
