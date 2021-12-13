@@ -1,3 +1,4 @@
+@title compact linear type stuff
 @felix
 var x :int ^ 3 * int ^ 2= ((1,2,3),(4,5));
 println$ x. (`1:2) . (`1:3);

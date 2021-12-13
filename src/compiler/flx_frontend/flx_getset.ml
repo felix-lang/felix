@@ -79,9 +79,9 @@ let domain_is_borrow bsym_table idx =
     Not_found -> failwith ("Flx_getset: can't find index " ^ string_of_int idx ^ " in symbol table")
  
 
-let rec find_once bsym_table (chain2ix:chain2ix_t) path (b:BidSet.t ref) e : unit =
+let rec find_once bsym_table (chain2ix:chain2ix_t) path (b:BidSet.t ref) (_,t as e) : unit =
 (*
-print_endline ("Find once for expresssion " ^ Flx_print.sbe bsym_table e);
+print_endline ("Find once for expresssion " ^ Flx_print.sbe bsym_table e ^ ", type = " ^ Flx_print.sbt bsym_table t);
 *)
   match e with
   | BEXPR_varname (i,_),_ -> 
@@ -103,7 +103,11 @@ print_endline ("Find once for expresssion " ^ Flx_print.sbe bsym_table e);
   (* This will ONLY work correctly if coercions on tuples have
      been expanded ...
   *)
-  | BEXPR_coerce ((_,BTYP_uniq _), BTYP_borrowed _),_ -> ()
+  | BEXPR_coerce ((_,(*BTYP_uniq*) _), BTYP_borrowed _),_ -> 
+(*
+print_endline ("Skipping expression coerced to borrowed");
+*)
+   ()
 
 (* 
   | BEXPR_apply_prim (i,_,(_,argt)),_
@@ -114,7 +118,8 @@ print_endline ("Find once for expresssion " ^ Flx_print.sbe bsym_table e);
     ()
 *)
 
-  | x -> Flx_bexpr.flat_iter ~f_bexpr:(find_once bsym_table chain2ix path b) x
+  | x -> 
+    Flx_bexpr.flat_iter ~f_bexpr:(find_once bsym_table chain2ix path b) x
 
 exception DuplicateSet of int * path_t
 

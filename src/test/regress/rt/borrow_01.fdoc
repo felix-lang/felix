@@ -21,6 +21,8 @@ proc check() {
 
   var a = box 1;
   fun g(x:int, y: _borrowed int) : int => x + unwrap y;
+  println$ g (1,a);
+  println$ g (1,a);
   println$ g (1,(loan a));
   println$ g (1,(loan a));
   kill a;
@@ -33,6 +35,8 @@ check();
 1
 1
 1
+2
+2
 2
 2
 @

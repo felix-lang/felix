@@ -78,8 +78,8 @@ let rec solve_subtypes nominal_subtype counter lhs rhs dvars (s:vassign_t option
     -> add_eq (t1,t2)
 
   (* here we throw away uniq part of argument type passing a value *)
-  | t1, BTYP_uniq t2 -> add_ge (t1,t2)
   | BTYP_borrowed t1, BTYP_uniq t2 -> add_ge (t1,t2)
+  | t1, BTYP_uniq t2 -> add_ge (t1,t2)
   | BTYP_borrowed t1, t2 -> add_ge (t1,t2)
 
   (* argument type t must be a subtype of each type of the intersection parameter *)

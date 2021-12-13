@@ -267,6 +267,7 @@ let iter_expr f (e:expr_t) =
   | `EXPR_get_tuple_last (_,x)
   | `EXPR_remove_fields (_,x,_)
   | `EXPR_getall_field (_,x,_)
+  | `EXPR_loan (_,x)
     -> f x
 
   | `EXPR_letin (_,(_,a,b))

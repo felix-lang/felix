@@ -67,6 +67,11 @@ let stack_calls syms bsym_table =
 let optimize_bsym_table' syms bsym_table (root_proc: int option) =
   print_debug syms "//OPTIMISING";
 
+  let bsym_table = print_time syms "[flx_opt]; Expanding Coercions (polymorphic)" begin fun () ->
+  (* make wrappers for non-function functional values *)
+  Flx_xcoerce.expand_coercions syms bsym_table end
+  in
+
   print_time syms "[flx_opt]; Polymorphic Uniqueness Verification" begin fun () ->
   Flx_once.once_bsym_table "Polymorphic" bsym_table syms.counter end;
 
