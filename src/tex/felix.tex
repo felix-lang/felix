@@ -1,0 +1,102 @@
+
+\documentclass[oneside]{book}
+\usepackage{xcolor}
+\definecolor{bg}{rgb}{0.95,0.95,0.95}
+\definecolor{emphcolor}{rgb}{0.5,0.0,0.0}
+\newcommand{\empha}{\bf\color{emphcolor}}
+\usepackage[framemethod=TikZ]{mdframed}
+\newtheorem{example}{Example}
+\mdfdefinestyle{MyFrame}{innerleftmargin=20pt}
+
+\definecolor{warningbg}{rgb}{0.95,0.90,0.90}
+\newenvironment{warning}%
+  {\begin{mdframed}[style=MyFrame,backgroundcolor=warningbg]}%
+  {\end{mdframed}}
+\definecolor{explanationbg}{rgb}{0.90,0.95,0.95}
+\newenvironment{explanation}%
+  {\begin{mdframed}[style=MyFrame,backgroundcolor=explanationbg]}%
+  {\end{mdframed}}
+
+\usepackage{parskip}
+\usepackage{minted}
+\usepackage{caption}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amscd}
+\usepackage{makeidx}
+\usepackage[toc]{glossaries}
+\makeindex
+\usemintedstyle{friendly}
+\setminted{bgcolor=bg,xleftmargin=20pt}
+\usepackage{hyperref}
+\hypersetup{pdftex,colorlinks=true,allcolors=blue}
+\usepackage{hypcap}
+\newcommand*{\fullref}[1]{\hyperref[{#1}]{\autoref*{#1} \nameref*{#1}}}
+\title{The Felix Language}
+\author{John Skaller}
+\makeglossaries
+
+\newglossaryentry{coroutine}{name=coroutine, description={a programming unit 
+which exchanges control with others on a neutral basis}}
+
+\newglossaryentry{polymorphism}{name=polymorphism, description={a language
+feature which allows a function to process arguments of
+more than one type, and to behave differently depending
+on the argument type}}
+
+\newglossaryentry{pthread}{name=pthread, description={a programming unit 
+which runs concurrently with others and which may be suspended and resumed
+by the operating system at any time}}
+
+\newglossaryentry{setwise lookup}{name=setwise lookup, description={
+a method of lookup where a symbol may be used before or after it is
+defined
+}}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\chapter{Introduction}
+The Felix programming language is based on algebra, in particular
+\href{ https://en.wikipedia.org/wiki/Category_theory}{category theory.}
+
+The construction begins with a category \(\mathcal{M}\) which is a cartesian closed category
+of monomorphic types, including a set of primitive types \(p_i\), primitive functions \(f_i\)
+and the usual type combinators for products, coproducts, function types, and recursion.
+
+Our objective is to construct a category \(\mathcal{P}\) of polymorphic types. Initially,
+the objects of this category will be functors  \(\mathcal{P}^n\rightarrow \mathcal{P}\).
+For example, in Felix notation the \verb%list% functor is given by:
+\begin{minted}{felix}
+typedef list[T] = 1 + T * list [T];
+\end{minted}
+Note this notation is deficient because the universally quantified variable T,
+representing the functor domain can only be associated with a binding name.
+It is actually not a functor but an type indexed by types. This is a functor:
+\begin{minted}{felix}
+typedef fun list(T:TYPE):TYPE => 1 + T * mu as mu;
+\end{minted}
+The difference is that the index of an indexed type is subject to
+unification and thus overload resolution and type checking, whereas
+the type function must be generative, that is, it has to be applied,
+and the application beta-reduced to produce an actual type, before
+unification can work.
+
+Now, we want to say that the arrows of \(\mathcal{P}\) are the natural
+transformations applying to these functors, so the objects will be
+polymorphic types and the arrows polymorphic functions. The category
+\(\mathcal{M}\) is embedded in \(\mathcal {P}\) by mapping each monomorphic
+type $t$ to a type mapped by the unit functor \(1_t: 1 \rightarrow \mathcal{P}\),
+in other words it is a functor with unit domain \(\mathcal{P}^0\).
+
+
+
+
+
+\clearpage
+\printglossaries
+\clearpage
+\addcontentsline{toc}{chapter}{Index}
+\printindex
+\backmatter
+\end{document}
