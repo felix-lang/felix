@@ -179,7 +179,6 @@ and string_of_expr (e:expr_t) =
   | `EXPR_ref (_,e) -> "&" ^ "(" ^ se e ^ ")"
   | `EXPR_rref (_,e) -> "rref" ^ "(" ^ se e ^ ")"
   | `EXPR_wref (_,e) -> "wref" ^ "(" ^ se e ^ ")"
-  | `EXPR_loan (_,e) -> "loan(" ^ se e ^ ")" 
 
   | `EXPR_likely (_,e) -> "likely" ^ "(" ^ se e ^ ")"
   | `EXPR_unlikely (_,e) -> "unlikely" ^ "(" ^ se e ^ ")"
@@ -355,6 +354,7 @@ and str_of_kindcode k : string =
   match k with
   | KND_type -> "TYPE"
   | KND_linear -> "LINEAR"
+  | KND_borrowed -> "BORROWED"
   | KND_unitsum -> "UNITSUM"
   | KND_compactlinear -> "COMPACTLINEAR"
   | KND_bool -> "BOOL"

@@ -172,7 +172,7 @@ open class Pchannel
   """ requires property "needs_ptf";
 
   noinline proc write[t](chan:pchannel[t], v:t) {
-    var ps = new v;
+    var ps = unbox$ new v;
     _write (chan,ps);
   }
   proc write[t] (chan:opchannel[t], v:t) { write$ C_hack::cast[pchannel[t]] chan,v; }

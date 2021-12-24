@@ -26,6 +26,7 @@ begin
   elapsed2 = time() - start;
   eprintln$ "Unique   append " + elapsed2.str;
   println$ x.len.str;
+  kill(x); // NOTE: BUG THIS SHOULD NOT BE NEEDED, previous line should kill x.
   collect();
 end
 

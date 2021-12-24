@@ -26,7 +26,7 @@ or
 range(0,5) |> println ;
 
 // lambda
-range(0,5) |> map (fun (x:int) => x + 1) |> println ;
+range(0,5) |> map (fun (x:int) => x + 1) |> unbox |> println ;
 
 // launch sequence
 fun addOne(x:int):int => x + 1;
@@ -34,6 +34,7 @@ fun sayNumber(x:int) = { println$ "T-Minus " + x; }
 List::range(0,5)       // generate a series of numberes
   |> List::rev         // reverse list 
   |> map addOne        // modify the intermediate result
+  |> unbox
   |> iter sayNumber    // output something for each number
 ;
 println$ "Blastoff!";

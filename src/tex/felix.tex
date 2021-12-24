@@ -66,30 +66,17 @@ and the usual type combinators for products, coproducts, function types, and rec
 
 Our objective is to construct a category \(\mathcal{P}\) of polymorphic types. Initially,
 the objects of this category will be functors  \(\mathcal{P}^n\rightarrow \mathcal{P}\).
-For example, in Felix notation the \verb%list% functor is given by:
-\begin{minted}{felix}
-typedef list[T] = 1 + T * list [T];
-\end{minted}
-Note this notation is deficient because the universally quantified variable T,
-representing the functor domain can only be associated with a binding name.
-It is actually not a functor but an type indexed by types. This is a functor:
-\begin{minted}{felix}
-typedef fun list(T:TYPE):TYPE => 1 + T * mu as mu;
-\end{minted}
-The difference is that the index of an indexed type is subject to
-unification and thus overload resolution and type checking, whereas
-the type function must be generative, that is, it has to be applied,
-and the application beta-reduced to produce an actual type, before
-unification can work.
+Let \(F: \mathcal{M}^m \rightarrow M\) and \(G: \mathcal{M}^m \rightarrow M^n\) then application
+of the composite can be given by 
+$$F (G_1 (t_1, t_2, .. t_m),  G_2 (t_1, ... t_m) , ... G_n (t_1, .. t_m))$$
+where G is split into component functors. in other words, compostion is just substitution, as is 
+reduction of applications.
 
-Now, we want to say that the arrows of \(\mathcal{P}\) are the natural
-transformations applying to these functors, so the objects will be
-polymorphic types and the arrows polymorphic functions. The category
-\(\mathcal{M}\) is embedded in \(\mathcal {P}\) by mapping each monomorphic
-type $t$ to a type mapped by the unit functor \(1_t: 1 \rightarrow \mathcal{P}\),
-in other words it is a functor with unit domain \(\mathcal{P}^0\).
-
-
+Let \(\mathcal{K}\) be the category with objects \(\mathcal{P}^i\) for finite natural
+numbers $i$, and arrows all the functors between them, then let \(\mathcal{P}\) 
+be the category with objects these functors, and arrows the natural transformnations
+of \(\mathcal{K}\). In other words, the objects are polymorphic data types,
+and the arrows polymorphic functions.
 
 
 

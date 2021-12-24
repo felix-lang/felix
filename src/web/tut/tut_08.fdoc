@@ -87,8 +87,8 @@ var data = list(1,2,3);
 fun square' (x:int) => x * x;
 
 // the following are equivalent.
-println$ map square' data;
-println$ map (fun (x:int) => x * x) data;
+println$ unbox$ map square' data;
+println$ unbox$ map (fun (x:int) => x * x) data;
 @
 @expect
 list(1, 4, 9)

@@ -145,7 +145,6 @@ let full_map_expr fi ft fe (e:expr_t):expr_t = match e with
   | `EXPR_coercion (sr, (x,t)) -> `EXPR_coercion (sr,(fe x, ft t))
   | `EXPR_variant_subtype_match_coercion (sr, (x,t)) -> `EXPR_variant_subtype_match_coercion (sr,(fe x, ft t))
   | `EXPR_suffix (sr,(qn,t)) -> `EXPR_suffix (sr,(qn, ft t))
-  | `EXPR_loan (sr,e) -> `EXPR_loan (sr, fe e)
   | `EXPR_intersect (sr,es) -> `EXPR_intersect (sr, List.map fe es)
   | `EXPR_union (sr,es) -> `EXPR_union(sr, List.map fe es)
   | `EXPR_isin (sr,(a,b)) -> `EXPR_isin (sr, (fe a, fe b))
@@ -267,7 +266,6 @@ let iter_expr f (e:expr_t) =
   | `EXPR_get_tuple_last (_,x)
   | `EXPR_remove_fields (_,x,_)
   | `EXPR_getall_field (_,x,_)
-  | `EXPR_loan (_,x)
     -> f x
 
   | `EXPR_letin (_,(_,a,b))

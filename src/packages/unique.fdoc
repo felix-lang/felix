@@ -4,7 +4,8 @@
 @tangle unique.flx
 open class Unique 
 {
-  // unsafely box up a value as a unique thing
+  // box up a value as a unique thing
+  // UNSAFE: contract obligation to ensure it actually is unique
   fun box[T] : T -> _uniq T = "($t)";
 
   // safely unpack the unique box
@@ -14,32 +15,32 @@ open class Unique
   proc kill[T] : uniq T = ";";
 
   // wrap a value so it's borrowed
+  // SAFE
   fun wrap[T] : T -> _borrowed T = "($t)";
 
+  // UNSAFE: contract obligation for receiver to forget it
   fun unwrap[T] : _borrowed T -> T = "($t)";
 
   // functor for typing
   typedef fun uniq (T:LINEAR):LINEAR => _uniq T;
 
+  // NOTE: DEPRECATED
   // peek inside the box without changing livenes state
   fun peek[T] : &<(uniq T) -> T = "*($t)";
 
-  // string representions
-  instance[T] Repr[uniq T] {
-    fun repr(var x:uniq T) => "uniq " + (C_hack::cast[T] x).str;
-  }
-
-  instance[T] Str[uniq T] {
-    fun str(var x:uniq T) => "uniq " + (C_hack::cast[T] x).str;
-  }
-
-  instance[T with Repr[T]] Repr[&<(uniq T)] {
-    fun repr(var x:&<(uniq T)) => "uniq " + x.peek.repr;
-  }
-
-  instance[T with Str[T]] Str[&<(uniq T)] {
-    fun str(var x:&<(uniq T)) => x.peek.str;
-  }
+  // NOTE: The compiler provides two coercions
+  // u.loan --> borrowed
+  // u.shared --> shared
+  //
+  // These are semantically equivalent to wrap and unbox
+  // EXCEPT that the argument is NOT observed by the uniqueness checker
+  //
+  // loan is safe, because the receiver expects a _borrowed type
+  //
+  // shared is UNSAFE because the receieve may share it
+  // so the onus is on the user to ensure this does not happen
+  // This feature avoids having to rewrite every function that 
+  // forgets a paremeter to accept a borrowed type, then unwrap it
 }
 
 

@@ -29,10 +29,9 @@ open class AbstractPointers
 open class MachinePointers
 {
   // ordinary pointers
-  proc storeat[T] ( p: &>T, v: T) = { _storeat (p,v); }
+  proc storeat[T:LINEAR] ( p: &>T, v: T) = { _storeat (p,v); }
 
   //$ Dereference a Felx pointer.
-  //lvalue fun deref[T]: &T -> T = "*$1";
   fun _deref[T:LINEAR]: &<T -> T = "*$t";
   fun deref[T:LINEAR] (p:&<T) => _deref p;
 }

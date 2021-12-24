@@ -1237,7 +1237,7 @@ class StrDict[T] {
      var err: JError_t;
      var slot : && T; 
      JudySLIns (_repr_ x, &key.stl_begin, &err, C_hack::cast[&&word] (&slot));
-     slot <- new value;
+     slot <- unbox (new value);
    }
 
    //$ Construct a dictionary from a list of pairs.

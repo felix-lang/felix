@@ -1774,7 +1774,7 @@ object processing_env(
     var pkg_cflags = Empty[string];
     if pkgs != Empty[string] do 
       eprintln$ "[flx:objc_compile_dynamic1] Adding packages " + str pkgs;
-      var PKGCONFIG_PATH=map 
+      var PKGCONFIG_PATH=unbox$ map 
          (fun (s:string) => "--path+="+s) 
          config.FLX_CONFIG_DIRS
       ;
@@ -1817,7 +1817,7 @@ object processing_env(
     var pkg_cflags = Empty[string];
     if pkgs != Empty[string] do 
       eprintln$ "[flx:objc_compile_static1] Adding packages " + str pkgs;
-      var PKGCONFIG_PATH=map 
+      var PKGCONFIG_PATH=unbox$ map 
          (fun (s:string) => "--path+="+s) 
          config.FLX_CONFIG_DIRS
       ;
@@ -1867,7 +1867,7 @@ object processing_env(
     var pkg_cflags = Empty[string];
     if pkgs != Empty[string] do 
       eprintln$ "[flx:c_compile_dynamic1] Adding packages " + str pkgs;
-      var PKGCONFIG_PATH=map 
+      var PKGCONFIG_PATH=unbox$ map 
          (fun (s:string) => "--path+="+s) 
          config.FLX_CONFIG_DIRS
       ;
@@ -1910,7 +1910,7 @@ object processing_env(
     var pkg_cflags = Empty[string];
     if pkgs != Empty[string] do 
       eprintln$ "[flx:c_compile_static1] Adding packages " + str pkgs;
-      var PKGCONFIG_PATH=map 
+      var PKGCONFIG_PATH=unbox$ map 
          (fun (s:string) => "--path+="+s) 
          config.FLX_CONFIG_DIRS
       ;
@@ -1960,7 +1960,7 @@ object processing_env(
     var pkg_cflags = Empty[string];
     if pkgs != Empty[string] do 
       eprintln$ "[flx:objcxx_compile_dynamic1] Adding packages " + str pkgs;
-      var PKGCONFIG_PATH=map 
+      var PKGCONFIG_PATH=unbox$ map 
          (fun (s:string) => "--path+="+s) 
          config.FLX_CONFIG_DIRS
       ;
@@ -2003,7 +2003,7 @@ object processing_env(
     var pkg_cflags = Empty[string];
     if pkgs != Empty[string] do 
       eprintln$ "[flx:objcxx_compile_static1] Adding packages " + str pkgs;
-      var PKGCONFIG_PATH=map 
+      var PKGCONFIG_PATH=unbox$ map 
          (fun (s:string) => "--path+="+s) 
          config.FLX_CONFIG_DIRS
       ;
@@ -2054,7 +2054,7 @@ object processing_env(
     var pkg_cflags = Empty[string];
     if pkgs != Empty[string] do 
       eprintln$ "[flx:cxx_compile_dynamic1] Adding packages " + str pkgs;
-      var PKGCONFIG_PATH=map 
+      var PKGCONFIG_PATH=unbox$ map 
          (fun (s:string) => "--path+="+s) 
          config.FLX_CONFIG_DIRS
       ;
@@ -2213,7 +2213,7 @@ object processing_env(
     var pkg_cflags = Empty[string];
     if pkgs != Empty[string] do 
       eprintln$ "[flx:cxx_compile_static1] Adding packages " + str pkgs;
-      var PKGCONFIG_PATH=map 
+      var PKGCONFIG_PATH=unbox$ map 
          (fun (s:string) => "--path+="+s) 
          config.FLX_CONFIG_DIRS
       ;
@@ -2373,7 +2373,7 @@ object processing_env(
     var pkgs = control.extra_pkgs;
     if pkgs != Empty[string] do 
       eprintln$ "[flx:cxx_link_shared_library] Adding packages " + str pkgs;
-      var PKGCONFIG_PATH=map 
+      var PKGCONFIG_PATH=unbox$ map 
          (fun (s:string) => "--path+="+s) 
          config.FLX_CONFIG_DIRS
       ;
@@ -2397,7 +2397,7 @@ object processing_env(
       end
     ;
     var EXT_SHARED_OBJ = #(tc.dynamic_object_extension);
-    var extra_objects = map (fun (f:string) => f + EXT_SHARED_OBJ) control.cppobases;
+    var extra_objects = unbox$ map (fun (f:string) => f + EXT_SHARED_OBJ) control.cppobases;
     if control.CXXONLY == 0 do
       var result = tc.dynamic_library_linker
         (
@@ -2437,7 +2437,7 @@ object processing_env(
     var pkgs = control.extra_pkgs;
     if pkgs != Empty[string] do 
       eprintln$ "[flx:cxx_link_shared_exe] Adding packages " + str pkgs;
-      var PKGCONFIG_PATH=map 
+      var PKGCONFIG_PATH=unbox$ map 
          (fun (s:string) => "--path+="+s) 
          config.FLX_CONFIG_DIRS
       ;
@@ -2466,7 +2466,7 @@ println$ "flx, prior to calling toolchain: DRIVER OBJS = " + control.DRIVER_OBJS
 println$ "flx, prior to calling toolchain: objs = " + control.objs.str;
 */
     var EXT_DYNAMIC_OBJ = #(tc.dynamic_object_extension);
-    var extra_objects = map (fun (f:string) => f + EXT_DYNAMIC_OBJ) control.cppobases;
+    var extra_objects = unbox$ map (fun (f:string) => f + EXT_DYNAMIC_OBJ) control.cppobases;
     if control.CXXONLY == 0 do
       var result = tc.dynamic_executable_linker
         (
@@ -2510,7 +2510,7 @@ println$ "flx, prior to calling toolchain: objs = " + control.objs.str;
     var pkgs = control.extra_pkgs;
     if pkgs != Empty[string] do 
       eprintln$ "[flx:cxx_link_static] Adding packages " + str pkgs;
-      var PKGCONFIG_PATH=map 
+      var PKGCONFIG_PATH=unbox$ map 
          (fun (s:string) => "--path+="+s) 
          config.FLX_CONFIG_DIRS
       ;
@@ -2534,7 +2534,7 @@ println$ "flx, prior to calling toolchain: objs = " + control.objs.str;
       end
     ;
     var EXT_STATIC_OBJ = #(tc.static_object_extension);
-    var extra_objects = map (fun (f:string) => f + EXT_STATIC_OBJ) control.cppobases;
+    var extra_objects = unbox$ map (fun (f:string) => f + EXT_STATIC_OBJ) control.cppobases;
     if control.CXXONLY == 0 do
       var result = tc.static_executable_linker
         (
@@ -2584,7 +2584,7 @@ println$ "flx, prior to calling toolchain: objs = " + control.objs.str;
       end
     ;
     var EXT_STATIC_OBJ = #(tc.static_object_extension);
-    var extra_objects = map (fun (f:string) => f + EXT_STATIC_OBJ) control.cppobases;
+    var extra_objects = unbox$ map (fun (f:string) => f + EXT_STATIC_OBJ) control.cppobases;
     if control.CXXONLY == 0 do
       var result = tc . static_library_linker 
         (
@@ -2639,7 +2639,7 @@ println$ "flx, prior to calling toolchain: objs = " + control.objs.str;
     elif control.CHECK_DEPENDENCIES == 1 do
       debugln "Checking C++->binary dependencies since CHECK_DEPENDENCIES=1 to see if the output is uptodate";
       var EXT_OBJ = cal_object_extension();
-      var extra_objects = map (fun (f:string) => f + EXT_OBJ) control.cppobases;
+      var extra_objects = unbox$ map (fun (f:string) => f + EXT_OBJ) control.cppobases;
       var xtime = FileStat::dfiletime(control.LINKER_OUTPUT_FILENAME,#FileStat::past_time);
       val depfilename = cache_join (config.FLX_OUTPUT_DIR, dvars.filebase+".dep");
       var flx_srctime = FileStat::dfiletime (depfilename,#FileStat::future_time);

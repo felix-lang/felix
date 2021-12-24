@@ -531,10 +531,6 @@ syntax expressions {
   //$ Felix pointer type and address of operator.
   x[sthename_pri] := "&" x[sthename_pri] =># "`(ast_ref ,_sr ,_2)";
 
-  //$ Felix pointer type and address of operator.
-  x[sthename_pri] := "loan" x[sthename_pri] =># "`(ast_loan,_sr ,_2)";
-
-
   x[sthename_pri] := "_rref" x[sthename_pri] =># "`(ast_rref ,_sr ,_2)";
   x[sthename_pri] := "&<" x[sthename_pri] =># "`(ast_rref ,_sr ,_2)";
   x[sthename_pri] := "_wref" x[sthename_pri] =># "`(ast_wref ,_sr ,_2)";

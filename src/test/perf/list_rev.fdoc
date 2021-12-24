@@ -28,6 +28,7 @@ begin
   elapsed2 = time() - start;
   eprintln$ "Unique   rev " + elapsed2.str;
   println$ x.len.str;
+  kill x; //??????????? Shouldn't the len function kill it?
   collect();
 end
 

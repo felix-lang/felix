@@ -48,6 +48,7 @@ let rec xsr x : Flx_srcref.t =
 and kind_of_sex sr x : kindcode_t =
   let ki k = kind_of_sex sr k in
   match x with
+  | Lst [Id "ast_name"; sr; Str "BORROWED"; Lst []] ->  KND_borrowed
   | Lst [Id "ast_name"; sr; Str "LINEAR"; Lst []] ->  KND_linear
   | Lst [Id "ast_name"; sr; Str "TYPE"; Lst []] ->  KND_type
   | Lst [Id "ast_name"; sr; Str "UNITSUM"; Lst []] ->  KND_unitsum
@@ -440,8 +441,6 @@ print_endline ("Processing ast_name "^xid id^" in xexpr");
  | Lst [Id "ast_deref"; sr; e] -> 
    `EXPR_deref (xsr sr,ex e)
  | Lst [Id "ast_ref"; sr; e] -> `EXPR_ref (xsr sr,ex e)
-
- | Lst [Id "ast_loan"; sr; e] -> `EXPR_loan (xsr sr, ex e)
 
  | Lst [Id "ast_rref"; sr; e] -> `EXPR_rref(xsr sr, ex e)
  | Lst [Id "ast_wref"; sr; e] -> `EXPR_wref(xsr sr, ex e)

@@ -174,7 +174,7 @@ Yet another helper.
   //$ Copy a list, and return last element as a list,
   //$ empty if original list was empty.
   private proc copy_last[T] (inp:list[T], out:&list[T], last:&list[T]) {
-    out <- rev inp;
+    out <- unbox (rev inp);
     rev_last (out, last);
   }
 

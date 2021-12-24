@@ -210,15 +210,6 @@ print_endline ("Case number " ^ si index);
   | `EXPR_cond (sr,(c,t,f)) ->
     bexpr_cond (be c) (be t) (be f)
 
-  | `EXPR_loan (sr,e) -> 
-     let e,t = be e in 
-     begin match t with
-     | BTYP_uniq t -> 
-       bexpr_coerce ((e,t), btyp_borrowed t)
-     | BTYP_borrowed _ -> e,t
-     | t -> bexpr_coerce ((e,t), btyp_borrowed t)
-     end
-
   | `EXPR_label (sr,label) -> 
     let maybe_index = lookup_label_in_env state bsym_table env sr label in
     begin match maybe_index with
@@ -1393,6 +1384,27 @@ print_endline ("CLASS NEW " ^sbt bsym_table cls);
 
   | `EXPR_map (sr,f,a) ->
     handle_map sr (be f) (be a)
+
+  (* generic loan routine *)
+  | `EXPR_apply (sr,(`EXPR_name (_,"loan",[]), e)) -> 
+     let _,t as x = be e in 
+     begin match t with
+     | BTYP_uniq t -> 
+       bexpr_coerce (x, btyp_borrowed t)
+     | BTYP_borrowed _ -> x 
+     | t -> bexpr_coerce (x, btyp_borrowed t)
+     end
+
+  (* generic share routine *)
+  | `EXPR_apply (sr,(`EXPR_name (_,"share",[]), e)) -> 
+     let _,t as x = be e in 
+     begin match t with
+     | BTYP_uniq t -> 
+       bexpr_coerce (x, t)
+     | BTYP_borrowed t ->  bexpr_coerce (x, t)
+     | t -> x
+     end
+
 
   (* generic str routine *)
   | `EXPR_apply (sr,(`EXPR_name (_,"_strr",[]), a)) -> 

@@ -15,16 +15,16 @@ gen stream () = {
   for k in (1,2,3) do yield Some$ k+40; done return None[int];
 }
 
-var ll = list_comprehension stream;
+var ll = unbox$ list_comprehension stream;
 println ll;
 
-var zz = list_comprehension { for k in (9,2,3) do yield Some$ k+40; done return None[int]; };
+var zz = unbox$ list_comprehension { for k in (9,2,3) do yield Some$ k+40; done return None[int]; };
 println zz;
 
 var kk = list { for k in (11,7,3) do yield Some$ k+40; done return None[int]; };
 println$ kk;
 
-for k in list_comprehension (slice_range_incl 10uz 20uz) do println k; done 
+for k in unbox$ list_comprehension (slice_range_incl 10uz 20uz) do println k; done 
 
 for k in (slice_range_incl 10uz 20uz) do println k; done 
  

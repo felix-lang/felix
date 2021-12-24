@@ -203,13 +203,11 @@ if name = debugid then print_endline "Trying unification";
       maybe_specialisation_with_dvars bsym_table counter eqns !dvars 
     else try Some (unification bsym_table counter eqns !dvars) with Not_found -> None
   in
-(*
 if name = debugid then
   begin match result with
   | None -> print_endline "Does not unify"
   | Some mgu -> print_endline ("UNIFIES with MGU = " ^ string_of_varlist bsym_table mgu)
   end;
-*)
   result
 
 
@@ -330,6 +328,7 @@ print_endline (" .. found tpattern .. analysing .. ");
           type_of_tpattern counter t
         | KND_generic (* overload treats this as a type variable in this routine *)
         | KND_linear
+        | KND_borrowed
         | KND_type
         | KND_unitsum
         | KND_compactlinear

@@ -49,6 +49,7 @@ and suffixed_name_t =
  * union, and the type ordinary procedure types return.  There are no values
  * of this type. *)
 and kindcode_t =
+  | KND_borrowed   (* borrowed type *)
   | KND_type       (* sharable (nonlinear) type *)
   | KND_linear     (* top level kind for types *)
   | KND_unitsum
@@ -194,7 +195,6 @@ and expr_t = [
   | `EXPR_ref of Flx_srcref.t * expr_t
   | `EXPR_rref of Flx_srcref.t * expr_t
   | `EXPR_wref of Flx_srcref.t * expr_t
-  | `EXPR_loan of Flx_srcref.t * expr_t 
   | `EXPR_likely of Flx_srcref.t * expr_t
   | `EXPR_unlikely of Flx_srcref.t * expr_t
   | `EXPR_new of Flx_srcref.t * expr_t
@@ -845,7 +845,6 @@ let src_of_expr (e : expr_t) = match e with
   | `EXPR_ref (s,_)
   | `EXPR_rref (s,_)
   | `EXPR_wref (s,_)
-  | `EXPR_loan (s,_)
   | `EXPR_likely (s,_)
   | `EXPR_unlikely (s,_)
   | `EXPR_literal (s,_)

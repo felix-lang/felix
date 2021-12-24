@@ -222,11 +222,11 @@ open class CmdOpt
 
   noinline gen parse-cmdline (spec:cmdspec_t) (x:list[string]) : cmdopt-parse-result_t = {
     var result = cmdopt-parse-result_t ();
-    var nonk = cvt-key-arg spec.split-key-value-spec x;
-    nonk = parse-key-multi-value spec.multi-valued-keys-spec result.multi-valued-keys nonk;
-    nonk = parse-key-single-value spec.single-valued-keys-spec result.single-valued-keys nonk;
-    nonk = parse-key spec.switches-spec result.switches nonk;
-    &result.positional <- parse-switches spec.short-switch-map-spec result.switches nonk;
+    var nonk = unbox$ cvt-key-arg spec.split-key-value-spec x;
+    nonk = unbox$ parse-key-multi-value spec.multi-valued-keys-spec result.multi-valued-keys nonk;
+    nonk = unbox$ parse-key-single-value spec.single-valued-keys-spec result.single-valued-keys nonk;
+    nonk = unbox$ parse-key spec.switches-spec result.switches nonk;
+    &result.positional <- unbox$ parse-switches spec.short-switch-map-spec result.switches nonk;
     return result;
   }
 }

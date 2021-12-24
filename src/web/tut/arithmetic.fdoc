@@ -315,7 +315,7 @@ fun explode (s:string):list[char] =
 {
   val n:size = len s;
   fun loop (acc:list[char]) (i:size) : list[char] =>
-    if (i == n) then rev acc
+    if (i == n) then unbox$ rev acc
     else loop (Cons (s.[i], acc)) (i + 1)
   ;
 

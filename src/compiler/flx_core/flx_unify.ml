@@ -41,6 +41,9 @@ let nominal_subtype bsym_table lhs rhs =
 
 (* LHS ge RHS, parameter supertype of argument *)
 let rec solve_subtypes nominal_subtype counter lhs rhs dvars (s:vassign_t option ref) (add_eq:reladd_t) (add_ge:reladd_t) =
+(*
+print_endline ("Solve subtypes " ^ Flx_btype.str_of_btype lhs ^ " >=? " ^ Flx_btype.str_of_btype rhs); 
+*)
   try nominal_subtype lhs rhs
   with Not_found ->
 
@@ -55,31 +58,13 @@ let rec solve_subtypes nominal_subtype counter lhs rhs dvars (s:vassign_t option
     add_ge (t1,t2)
 
 
-  (* WARNING: HACK! SPECIAL RULES FOR UNIQUE TYPES.
-
-    We want a function accepting a T value to also accept
-    a uniq T; throwing away the uniq is safe!
-
-    We also want the same idea to work under pointers.
-
-    For values, we do that and also allow the usual value subtyping at
-    the same time. 
-
-    For pointers, the read/write property subtypes, but
-    the pointed at value does not, except for uniq.
-  *)
-
-  | BTYP_ptr (`W,t1,[]), BTYP_ptr (`W,BTYP_uniq t2,[])
-  | BTYP_ptr (`W,t1,[]), BTYP_ptr (`RW,BTYP_uniq t2,[])
-(*
-  | BTYP_rref t1, BTYP_rref (BTYP_uniq t2)
-  | BTYP_rref t1, BTYP_pointer (BTYP_uniq t2)
-*)
-    -> add_eq (t1,t2)
-
   (* here we throw away uniq part of argument type passing a value *)
   | BTYP_borrowed t1, BTYP_uniq t2 -> add_ge (t1,t2)
+
+  | BTYP_type_var _, BTYP_uniq _ -> add_eq (lhs,rhs) (* hack to assign type variable *)
   | t1, BTYP_uniq t2 -> add_ge (t1,t2)
+
+  | BTYP_borrowed _, BTYP_type_var _  -> add_eq (lhs, rhs) (* hack to assign type variable *)
   | BTYP_borrowed t1, t2 -> add_ge (t1,t2)
 
   (* argument type t must be a subtype of each type of the intersection parameter *)
@@ -188,16 +173,6 @@ let rec solve_subtypes nominal_subtype counter lhs rhs dvars (s:vassign_t option
     add_eq (l,r);
     add_eq (machl, machr);
 
-(*
-  (* these special rules say a pointer &t is a subtype of a clt pointer <_,t> *)
-  | BTYP_cltpointer (lm,l), BTYP_pointer (t)
-  | BTYP_cltrref (lm,l), BTYP_pointer (t)
-  | BTYP_cltwref (lm,l), BTYP_pointer (t)
-  | BTYP_cltrref (lm,l), BTYP_rref (t)
-  | BTYP_cltwref (lm,l), BTYP_wref (t) 
-    ->
-    (* add_eq (lm,t); *) add_eq (l,t)
-*)
 
   | BTYP_function (dl,cl), BTYP_linearfunction (dr,cr)
   | BTYP_linearfunction (dl,cl), BTYP_linearfunction (dr,cr)
@@ -678,7 +653,8 @@ let maybe_specialisation_with_dvars bsym_table counter eqns dvars =
   let nominal_subtype lhs rhs = nominal_subtype bsym_table lhs rhs in
   let eqns = List.map (fun x -> `Ge, x) eqns in
   try Some (unif nominal_subtype counter eqns dvars)
-  with Not_found -> None
+  with Not_found -> 
+    None
 
 (* DERIVED *)
 let maybe_specialisation bsym_table counter eqns =

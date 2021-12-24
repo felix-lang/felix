@@ -130,7 +130,7 @@ open class UniqueCStrings
   instance Repr[_ucstr] { fun repr(p:_ucstr)=>p._repr_.repr; }
 
   // length
-  fun len(var s:&<ucstr) : size => s.peek._repr_.strlen;
+  fun len(var s:_borrowed _ucstr) : size => s.unwrap._repr_.strlen;
 
   // modify one char
   fun set (var s:ucstr, i:int, c:char) : ucstr =  {
@@ -150,7 +150,7 @@ open class UniqueCStrings
   ;
 
   // append: consumes y
-  fun append (var x:ucstr, var y:ucstr): ucstr = {
+  noinline fun append (var x:ucstr, var y:ucstr): ucstr = {
     var cx = unpack x;
     var cy = unpack y;
     var lx = cx.len;
@@ -303,7 +303,7 @@ open class UniqueCountedStrings
   open CString;
   open Memory;
 
-  private var debug = Env::issetenv "FLX_TRACE_UCSTR";
+  private var debug = Env::issetenv "FLX_TRACE_USTR";
 
   // abstract representation
   private type _ustr = new +char;
@@ -376,7 +376,7 @@ open class UniqueCountedStrings
   ;
 
   // append: consumes y
-  fun append (var x:ustr, var y:ustr): ustr = {
+  noinline fun append (var x:ustr, var y:ustr): ustr = {
     var cx = unpack x;
     var cy = unpack y;
     var lx = cx.len;

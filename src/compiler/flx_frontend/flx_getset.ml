@@ -102,12 +102,32 @@ print_endline ("Find once for expresssion " ^ Flx_print.sbe bsym_table e ^ ", ty
 
   (* This will ONLY work correctly if coercions on tuples have
      been expanded ...
+  | BEXPR_coerce ((_,BTYP_uniq _) _), BTYP_borrowed _),_ 
   *)
-  | BEXPR_coerce ((_,(*BTYP_uniq*) _), BTYP_borrowed _),_ -> 
+  | BEXPR_coerce ((_,BTYP_uniq t1), BTYP_borrowed t2),_  
+    when t1 = t2
+    ->  
 (*
-print_endline ("Skipping expression coerced to borrowed");
+    begin
+      if t1 = t2 then
+        print_endline ("Skipping expression type " ^Flx_print.sbt bsym_table t1 ^ " coerced to borrowed: " ^ Flx_print.sbe bsym_table e)
+    else
+        print_endline ("Skipping WEIRD expression coerced to borrowed or shared")
+    end;
 *)
-   ()
+    ()
+  | BEXPR_coerce ((_,BTYP_uniq t1), t2),_  
+    when t1 = t2
+    -> 
+(*
+    begin
+      if t1 = t2 then
+        print_endline ("Skipping expression type uniq " ^Flx_print.sbt bsym_table t1 ^ " coerced to shared: " ^ Flx_print.sbe bsym_table e)
+    else
+        print_endline ("Skipping WEIRD expression coerced to borrowed or shared")
+    end;
+*)
+    ()
 
 (* 
   | BEXPR_apply_prim (i,_,(_,argt)),_
