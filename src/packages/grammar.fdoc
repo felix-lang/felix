@@ -153,6 +153,9 @@ syntax types {
   t[ssuperscript_pri] := t[ssuperscript_pri] "^" t[srefr_pri] =># "`(typ_array ,_1 ,_3)";
   t[ssuperscript_pri] := t[ssuperscript_pri] "\^" t[srefr_pri] =># "`(typ_compactarray ,_1 ,_3)";
 
+  t[ssuperscript_pri] := t[ssuperscript_pri] "\circ" t[>ssuperscript_pri] =># "(tInfix)";
+  t[ssuperscript_pri] := t[ssuperscript_pri] "\cdot" t[>ssuperscript_pri] =># "(tInfix)";
+
   t[sapplication_pri] := t[sapplication_pri] t[>sapplication_pri] =># 
     "`(typ_apply ,_sr (,_1 ,_2))" note "apply";
 

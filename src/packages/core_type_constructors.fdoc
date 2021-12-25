@@ -117,6 +117,18 @@ open class Typing
 
   const memcount[t] : size = "#memcount";
   const arrayindexcount[t] : size = "#arrayindexcount";
+
+  // forward functor composition (1 argument)
+  typedef fun \circ (f:TYPE->TYPE, g:TYPE->TYPE):TYPE->TYPE => 
+    fun (T:TYPE):TYPE => f(g T)
+  ;
+
+  // reverse functor composition (1 argument)
+  typedef fun \odot (f:TYPE->TYPE, g:TYPE->TYPE):TYPE->TYPE => 
+    fun (T:TYPE):TYPE => g(f T)
+  ;
+
+
 }
 
 @h1 Option
