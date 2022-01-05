@@ -15,7 +15,7 @@ print_endline ("Fixpoint adjust " ^ sbt bsym_table t);
 *)
   Flx_btype_rec.adjust_fixpoint t
 
-let cal_isrecun bsym_table termlist t1 = 
+let cal_isrecfun calltag bsym_table termlist t1 t = 
       match t1 with 
       | BTYP_fix (j,mt) ->
 (*
@@ -54,7 +54,6 @@ print_endline (sbt bsym_table (List.nth termlist (-2-j)));
           false
         end
       | _ -> false
-    in
 
 
 let type_apply br beta_reduce' calltag counter bsym_table sr termlist t t1 t2 = 
@@ -92,7 +91,7 @@ print_endline ("Flx_beta: BTYP_type_apply\n  " ^ Flx_btype.st t1 ^ "\nto\n  " ^
 (*
 print_endline ("Attempting to beta-reduce type function application " ^ sbt bsym_table t);
 *)
-    let isrecfun = cal_isrecfun bsym_table termlist t1 in 
+    let isrecfun = cal_isrecfun calltag bsym_table termlist t1 t in 
 (*
 print_endline ("Calculated isrecfun = " ^ if isrecfun then "true" else "false");
 *)
