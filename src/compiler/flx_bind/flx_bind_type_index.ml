@@ -162,6 +162,7 @@ print_endline ("flx_lookup: bind-type-index returning fixated " ^ sbt bsym_table
       );
     *)
     match entry with
+    | SYMDEF_kindvar _ -> assert false
     | SYMDEF_typevar mt ->
       (* HACK! We will assume metatype are entirely algebraic,
         that is, they cannot be named and referenced, we also
@@ -225,6 +226,40 @@ print_endline ("Flx_bind_type_index.Binding type variable " ^ si index ^ ", kind
       print_endline ("Bind type index: Unravelling virtual type instance " ^ id ^ " index=" ^ si index);
       let t = bt t in
       t
+
+
+    | SYMDEF_type_function (iks,t) -> 
+(*
+print_endline ("Bind type index, trying to bind type function " ^id ^ "<" ^string_of_int index ^ "> = " ^ string_of_typecode t);
+*)
+    begin try
+      let bsym = Flx_bsym_table.find bsym_table index in
+      let bbdcl = Flx_bsym.bbdcl bsym in
+      begin match bbdcl with
+      | BBDCL_structural_type_alias (bvs, alias) ->
+        let salias = Flx_btype_subst.tsubst sr bvs ts alias in
+(*
+        print_endline ("Bind type index: STRUCTURAL Unravelling type alias " ^ id ^ " index=" ^ si index ^ " to " ^ Flx_btype.st salias);
+*)
+        salias
+      | BBDCL_nominal_type_alias (bvs, alias) ->
+(*
+        print_endline ("Bind type index: NOMINAL bind type alias " ^ id ^ " index=" ^ si index ^ " to " ^ Flx_btype.st alias);
+*)
+        let k = Flx_btype_kind.metatype sr alias in
+        let t = btyp_inst (index,ts,k) in
+        t
+
+      | _ -> failwith ("Flx_bind_type expected type alias in bound symbol table " ^ id);
+      end
+    with Not_found ->
+      let k = Flx_guess_meta_type.guess_metatype sr t in
+print_endline ("Flx_bind_type_index: btyp_inst, meta type calculated by guess_metatype!"); 
+      let t = btyp_inst (index,ts,k) in 
+      print_endline ("Bind type index: INITIAL nominalising type alias " ^ id ^ 
+       " index=" ^ si index ^ " to " ^ Flx_btype.st t ^ ", kind=" ^ Flx_kind.sk k);
+      t
+    end
 
 
     | SYMDEF_type_alias t ->

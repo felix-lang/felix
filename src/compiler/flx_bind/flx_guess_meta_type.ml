@@ -143,6 +143,10 @@ let guess_meta_type state bsym_table bt index : kind =
   match data with { Flx_sym.id=id; sr=sr; vs=vs; dirs=dirs; symdef=entry } ->
     match entry with
     | SYMDEF_instance_type t
+    | SYMDEF_type_function (_,t)  -> 
+      print_endline ("Guess meta type of type function...");
+      guess_metatype sr t
+
     | SYMDEF_type_alias t  -> 
       guess_metatype sr t
     | _ -> print_endline ("Dunno, assume a type " ^ string_of_symdef entry id vs); assert false

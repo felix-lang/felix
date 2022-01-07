@@ -6,6 +6,7 @@ open List
 
 exception Not_type
 exception Not_kind
+exception Not_sort
 
 let prefix p s =
   let n = String.length p in
@@ -44,6 +45,15 @@ let rec xsr x : Flx_srcref.t =
   | Lst [Str fn; Int fl; Int fc; Int ll; Int lc] ->
       Flx_srcref.make (fn,ii fl,ii fc,ii ll,ii lc)
   | x -> err x "Invalid source reference"
+
+and sort_of_sex sr x : sortcode_t =
+  match x with
+  | Lst [Id "ast_name"; sr; Str "KIND"; Lst []] -> SRT_kind
+  | _ ->
+    print_endline ("Unexpected sort term"); 
+    print_endline ( Sex_print.string_of_sex x );
+    raise Not_sort
+
 
 and kind_of_sex sr x : kindcode_t =
   let ki k = kind_of_sex sr k in
@@ -716,6 +726,15 @@ print_endline ("Translating vs list " ^ Sex_print.string_of_sex x);
   | Lst [pvs; aux] -> xpvs pvs, xaux aux
   | x -> err x "xvs_list_t"
 
+and xks_list_t sr x : ks_list_t =
+  match x with
+  | Lst iks -> map (function
+    | Lst [id; s] -> xid id, sort_of_sex sr s
+    | x -> err x "xks_list"
+    ) iks
+  | x -> err x "xks_list_t"
+
+
 and xaxiom_method_t sr x : axiom_method_t =
   let ex x = xexpr_t sr x in
   match x with
@@ -953,6 +972,7 @@ print_endline ("sex2flx:stmt] " ^ Sex_print.string_of_sex x);
   let ex sr x = xexpr_t sr x in
   let xq sr m qn = qne (ex sr) m qn in
   let xvs sr x = xvs_list_t sr x in
+  let xks sr x = xks_list_t sr x in
   let xam sr x =  xaxiom_method_t sr x in
   let xps pdef sr x =  xparams_t pdef sr x in
   let xret sr x =  xret_t sr x in
@@ -1101,7 +1121,7 @@ print_endline ("Type alias " ^ xid id ^ " flx   = " ^ Flx_print. string_of_typec
 *)
       STMT_type_alias (sr, xid id, xvs sr vs, ti sr t)
 
-  | Lst [Id "mktypefun"; sr; id; vs; argss; ret; body] -> let sr = xsr sr in 
+  | Lst [Id "mktypefun"; sr; id; ks; argss; ret; body] -> let sr = xsr sr in 
     let fixarg  arg = match arg with
     | Lst [id; t] -> xid id, ki sr t
     | x -> err x "mktypefun:unpack args1"
@@ -1114,7 +1134,7 @@ print_endline ("Type alias " ^ xid id ^ " flx   = " ^ Flx_print. string_of_typec
     | Lst args -> map fixargs args
     | x -> err x "mktypefun:unpack args3"
     in
-    Flx_typing.mktypefun (sr) (xid id) (xvs sr vs) argss (ki sr ret) (ti sr body)
+    Flx_typing.mktypefun (sr) (xid id) (xks sr ks) argss (ki sr ret) (ti sr body)
 
   | Lst [Id "ast_inherit"; sr; id; vs; qn] -> let sr = xsr sr in 
       STMT_inherit (sr, xid id, xvs sr vs, xq sr "ast_inherit" qn)

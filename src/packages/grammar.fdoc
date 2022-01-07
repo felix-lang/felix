@@ -4740,6 +4740,7 @@ syntax statements {
   stvarlist := "[" stvar_comma_list stype_constraint "]" =>#
     "(tvfixup _2 _3)";
 
+
   stypeparameter := sname ":" t[sarrow_pri] =># "`(,_1 ,_3)";
   stypeparameter := sname =># "`(,_1 typ_none)";
   stypeparameter_comma_list := sepsilon =># "()";
@@ -5228,26 +5229,35 @@ syntax type_decls {
     `(ast_type_alias ,_sr ,(first _2) ,(second _2) ,_4)
     """;
 
+
+  skvar := sname =># """`(,_1 (ast_name ,_sr "KIND" ()))"""; 
+  skvar_comma_list := skvar ("," skvar)* =># "(cons _1 (map second _2))";
+  skvar_comma_list := sepsilon =># "'()";
+  skvarlist := sepsilon =># "'()";
+  skvarlist := "[" skvar_comma_list "]"=># "_2";
+  skf_declname := sname skvarlist =># "`(,_1 ,_2)";
+
+
   //$ Typedef fun create a type function or functor.
   //$ It maps some types to another type.
   //$ This is the simple expression form.
-  stmt := "typedef" "fun" sdeclname stypefun_args ":" stypeexpr "=>" stype ";" =>#
+  stmt := "typefun" skf_declname stypefun_args ":" stypeexpr "=>" stype ";" =>#
     """
-    `(mktypefun ,_sr ,(first _3) ,(second _3) ,_4 ,_6 ,_8)
+    `(mktypefun ,_sr ,(first _2) ,(second _2) ,_3 ,_5 ,_7)
     """;
 
   //$ Typedef fun create a type function or functor.
   //$ It maps some types to another type.
   //$ This is the simple matching form.
-  stmt := "typedef" "fun" sdeclname ":" stypeexpr "=" stype_matching+ ";" =>#
+  stmt := "typefun" skf_sdeclname ":" stypeexpr "=" stype_matching+ ";" =>#
     """
-    (if (eq? 'typ_arrow (first _5))
+    (if (eq? 'typ_arrow (first _4))
       (let (
-        (argt (caadr _5))
-        (ret (cadadr _5))
-        (body `(ast_type_match ,_sr (,(noi '_a) ,_7))))
+        (argt (caadr _4))
+        (ret (cadadr _4))
+        (body `(ast_type_match ,_sr (,(noi '_a) ,_6))))
         (let ((args `(((_a ,argt)))))
-      `(mktypefun ,_sr ,(first _3) ,(second _3) ,args ,ret ,body)
+      `(mktypefun ,_sr ,(first _2) ,(second _2) ,args ,ret ,body)
       ))
       ('ERROR)
     )

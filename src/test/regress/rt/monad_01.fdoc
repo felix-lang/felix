@@ -17,7 +17,7 @@ instance[T with Str[T]] Str[success[T]]
     endmatch
     ;
 }
-typedef fun Fallible (t:TYPE) : TYPE => success[t] ;
+typefun Fallible (t:TYPE) : TYPE => success[t] ;
 instance Monad[Fallible]
 {
   fun bind[a, b] (x:Fallible a, f: a -> Fallible b):Fallible b =>

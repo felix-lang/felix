@@ -455,6 +455,8 @@ print_endline ("Bound tuple head " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_
        | _ -> typ
     in
     let base = unfold "flx_lookup2" base in
+    let base = Flx_beta.beta_reduce "flx_bind_expression-xxx" state.counter bsym_table sr base in
+
     match base with
     | BTYP_array (t,BTYP_unitsum len)  ->
       let n = if n = -1 then n + len else n in

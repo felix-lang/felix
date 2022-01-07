@@ -42,7 +42,7 @@ Felix type system has several advanced features.
 @h2 Type functions
 In Felix you can specify a function which accepts and returns types:
 @felix
-typedef fun diag1 (x:TYPE) : TYPE => x * x;
+typefun diag1 (x:TYPE) : TYPE => x * x;
 var b: diag1 int = 1,2; // OK
 @
 
@@ -87,7 +87,7 @@ With a type function and match of course! This is from library file
 <a href="/lib/std/int.flx">int.flx</a>:
 
 @felix-unchecked
-typedef fun integral_promotion: TYPE -> TYPE =
+typefun integral_promotion: TYPE -> TYPE =
   | tiny => int
   | utiny => int
   | short => int

@@ -132,6 +132,30 @@ print_endline ("Calculated isrec= " ^ if isrec then "true" else "false");
     print_endline ("Function = " ^ sbt bsym_table t1);
     print_endline ("Argument = " ^ sbt bsym_table t2);
 *)
+    let t1 = 
+      match t1 with
+      | BTYP_inst (index,_,_) ->
+(*
+        print_endline ("Flx_type_fun: beta-reduce finds type function instance "^string_of_int index^", lookup needed");
+*)
+        begin try
+          let bsym = Flx_bsym_table.find bsym_table index in
+(*
+          print_endline ("Found symbol " ^ Flx_bsym.id bsym);
+*)
+          let bbdcl = bsym.bbdcl in
+          begin match bbdcl with
+          | BBDCL_nominal_type_alias (_,t) -> t
+          | _ ->
+            print_endline ("Flx_type_fun: expected symbol "^Flx_bsym.id bsym ^" to be nominal type alias");
+            assert false
+          end
+        with Not_found ->
+          print_endline ("Flx_type_fun: CANNOT FIND BOUND SYMBOL IN SYMBOL TABLE");
+          assert false
+        end
+      | _ -> t1
+    in
     begin match t1 with
     | BTYP_type_function (ps,r,body) ->
       let params' =

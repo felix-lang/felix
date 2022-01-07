@@ -863,7 +863,10 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
   | STMT_begin_typeclass _ -> assert false
 
   | STMT_type_alias (sr, id, vs, t) ->
-    tack (STMT_type_alias (sr,mi sr id,vs, mt sr t))
+    tack (STMT_type_alias (sr,mi sr id, vs, mt sr t))
+
+  | STMT_type_function (sr, id, ks, t) ->
+    tack (STMT_type_function (sr,mi sr id, ks, mt sr t))
 
   | STMT_inherit (sr, id, vs, t) ->  tack st
   | STMT_inherit_fun (sr, id, vs, t) ->  tack st

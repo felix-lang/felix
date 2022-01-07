@@ -19,39 +19,39 @@ typedef any = any;
 open class Typing
 {
 
-  typedef fun dom(t:TYPE):TYPE =>
+  typefun dom(t:TYPE):TYPE =>
     typematch t with
     | ?a -> _ => a
     endmatch
   ;
 
-  typedef fun cod(t:TYPE):TYPE =>
+  typefun cod(t:TYPE):TYPE =>
     typematch t with
     | _ -> ?b => b
     endmatch
   ;
 
-  typedef fun prj1(t:TYPE):TYPE =>
+  typefun prj1(t:TYPE):TYPE =>
     typematch t with
     | ?a * _ => a
     endmatch
   ;
 
-  typedef fun prj2(t:TYPE):TYPE =>
+  typefun prj2(t:TYPE):TYPE =>
     typematch t with
     | _ * ?b => b
     endmatch
   ;
 /*
   // THESE SHOULD PROBABLY BE FIXED OR DELETED
-  typedef fun type_lnot(x:TYPE):TYPE=>
+  typefun type_lnot(x:TYPE):TYPE=>
     typematch x with
     | 0 => 1
     | _ => 0
     endmatch
   ;
 
-  typedef fun type_land(x:TYPE, y:TYPE):TYPE =>
+  typefun type_land(x:TYPE, y:TYPE):TYPE =>
     typematch (x,  y) with
     | 0, _ => 0
     | _,0 => 0
@@ -59,56 +59,56 @@ open class Typing
     endmatch
   ;
 
-  typedef fun type_lor(x:TYPE, y:TYPE):TYPE=>
+  typefun type_lor(x:TYPE, y:TYPE):TYPE=>
     typematch (x,  y) with
     | 0, 0 => 0
     | _,_ => 1
     endmatch
   ;
 
-  typedef fun type_eq(x:TYPE, y:TYPE):TYPE=>
+  typefun type_eq(x:TYPE, y:TYPE):TYPE=>
     typematch x with
     | y => typematch y with | x => 1 | _ => 0 endmatch
     | _ => 0
     endmatch
   ;
 
-  typedef fun type_ne (x:TYPE, y:TYPE):TYPE=> type_lnot (type_eq (x , y));
+  typefun type_ne (x:TYPE, y:TYPE):TYPE=> type_lnot (type_eq (x , y));
 
-  typedef fun type_le (x:TYPE, y:TYPE):TYPE=>
+  typefun type_le (x:TYPE, y:TYPE):TYPE=>
     typematch x with
     | y => 1 
     | _ => 0
     endmatch
   ;
 
-  typedef fun type_ge (x:TYPE, y:TYPE):TYPE=>
+  typefun type_ge (x:TYPE, y:TYPE):TYPE=>
     typematch y with
     | x => 1 
     | _ => 0
     endmatch
   ;
 
-  typedef fun type_gt (x:TYPE, y:TYPE):TYPE=> type_le (y, x);
-  typedef fun type_lt (x:TYPE, y:TYPE):TYPE=> type_ge (y, x);
+  typefun type_gt (x:TYPE, y:TYPE):TYPE=> type_le (y, x);
+  typefun type_lt (x:TYPE, y:TYPE):TYPE=> type_ge (y, x);
 */
 
   // Polymorphic type comparisons, including subtyping AND subsumption
-  typedef fun is_subtype (arg:TYPE, param:TYPE):BOOL =>
+  typefun is_subtype (arg:TYPE, param:TYPE):BOOL =>
     subtypematch arg with
     | param => TRUE
     | _ => FALSE
     endmatch
   ;
 
-  typedef fun is_supertype (param:TYPE, arg:TYPE):BOOL =>
+  typefun is_supertype (param:TYPE, arg:TYPE):BOOL =>
     subtypematch arg with
     | param => TRUE
     | _ => FALSE
     endmatch
   ;
 
-  typedef fun type_eq(a:TYPE, b:TYPE):BOOL =>
+  typefun type_eq(a:TYPE, b:TYPE):BOOL =>
     typematch a with
     | b => TRUE
     | _ => FALSE
@@ -119,12 +119,12 @@ open class Typing
   const arrayindexcount[t] : size = "#arrayindexcount";
 
   // forward functor composition (1 argument)
-  typedef fun \circ (f:TYPE->TYPE, g:TYPE->TYPE):TYPE->TYPE => 
+  typefun \circ (f:TYPE->TYPE, g:TYPE->TYPE):TYPE->TYPE => 
     fun (T:TYPE):TYPE => f(g T)
   ;
 
   // reverse functor composition (1 argument)
-  typedef fun \odot (f:TYPE->TYPE, g:TYPE->TYPE):TYPE->TYPE => 
+  typefun \odot (f:TYPE->TYPE, g:TYPE->TYPE):TYPE->TYPE => 
     fun (T:TYPE):TYPE => g(f T)
   ;
 
@@ -501,20 +501,20 @@ instance[T:COMPACTLINEAR] RandomSequence[T] {
 open[T:COMPACTLINEAR] BoundRandomSequence[T];
 
 
-typedef fun n"`+" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_add",(x,y),UNITSUM);
-typedef fun n"`-" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_diff",(x,y),UNITSUM);
-typedef fun n"`*" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_mul",(x,y),UNITSUM);
-typedef fun n"`/" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_div",(x,y),UNITSUM);
-typedef fun n"`%" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_mod",(x,y),UNITSUM);
+typefun n"`+" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_add",(x,y),UNITSUM);
+typefun n"`-" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_diff",(x,y),UNITSUM);
+typefun n"`*" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_mul",(x,y),UNITSUM);
+typefun n"`/" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_div",(x,y),UNITSUM);
+typefun n"`%" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_mod",(x,y),UNITSUM);
 
-typedef fun n"_unitsum_min" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_min",(x,y),UNITSUM);
-typedef fun n"_unitsum_max" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_max",(x,y),UNITSUM);
-typedef fun n"_unitsum_gcd" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_gcd",(x,y),UNITSUM);
-typedef fun n"_unitsum_lcm" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_lcm",(x,y),UNITSUM);
+typefun n"_unitsum_min" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_min",(x,y),UNITSUM);
+typefun n"_unitsum_max" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_max",(x,y),UNITSUM);
+typefun n"_unitsum_gcd" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_gcd",(x,y),UNITSUM);
+typefun n"_unitsum_lcm" (x:UNITSUM,y:UNITSUM):UNITSUM => _typeop ("_unitsum_lcm",(x,y),UNITSUM);
 
-typedef fun n"`<" (x:UNITSUM,y:UNITSUM):BOOL=> _typeop ("_unitsum_lt",(x,y),BOOL);
-typedef fun n"`>" (x:UNITSUM,y:UNITSUM):BOOL=> _typeop ("_unitsum_lt",(y,x),BOOL);
-typedef fun n"`==" (x:UNITSUM,y:UNITSUM):BOOL=> x `< y and y `< x;
+typefun n"`<" (x:UNITSUM,y:UNITSUM):BOOL=> _typeop ("_unitsum_lt",(x,y),BOOL);
+typefun n"`>" (x:UNITSUM,y:UNITSUM):BOOL=> _typeop ("_unitsum_lt",(y,x),BOOL);
+typefun n"`==" (x:UNITSUM,y:UNITSUM):BOOL=> x `< y and y `< x;
 @
 // -----------------------------------------------------------------------------
 @h1 Category Theoretic Functional Operations

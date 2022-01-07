@@ -181,6 +181,23 @@ let full_add_typevar counter_ref sym_table sr table key value =
   with Not_found ->
     Hashtbl.add table key (NonFunctionEntry (mkentry counter_ref dfltivs value))
 
+let full_add_kindvar counter_ref sym_table sr table key value =
+  try
+    let entry = Hashtbl.find table key in
+    match entry with
+    | NonFunctionEntry (idx)
+    | FunctionEntry (idx :: _ ) ->
+        let sym = Flx_sym_table.find sym_table (Flx_typing.sye idx) in
+        Flx_exceptions.clierr2 sr sym.Flx_sym.sr (
+         "[build_tables] Duplicate non-function " ^ key ^ "<" ^
+         Flx_print.string_of_bid (Flx_typing.sye idx) ^ ">")
+
+    | FunctionEntry [] -> assert false
+  with Not_found ->
+    Hashtbl.add table key (NonFunctionEntry (mkentry counter_ref dfltivs value))
+
+
+
 
 let full_add_function counter_ref sym_table sr (vs:ivs_list_t) table key value =
 (*
@@ -246,6 +263,15 @@ Flx_print.string_of_tcon con);
   in
   ivs, con
 
+let make_iks ?(print=false) level counter_ref (ks: ks_list_t):iks_list_t = 
+  List.map (fun (kid,srt) ->
+    let n = fresh_bid counter_ref in
+    if print then
+      print_endline ("//  " ^ Flx_util.spaces level ^
+        Flx_print.string_of_bid n ^ " -> " ^ kid ^ 
+        " (kind variable) sort =" ^ Flx_print.str_of_sortcode srt);
+    kid,n,srt
+  ) ks
 
 (* this routine takes a partially filled unbound definition table,
   'sym_table' and a counter 'counter', and adds entries to the table
@@ -384,6 +410,7 @@ and build_table_for_dcl
   (* Make some shorthand functions *)
   let spc = Flx_util.spaces level in
   let make_ivs = make_ivs ~print:print_flag level counter_ref in
+  let make_iks = make_iks ~print:print_flag level counter_ref in
 
   if print_flag then
     print_endline (Flx_print.string_of_dcl level id seq vs dcl);
@@ -542,6 +569,16 @@ print_endline ("Adding type variable 7141!");
     end (fst ivs)
   in
   let add_tvars table = add_tvars' (Some symbol_index) table ivs in
+
+  let add_kvars' parent table (iks: iks_list_t) =
+    List.iter begin fun (kvid, index, srt) ->
+      let mt = srt in
+      (* Add the type variable to the symbol table. *)
+      add_symbol ~ivs:dfltivs index kvid sr (SYMDEF_kindvar mt);
+      full_add_kindvar counter_ref sym_table sr table kvid index;
+    end iks
+  in
+  let add_kvars table ks = add_kvars' (Some symbol_index) table ks in
 
   (* adds parameter to symbol table and lookup table as side effect
      returning original parameter
@@ -1201,6 +1238,22 @@ print_endline ("Has vs = " ^ string_of_bool (not has_novs));
 
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
+
+  | DCL_type_function (ks,t) ->
+(*
+print_endline ("Flx_symtab: add DCL_type_function " ^ id ^ "<" ^ string_of_int symbol_index^ ">["^Flx_print.string_of_ks ks^"] type=" ^ Flx_print.string_of_typecode t); 
+*)
+      let iks = make_iks ks in
+
+      (* Add the type alias to the sym_table. *)
+      add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_type_function (iks,t));
+
+      if access = `Public then add_unique pub_name_map id symbol_index;
+      add_unique priv_name_map id symbol_index;
+
+      (* Add the kind variables to the private symbol table. *)
+      add_kvars privtab iks
+
 
   | DCL_inherit qn ->
       (* Add the inherited typeclass to the dnfs. *)

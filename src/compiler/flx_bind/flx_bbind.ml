@@ -323,6 +323,7 @@ with _ -> print_endline ("PARENT BINDING FAILED CONTINUING ANYHOW");
    * pure declarations of functions.
    *)
 
+  | SYMDEF_kindvar _ -> ()
   | SYMDEF_typevar _ -> ()
 
   (* the root module doesn't generate anything YET. After the complete 
@@ -804,6 +805,33 @@ print_endline (" &&&&&& SYMDEF_instance calling BBIND_SYMBOL");
     let t = bt t in
     add_bsym None (bbdcl_newtype (bvs, t))
 
+  | SYMDEF_type_function (ks,t) -> 
+(*
+print_endline ("Binding type function .. ");
+*)
+    if get_structural_typedefs state then begin 
+(*
+print_endline ("NOT **** Adding typefun " ^ sym.Flx_sym.id ^"<"^ si symbol_index ^ "> = " ^ Flx_print.string_of_typecode t ^ " to bsym_table");
+*)
+       () 
+    end else begin
+(*
+print_endline ("TRYING TO BIND typefun " ^ sym.Flx_sym.id ^"<"^ si symbol_index ^ "> = " ^ Flx_print.string_of_typecode t );
+*)
+    let t = 
+      try bt t 
+      with exn ->
+        print_endline ("BINDING typedef " ^ sym.Flx_sym.id ^"<"^ si symbol_index ^ "> = " ^ 
+          Flx_print.string_of_typecode t ^ "  FAILED with " ^ Printexc.to_string exn);
+        raise exn
+    in
+(*
+print_endline ("Adding typefun " ^ sym.Flx_sym.id ^"<"^ si symbol_index ^ "> = " ^ Flx_btype.st t ^ " to bsym_table");
+*)
+    add_bsym None (bbdcl_nominal_type_alias (bvs, t))
+   end
+
+
   | SYMDEF_type_alias t ->
 (*
 print_endline ("Binding type alias .. ");
@@ -908,29 +936,45 @@ print_endline ("\n====================\nSetting type aliases to nominal\n=======
 print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
 *)
       begin match sym.Flx_sym.symdef with
+      | Flx_types.SYMDEF_type_function  (_,t) 
+      ->
+        begin try
+(*
+        print_endline ("Binding typefun " ^ sym.Flx_sym.id ^ "<"^string_of_int i^"> = " ^ string_of_typecode t);
+*)
+                begin try bbind_symbol state bsym_table_dummy i parent sym
+                with Not_found ->
+                  try match hfind "bbind" state.sym_table i with { Flx_sym.id=id } ->
+                    print_endline ("Binding error, Not_found thrown binding " ^ id ^ " index " ^
+                      string_of_bid i ^ " parent " ^ (match parent with | None -> "NONE" | Some p -> string_of_int p))
+                  with Not_found ->
+                    failwith ("Binding error, Not_found thrown binding unknown id with index " ^ string_of_bid i)
+                end
+        with _ -> ()
+        end
+
       | Flx_types.SYMDEF_type_alias  t
       ->
-begin try
+        begin try
 (*
-print_endline ("Binding typedef " ^ sym.Flx_sym.id ^ "<"^string_of_int i^"> = " ^ string_of_typecode t);
+        print_endline ("Binding typedef " ^ sym.Flx_sym.id ^ "<"^string_of_int i^"> = " ^ string_of_typecode t);
 *)
-        begin try bbind_symbol state bsym_table_dummy i parent sym
-        with Not_found ->
-          try match hfind "bbind" state.sym_table i with { Flx_sym.id=id } ->
-            print_endline ("Binding error, Not_found thrown binding " ^ id ^ " index " ^
-              string_of_bid i ^ " parent " ^ (match parent with | None -> "NONE" | Some p -> string_of_int p))
-          with Not_found ->
-            failwith ("Binding error, Not_found thrown binding unknown id with index " ^ string_of_bid i)
+                begin try bbind_symbol state bsym_table_dummy i parent sym
+                with Not_found ->
+                  try match hfind "bbind" state.sym_table i with { Flx_sym.id=id } ->
+                    print_endline ("Binding error, Not_found thrown binding " ^ id ^ " index " ^
+                      string_of_bid i ^ " parent " ^ (match parent with | None -> "NONE" | Some p -> string_of_int p))
+                  with Not_found ->
+                    failwith ("Binding error, Not_found thrown binding unknown id with index " ^ string_of_bid i)
+                end
+        with _ -> ()
         end
-with _ -> ()
-end
       | _ -> ()
       end
     end;
     incr counter
   done
   ;
-
 (*
   print_endline ("\n=====================\n TYPEDEFS before expansion\n=====================\n");
   Flx_bsym_table.iter (fun bid parent bsym ->
@@ -942,6 +986,7 @@ end
   ) bsym_table_dummy;  
   print_endline ("\n==========================================\n");
 *)
+
   Flx_bsym_table.iter (fun bid parent bsym ->
     let bbdcl = Flx_bsym.bbdcl bsym in
     let sr = Flx_bsym.sr bsym in
@@ -954,7 +999,6 @@ end
  
     | _ -> ()
   ) bsym_table_dummy;
-
 (*
   print_endline ("\n=====================\n TYPEDEFS after expansion\n=====================\n");
   Flx_bsym_table.iter (fun bid parent bsym ->
@@ -965,7 +1009,6 @@ end
     | _ -> ()
   ) bsym_table_dummy;  
 *)
-
 (*
   print_endline ("\n=====================\n VAR CACHE (function codomains) \n=====================\n");
   Hashtbl.iter (fun i t ->
@@ -1008,7 +1051,6 @@ end
 (*
   print_endline ("\n===================\nSetting type aliases to structura\n=======================\n");
 *)
-
   (* PASS 1, TYPE ONLY *)
   set_structural_typedefs state;
 
@@ -1029,7 +1071,6 @@ print_endline ("Fixing typeofs");
 (*
 print_endline ("Done fixing typeofs");
 *)
-
   let counter = ref start_counter in
   while !counter < !ref_counter do
     let i = !counter in

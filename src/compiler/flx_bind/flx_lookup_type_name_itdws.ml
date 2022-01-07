@@ -48,6 +48,9 @@ print_endline ("Handle type " ^ name ^ " ... bound type is " ^ sbt bsym_table t)
 *)
       t
 
+  | SYMDEF_type_function _ -> assert false
+
+  | SYMDEF_type_function _ 
   | SYMDEF_type_alias _ ->
 (*
 print_endline ("Lookup_type_name_in_table_dirs_with_sig: Handle type alias " ^ name ^ " ... binding type index " ^ string_of_int index);
@@ -125,6 +128,8 @@ let lookup_type_name_in_table_dirs_with_sig
    and the check needed here is on kinds. The only real solution is
    a special lookup_type_function_name_itdws routine
 *)
+    | SYMDEF_kindvar _ -> assert false
+
     | SYMDEF_typevar mt ->
       let mt = bmt "lookup_type_name_itdws" mt in
 (*
@@ -163,6 +168,10 @@ let lookup_type_name_in_table_dirs_with_sig
     (* an instance type is just like a type alias in phase 1 *)
     | SYMDEF_instance_type t ->
       Some (bt sr t)
+
+    | SYMDEF_type_function _ ->  
+      print_endline ("flx_lookup_type_name_itdws BUG");
+      assert false
 
     (* the effect of the binding depends on the mode for aliases, nominal or structural *)
     | SYMDEF_type_alias t -> 

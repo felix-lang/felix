@@ -14,9 +14,9 @@
 // move to separate file later.
 open class AbstractPointers
 {
-  typedef fun rptr (T:TYPE) : TYPE =>  (get: 1 -> T);
-  typedef fun wptr (T:TYPE) : TYPE =>  (set : T -> 0);
-  typedef fun rwptr (T:TYPE) : TYPE => (get: 1 -> T, set : T -> 0);
+  typefun rptr (T:TYPE) : TYPE =>  (get: 1 -> T);
+  typefun wptr (T:TYPE) : TYPE =>  (set : T -> 0);
+  typefun rwptr (T:TYPE) : TYPE => (get: 1 -> T, set : T -> 0);
 
   fun mkr[T] (p:&<T) => (get= { *p });
   fun mkw[T] (p:&>T) => (set = proc (v:T) { p<-v; });
@@ -109,7 +109,7 @@ open[T] Eq[cptr[T]];
 open[T] Tord[cptr[T]];
 
 //$ Special notation @T for  type of a C pointer.
-typedef fun n"@" (T:TYPE) : TYPE => cptr[T]; 
+typefun n"@" (T:TYPE) : TYPE => cptr[T]; 
 
 @h1 C Arrays
 A @{carray[T]}, with more suggestive shorthand notation @{+T},
@@ -120,7 +120,7 @@ is an incrementable, non-NULL pointer to a contiguous store.
 
 // For some reason this functor must be in global scope
 //$ Define prefix + notation.
-typedef fun tprefix_plus(T:TYPE) : TYPE => Carray::carray[T]; 
+typefun tprefix_plus(T:TYPE) : TYPE => Carray::carray[T]; 
 
 //$ A carray[T] = +T is an incrementable, non-NULL, pointer.
 open class Carray

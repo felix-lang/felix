@@ -350,7 +350,11 @@ and string_of_expr (e:expr_t) =
    11    as, all
 *)
 
-and str_of_kindcode k : string =
+and str_of_sortcode (s:sortcode_t) : string =
+  match s with
+  | SRT_kind -> "KIND"
+
+and str_of_kindcode (k:kindcode_t) : string =
   match k with
   | KND_type -> "TYPE"
   | KND_linear -> "LINEAR"
@@ -1133,6 +1137,18 @@ and string_of_plain_vs vs =
     (fun (name,tpat) -> string_of_id name ^ string_of_maybe_kindcode tpat)
   vs
 
+and string_of_ks ks =
+  catmap ", "
+    (fun (name,tpat) -> string_of_id name ^ str_of_sortcode tpat)
+  ks
+
+and string_of_iks ks =
+  catmap ", "
+    (fun (name,index, srt) -> string_of_id name ^ "<"^string_of_int index ^ ">:" ^str_of_sortcode srt)
+  ks
+
+
+
 and string_of_bvs' bvs =
   catmap ", " (fun (s, i,mt)-> s^"<" ^string_of_bid i^">:"^ sk mt) bvs
 
@@ -1454,6 +1470,12 @@ and string_of_statement level s =
     spaces level ^ "typedef " ^ string_of_id t1 ^ string_of_vs vs ^
     " = " ^
     string_of_typecode t2 ^ ";"
+
+  | STMT_type_function (_,t1,ks,t2) ->
+    spaces level ^ "typedef " ^ string_of_id t1 ^ string_of_ks ks ^
+    " = " ^
+    string_of_typecode t2 ^ ";"
+
 
   | STMT_inherit (_,name,vs,qn) ->
     spaces level ^ "inherit " ^ string_of_id name ^ string_of_vs vs ^
@@ -1894,6 +1916,10 @@ and string_of_symdef entry name vs =
   | SYMDEF_type_alias t ->
     "typedef " ^ string_of_id name ^ string_of_ivs vs ^" = " ^ st t ^ ";"
 
+  | SYMDEF_type_function (iks, t) ->
+    "typefun " ^ string_of_id name ^ "[" ^ string_of_iks iks ^"] = " ^ st t ^ ";"
+
+
   | SYMDEF_inherit qn ->
     "inherit " ^ string_of_id name ^ string_of_ivs vs ^" = " ^
     string_of_qualified_name qn ^ ";"
@@ -1944,6 +1970,9 @@ and string_of_symdef entry name vs =
 
   | SYMDEF_typevar (t) ->
     "typevar " ^ string_of_id name ^ string_of_ivs vs ^":"^ str_of_kindcode t ^ ";"
+
+  | SYMDEF_kindvar (t) ->
+    "kindvar " ^ string_of_id name ^  ":"^ str_of_sortcode t ^ ";"
 
   | SYMDEF_const (props,t,ct, reqs) ->
     string_of_properties props ^
@@ -2460,6 +2489,11 @@ and string_of_dcl level name seq vs (s:dcl_t) =
   | DCL_type_alias (t2) ->
     sl ^ "typedef " ^ string_of_id name ^ seq ^ string_of_vs vs ^
     " = " ^ st t2 ^ ";"
+
+  | DCL_type_function (ks, t2) ->
+    sl ^ "typefun " ^ string_of_id name ^ seq ^ "[" ^ string_of_ks ks ^ "]" ^
+    " = " ^ st t2 ^ ";"
+
 
   | DCL_inherit qn ->
     sl ^ "inherit " ^ string_of_id name ^ seq ^ string_of_vs vs ^

@@ -71,6 +71,7 @@ let sig_of_symdef symdef sr name i : typecode_t * typecode_t * ((string * expr_t
 
   | SYMDEF_const_ctor (_,r,_,_) -> `TYP_void sr,r,None
   | SYMDEF_nonconst_ctor (_,r,_,_,t) -> t,r,None
+  | SYMDEF_type_function (_,t) 
   | SYMDEF_type_alias t ->
 (*
     print_endline ("[sig_of_symdef] Found a typedef " ^ name);

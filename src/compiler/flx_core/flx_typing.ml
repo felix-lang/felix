@@ -30,13 +30,13 @@ let mktypelambda sr args return_type body =
 
 
 
-let mktypefun sr name vs args return_type body =
+let mktypefun sr name ks args return_type body =
   let body = mktypelambda sr args return_type body in
-  STMT_type_alias
+  STMT_type_function
   (
     sr,
     name,
-    vs,
+    ks,
     body
   )
 

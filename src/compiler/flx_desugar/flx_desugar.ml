@@ -375,6 +375,12 @@ print_endline ("Translating Lazy Declaration " ^ name);
     *)
     asms @ [Dcl (sr,name,None,access,vs,DCL_type_alias (typ))]
 
+  | STMT_type_function (sr,name,ks,typ) -> 
+(* print_endline ("flx_desugar: adding DCL_type_function " ^ name); *)
+    let asms,typ = Flx_desugar_expr.rett rex typ sr in
+    asms @ [Dcl (sr,name,None,access,dfltvs,DCL_type_function (ks,typ))]
+
+
   | STMT_inherit (sr,name,vs,qn) -> [Dcl (sr,name,None,access,vs,DCL_inherit qn)]
   | STMT_inherit_fun (sr,name,vs,qn) -> [Dcl (sr,name,None,access,vs,DCL_inherit_fun qn)]
 

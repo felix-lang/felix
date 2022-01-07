@@ -4,7 +4,7 @@
 //Check types:recursive
 //Check type functions:recursive
 
-typedef fun uncurry(t:TYPE):TYPE =>
+typefun uncurry(t:TYPE):TYPE =>
   typematch t with
   | ?head -> ?tail => head * uncurry tail
   | _ => t
@@ -19,7 +19,7 @@ var x: f567 = 1, (2L, 3.0f);
 
 typedef mylist = 1 + int * mylist;
 
-typedef fun lst(t1:TYPE, t2:TYPE ):TYPE=> 1 + t1 * lst (t2,t1);
+typefun lst(t1:TYPE, t2:TYPE ):TYPE=> 1 + t1 * lst (t2,t1);
 
 var y1: lst (int,long);
 var y2:  1 + int * (1 + long * x)  as x;

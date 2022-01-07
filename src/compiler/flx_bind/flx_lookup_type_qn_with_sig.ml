@@ -269,6 +269,7 @@ print_endline "Found function entry";
 
         let sym = get_data state.sym_table index in
         begin match sym.Flx_sym.symdef with
+        | SYMDEF_type_function (_,(`TYP_typefun (args,ret,body) as tf))
         | SYMDEF_type_alias (`TYP_typefun (args,ret,body) as tf)->
           print_endline ("Got type function " ^ string_of_typecode body); 
           let btf = 

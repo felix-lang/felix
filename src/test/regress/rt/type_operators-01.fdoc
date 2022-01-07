@@ -19,7 +19,7 @@ var a:tt = (1L, 2L, (3,4L));
 print a.(0); print " "; print a.(1); print " ";
 print a.(2).(0); print " "; print a.(2).(1); endl;
 
-typedef fun domainf (t:TYPE):TYPE => typematch t with | ?aa -> ?bb => aa endmatch;
+typefun domainf (t:TYPE):TYPE => typematch t with | ?aa -> ?bb => aa endmatch;
 typedef domains [t] = typematch t with | ?aa -> ?bb => aa endmatch;
 typedef il = int -> long;
 typedef ityf = domainf il;

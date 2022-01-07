@@ -5,7 +5,7 @@
 //Check polymorphism
 //Check types:higher order
 
-typedef fun pair (t:TYPE):TYPE => t * t;
+typefun pair (t:TYPE):TYPE => t * t;
 typedef Pair[t] = t * t;
 typedef PAIR = fun (t:TYPE):TYPE =>Pair[t];
 

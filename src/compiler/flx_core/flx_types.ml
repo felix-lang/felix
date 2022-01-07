@@ -18,6 +18,7 @@ open Flx_ast
 
 type plain_ivs_list_t = (Flx_id.t * bid_t * kindcode_t) list
 type ivs_list_t = plain_ivs_list_t * vs_aux_t
+type iks_list_t = (Flx_id.t * bid_t * sortcode_t) list
 
 let dfltivs : ivs_list_t = [], Flx_ast.dfltvs_aux
 
@@ -64,6 +65,7 @@ type dcl_t =
   (* variables *)
   | DCL_value of         typecode_t * value_kind_t
   | DCL_type_alias of    typecode_t
+  | DCL_type_function of  ks_list_t *  typecode_t
   | DCL_inherit of       qualified_name_t
   | DCL_inherit_fun of   qualified_name_t
 
@@ -113,6 +115,7 @@ type symbol_definition_t =
   | SYMDEF_abs of type_qual_t list * Flx_code_spec.t * named_req_expr_t
   | SYMDEF_parameter of  param_kind_t * typecode_t
   | SYMDEF_typevar of kindcode_t (* usually KND_type *)
+  | SYMDEF_kindvar of sortcode_t (* usually KND_type *)
   | SYMDEF_axiom of params_t * axiom_method_t
   | SYMDEF_lemma of params_t * axiom_method_t
   | SYMDEF_reduce of (ivs_list_t * parameter_t list * expr_t * expr_t) list
@@ -138,6 +141,7 @@ type symbol_definition_t =
   | SYMDEF_struct of (Flx_id.t * typecode_t) list
   | SYMDEF_cstruct of (Flx_id.t * typecode_t) list * named_req_expr_t 
   | SYMDEF_type_alias of typecode_t
+  | SYMDEF_type_function of iks_list_t * typecode_t
   | SYMDEF_inherit of qualified_name_t
   | SYMDEF_inherit_fun of qualified_name_t
   | SYMDEF_instance of qualified_name_t

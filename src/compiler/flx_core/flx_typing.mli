@@ -30,7 +30,7 @@ val mktypelambda:
 val mktypefun:
   Flx_srcref.t ->
   Flx_id.t ->
-  vs_list_t ->
+  ks_list_t ->
   (Flx_id.t * kindcode_t) list list ->
   kindcode_t ->
   typecode_t ->

@@ -58,7 +58,7 @@ instance[T with Str[T]] Str[success[T]]
 @
 Here is where things get interesting:
 @felix
-typedef fun Fallible (t:TYPE) : TYPE => success[t] ;
+typefun Fallible (t:TYPE) : TYPE => success[t] ;
 @
 This is a type function. <code>Fallible</code> is a function in one
 type argument with domain and codomain both <code>TYPE</code>. The

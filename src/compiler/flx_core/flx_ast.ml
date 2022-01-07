@@ -63,6 +63,9 @@ and kindcode_t =
   | KND_tpattern of typecode_t
   | KND_special of string
 
+and sortcode_t = 
+  | SRT_kind
+
 (** type of a type *)
 and typecode_t = [
   | `TYP_bool of bool (* KND_bool *)
@@ -140,6 +143,7 @@ and vs_aux_t = {
 
 and plain_vs_list_t = (Flx_id.t * kindcode_t) list
 and vs_list_t = plain_vs_list_t * vs_aux_t
+and ks_list_t = (Flx_id.t * sortcode_t) list
 
 and axiom_kind_t = Axiom | Lemma
 and axiom_method_t = Predicate of expr_t | Equation of expr_t * expr_t
@@ -528,6 +532,7 @@ and statement_t =
       (Flx_id.t * typecode_t) list *
       raw_req_expr_t
   | STMT_type_alias of Flx_srcref.t * Flx_id.t * vs_list_t * typecode_t
+  | STMT_type_function of Flx_srcref.t * Flx_id.t * ks_list_t * typecode_t
   | STMT_inherit of Flx_srcref.t * Flx_id.t * vs_list_t * qualified_name_t
   | STMT_inherit_fun of Flx_srcref.t * Flx_id.t * vs_list_t * qualified_name_t
 
@@ -919,6 +924,7 @@ let src_of_stmt (e : statement_t) = match e with
   | STMT_var_decl (s,_,_,_,_)
   | STMT_ref_decl (s,_,_,_,_)
   | STMT_type_alias (s,_,_,_)
+  | STMT_type_function (s,_,_,_)
   | STMT_inherit (s,_,_,_)
   | STMT_inherit_fun (s,_,_,_)
   | STMT_nop (s,_)

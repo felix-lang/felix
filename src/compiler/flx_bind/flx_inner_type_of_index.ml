@@ -85,6 +85,14 @@ if index = 37461 then print_env env;
       failwith ("Woops inner_type_of_index found inherit fun!! " ^
         string_of_bid index)
   | SYMDEF_instance_type t
+  | SYMDEF_type_function (_,t) ->
+(*
+print_endline ("bind_type_index finds: Type alias name " ^ sym.Flx_sym.id);
+  NOTE: this routine is finding the type of a type, that is, a metatype,
+  its a bit of a hack!
+*)
+print_endline ("Inner type of index trying to calculate meta type of type function");
+assert false
   | SYMDEF_type_alias t ->
 (*
 print_endline ("bind_type_index finds: Type alias name " ^ sym.Flx_sym.id);
