@@ -151,7 +151,7 @@ print_endline ("Calculated isrec= " ^ if isrec then "true" else "false");
             assert false
           end
         with Not_found ->
-          print_endline ("Flx_type_fun: CANNOT FIND BOUND SYMBOL IN SYMBOL TABLE");
+          print_endline ("Flx_type_fun: CANNOT FIND BOUND SYMBOL "^ string_of_int index^ " IN SYMBOL TABLE");
           assert false
         end
       | _ -> t1
