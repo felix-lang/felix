@@ -23,6 +23,56 @@ open Flx_btype_occurs
 open Flx_btype_subst
 open Flx_bid
 
+
+(* This module produces a reference to either a nominal type, or a type alias,
+of the form 
+
+  BTYP_inst or 
+  BTYP_vinst or 
+  BTYP_typevar or 
+  BTYP_finst
+
+
+The referenced type need not yet be in the bound symbol table.
+
+The generated term BTYP_inst(`Nominal, index, ts, kind) is not replaceable.
+The ts and kind expressions might be reducible, but the term itself cannot
+be replaced. It might be elided by an optimisation. In the back end,
+it generates a reference to a C++ type, either a primitive like int,
+a generated C++ class, or is a binding to an extant C++ class, possibly
+a template.
+
+On the other hand `Alias references are transient and must be removed by
+expansion of typedefs and replaced by their bound representation. However
+this may not be available at the time this routine runs.
+
+Removal of aliases is basically substitution with one special case,
+recursion. A recursive expansion must be replaced by a fixpoint term.
+
+There are THREE cases for recursive expansion:
+
+1. A simple BTYP_inst (`Alias, ..) term is replaced by the bound
+definition it refers to unless the term is in the trail, in which
+case a fixpoint term is used instead.
+
+2. A recursive function call on the function's parameter is replaced
+by a fixpoint term.
+
+3. Polymorphic recursion is expanded up to a hard limit. This is not idea
+and should be fixed. Recursions can converge to a fixpoint, converge
+to a cycle, or diverge. A cyclic convergence should expand to a fixpoint
+so there is only divergence left to handle. 
+
+IN THEORY I believe any bounded recursions must terminate in a single
+fixpoint, that is, because of the bound, a limited number of expansions
+can take place until some term is repeated, generating a fixpoint.
+Therefore a rigorous proof of divergencee should lead to an error,
+otherwise expand up to the limit.
+
+NOTE: these notes partly belong in another module.
+
+*)
+
 let debug = false 
 
 let rec bind_type_index 
@@ -30,194 +80,50 @@ let rec bind_type_index
   inner_bind_type
   state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts mkenv
 =
-(*
-if index = 37335 then 
-  print_endline "**** Bind_type_index, special 37335";
-if index = 37335 then 
-  print_endline (" **** RAW ts =h ["^ catmap ", " (sbt bsym_table) ts^ "]");
-*)
+  (* fixup the fixpoints *)
   let ts = adjust_ts state.sym_table bsym_table sr index ts in
-(*
-if index = 37335 then 
-  print_endline (" **** Adjusted ts =h ["^ catmap ", " (sbt bsym_table) ts^ "]");
-*)
-  (*
-  print_endline ("Adjusted ts =h ["^ catmap ", " (sbt bsym_table) ts^ "]");
-  *)
   let bt t =
-      (*
-      print_endline "Making params .. ";
-      *)
-      let vs,_ = find_vs state.sym_table bsym_table index in
-(*
-if index = 37335 then begin
-        print_endline (" **** preparing to bind type " ^ string_of_typecode t);
-        print_endline (" **** making params for call to bind type");
-        print_endline (" **** vs=" ^
-          catmap "," (fun (s,i,_)-> s ^ "<" ^ string_of_bid i ^ ">") vs);
-        print_endline (" **** ts=" ^ catmap "," (sbt bsym_table) ts);
-end;
-*)
-      if List.length vs <> List.length ts then 
+    (* get hold of the type variable parameters *)
+    let vs,_ = find_vs state.sym_table bsym_table index in
+    (* check we have the right number of input arguments *)
+    if List.length vs <> List.length ts then 
       begin
         print_endline ("vs=" ^
           catmap "," (fun (s,i,_)-> s ^ "<" ^ string_of_bid i ^ ">") vs);
         print_endline ("ts=" ^ catmap "," (sbt bsym_table) ts);
         failwith "len vs != len ts"
       end
-      else
-      (* I think this is the wrong idea: params is for type function parameters! *)
-      (* let params = List.map2 (fun (s,i,_) t -> s,t) vs ts in *)
-      (* so lets try with out them *)
-      let params = [] in
-(*
-if index = 37335 then begin
-  print_endline (" **** params = " ^ catmap "," (fun (s,t) -> s ^ " --> " ^ sbt bsym_table t) params);
-end;
-*)
-      (*
-      let params = make_params state.sym_table sr index ts in
-      *)
-      (*
-      print_endline ("params made");
-      *)
-      let env:env_t = mkenv index in
-      let t =
-        bind_type' state bsym_table env
-        { rs with type_alias_fixlist = (index,rs.depth):: rs.type_alias_fixlist }
-        sr t params mkenv
-      in
-(*
-if index = 37335 then begin
-  print_endline (" **** Bound type is " ^ sbt bsym_table t);
-  print_endline (" **** SHOULD HAVE VARIABLES REPLACED!");
-end;
-*)
-(* DO A HACK NOW, cause params doesn't propagate *)
-     let t = tsubst sr (List.map (fun (s,i,mt) -> s,i,Flx_btype.bmt "Flx_bind_type_index" mt) vs) ts t in 
-(*
-if index = 37335 then begin
-  print_endline (" **** AFTER TSUBST Bound type is " ^ sbt bsym_table t);
-  print_endline (" **** SHOULD HAVE VARIABLES REPLACED!");
-end;
-*)
-(*
-        print_endline ("Unravelled and bound is " ^ sbt bsym_table t);
-        *)
-        (*
-        let t = beta_reduce state.counter sr t in
-        *)
-        (*
-        print_endline ("Beta reduced: " ^ sbt bsym_table t);
-        *)
-        t
+    ;
+    let env:env_t = mkenv index in
+    let params = [] in
+    let t =
+      bind_type' state bsym_table env
+      { rs with type_alias_fixlist = (index,rs.depth):: rs.type_alias_fixlist }
+      sr t params mkenv
+    in
+    (* replace type variable parameters with arguments *)
+    let t = tsubst sr (List.map (fun (s,i,mt) -> s,i,Flx_btype.bmt "Flx_bind_type_index" mt) vs) ts t in 
+    t
   in
-(*
-  print_endline
-  (
-    "BINDING INDEX " ^ string_of_int index ^
-    " with ["^ catmap ", " (sbt bsym_table) ts^ "]"
-  );
-*)
-  (*
-  print_endline ("type alias fixlist is " ^ catmap ","
-    (fun (i,j) -> si i ^ "(depth "^si j^")") type_alias_fixlist
-  );
-  *)
+
+  (* check for recursion *)
   if List.mem_assoc index rs.type_alias_fixlist
   then begin
-(*
-    print_endline (
-      "Making fixpoint for Recursive type alias " ^
-      (
-        match get_data state.sym_table index with { Flx_sym.id=id;sr=sr}->
-          id ^ " defined at " ^
-          Flx_srcref.short_string_of_src sr
-      )
-    );
-*)
     let mt = Flx_guess_meta_type.guess_meta_type state bsym_table bt index in
-print_endline ("Flx_bind_type_index: fixpoint, meta type calculated by guess_meta_type!"); 
+    print_endline ("Flx_bind_type_index: fixpoint, meta type calculated by guess_meta_type!"); 
     let fixated = btyp_fix ((List.assoc index rs.type_alias_fixlist)-rs.depth) mt in
-(*
-print_endline ("flx_lookup: bind-type-index returning fixated " ^ sbt bsym_table fixated);
-*)
     fixated
   end
+
+  (* no recursion *)
   else begin
-  (*
-  print_endline "bind_type_index";
-  *)
   let parent = Flx_sym_table.find_parent state.sym_table index in
   match get_data state.sym_table index with
   | { Flx_sym.id=id; sr=sr; vs=vs; dirs=dirs; symdef=entry } ->
-    (*
-    if List.length vs <> List.length ts
-    then
-      clierrx "[flx_bind/flx_lookup.ml:1496: E102] " sr
-      (
-        "[bind_type_index] Wrong number of type arguments for " ^ id ^
-        ", expected " ^
-        si (List.length vs) ^ " got " ^ si (List.length ts)
-      );
-    *)
     match entry with
     | SYMDEF_kindvar _ -> assert false
     | SYMDEF_typevar mt ->
-      (* HACK! We will assume metatype are entirely algebraic,
-        that is, they cannot be named and referenced, we also
-        assume they cannot be subscripted .. the bt routine
-        that works for type aliases doesn't seem to work for
-        metatypes .. we get vs != ts .. ts don't make sense
-        for type variables, only for named things ..
-      *)
-      (* WELL the above is PROBABLY because we're calling
-      this routine using sye function to strip the view,
-      so the supplied ts are wrong ..
-      *)
-      (*
-      print_endline ("CALCULATING TYPE VARIABLE METATYPE " ^ si index ^ " unbound=" ^ string_of_typecode mt);
-      *)
-      (* weird .. a type variables parent function has an env containing
-      the type variable .. so we need ITS parent for resolving the
-      meta type ..??
-
-      No? We STILL get an infinite recursion???????
-      *)
-      (*
-      print_endline ("type variable index " ^ si index);
-      *)
-(*
-      let env = match parent with
-        | Some parent ->
-          (*
-          print_endline ("It's parent is " ^ si parent);
-          *)
-          (*
-          let {parent=parent} = hfind "lookup" state.sym_table parent in
-          begin match parent with
-          | Some parent ->
-             print_endline ("and IT's parent is " ^ si parent);
-          *)
-            let mkenv i = Flx_name_lookup.mk_bare_env state.sym_table i in
-            mkenv parent
-          (*
-          | None -> []
-          end
-          *)
-        | None -> []
-      in
-*)
       let mt = bmt "bind_type_index" mt in
-      (*
-      print_endline ("Bound metatype is " ^ sbt bsym_table mt);
-      let mt = cal_assoc_type state sr mt in
-      print_endline ("Assoc type is " ^ sbt bsym_table mt);
-      *)
-(*
-if index = 7141 then
-print_endline ("Flx_bind_type_index.Binding type variable " ^ si index ^ ", kind=" ^ Flx_kind.sk mt);
-*)
       btyp_type_var (index,mt)
 
     (* type alias RECURSE *)
@@ -228,37 +134,22 @@ print_endline ("Flx_bind_type_index.Binding type variable " ^ si index ^ ", kind
       t
 
 
-    | SYMDEF_type_function (iks,t) -> 
+    | SYMDEF_type_function (iks,t) ->
 (*
 print_endline ("Bind type index, trying to bind type function " ^id ^ "<" ^string_of_int index ^ "> = " ^ string_of_typecode t);
 *)
     begin try
-      let bsym = Flx_bsym_table.find bsym_table index in
-      let bbdcl = Flx_bsym.bbdcl bsym in
-      begin match bbdcl with
-      | BBDCL_structural_type_alias (bvs, alias) ->
-        let salias = Flx_btype_subst.tsubst sr bvs ts alias in
-(*
-        print_endline ("Bind type index: STRUCTURAL Unravelling type alias " ^ id ^ " index=" ^ si index ^ " to " ^ Flx_btype.st salias);
-*)
-        salias
-      | BBDCL_nominal_type_alias (bvs, alias) ->
-(*
-        print_endline ("Bind type index: NOMINAL bind type alias " ^ id ^ " index=" ^ si index ^ " to " ^ Flx_btype.st alias);
-*)
-        let k = Flx_btype_kind.metatype sr alias in
-        let t = btyp_inst (index,ts,k) in
+      let t = bt t in
+      let k = Flx_btype_kind.metatype sr t in
+        let dom,cod = match k with 
+        | KIND_function (dom,cod) -> dom, cod
+        | _ -> assert false
+        in
+        let t = btyp_finst (index,[],dom,cod) in
         t
-
-      | _ -> failwith ("Flx_bind_type expected type alias in bound symbol table " ^ id);
-      end
-    with Not_found ->
-      let k = Flx_guess_meta_type.guess_metatype sr t in
-print_endline ("Flx_bind_type_index: btyp_inst, meta type calculated by guess_metatype!"); 
-      let t = btyp_inst (index,ts,k) in 
-      print_endline ("Bind type index: INITIAL nominalising type alias " ^ id ^ 
-       " index=" ^ si index ^ " to " ^ Flx_btype.st t ^ ", kind=" ^ Flx_kind.sk k);
-      t
+    with Not_found -> 
+      print_endline ("Failure binding type function body " ^ string_of_typecode t);
+      assert false
     end
 
 
@@ -277,13 +168,19 @@ print_endline ("Bind type index, trying to bind " ^id ^ "<" ^string_of_int index
           Flx_btype.st salias);
 *)
         salias
+
+      (* This case would not normally happen, HOWEVER it MAY be the case a nominal
+         type record is generated for a type alias sometimes. We should
+         check this CANNOT occur. At the moment it definitely DOES occur and that
+         needs to be fixed.
+      *)
       | BBDCL_nominal_type_alias (bvs, alias) ->
 (*
-        print_endline ("Bind type index: NOMINAL bind type alias " ^ id ^ " index=" ^ si index ^ " to " ^
+        print_endline ("ERROR! [Bind type index]: NOMINAL symbol table entry found for type alias " ^ id ^ " index=" ^ si index ^ " to " ^
           Flx_btype.st alias);
 *)
         let k = Flx_btype_kind.metatype sr alias in
-        let t = btyp_inst (index,ts,k) in
+        let t = btyp_inst (`Alias, index,ts,k) in
         t
 
       | _ -> failwith ("Flx_bind_type expected type alias in bound symbol table " ^ id);
@@ -293,7 +190,7 @@ print_endline ("Bind type index, trying to bind " ^id ^ "<" ^string_of_int index
 (*
 print_endline ("Flx_bind_type_index: btyp_inst, meta type calculated by guess_metatype!"); 
 *)
-      let t = btyp_inst (index,ts,k) in 
+      let t = btyp_inst (`Alias, index,ts,k) in 
 (*
       print_endline ("Bind type index: INITIAL nominalising type alias " ^ id ^ 
        " index=" ^ si index ^ " to " ^ Flx_btype.st t ^ ", kind=" ^ Flx_kind.sk k);
@@ -302,7 +199,7 @@ print_endline ("Flx_bind_type_index: btyp_inst, meta type calculated by guess_me
     end
 
     | SYMDEF_abs _ ->
-      btyp_inst (index,ts,Flx_kind.KIND_type)
+      btyp_inst (`Nominal, index,ts,Flx_kind.KIND_type)
 
     | SYMDEF_virtual_type  ->
       btyp_vinst (index,ts,Flx_kind.KIND_type)
@@ -315,15 +212,15 @@ print_endline ("Flx_bind_type_index: btyp_inst, meta type calculated by guess_me
 (*
 print_endline ("bind type index, struct thing " ^ si index ^ " ts=" ^ catmap "," (sbt bsym_table) ts);
 *)
-      btyp_inst (index,ts,Flx_kind.KIND_type)
+      btyp_inst (`Nominal,index,ts,Flx_kind.KIND_type)
 
 
     (* allow binding to type constructors now too .. *)
     | SYMDEF_const_ctor (uidx,ut,idx,vs') ->
-      btyp_inst (index,ts,Flx_kind.KIND_type)
+      btyp_inst (`Nominal, index,ts,Flx_kind.KIND_type)
 
     | SYMDEF_nonconst_ctor (uidx,ut,idx,vs',argt) ->
-      btyp_inst (index,ts,Flx_kind.KIND_type)
+      btyp_inst (`Nominal, index,ts,Flx_kind.KIND_type)
 
     | SYMDEF_typeclass 
     | SYMDEF_module 

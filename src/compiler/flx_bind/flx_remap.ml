@@ -50,6 +50,7 @@ let remap_bbdcl offset bbdcl =
     List.map (fun (i, ts) -> remap_bid i, List.map remap_btype ts) breqs
   in
   match bbdcl with
+  | BBDCL_type_function _ -> assert false
   | BBDCL_nominal_type_alias _ -> assert false
   | BBDCL_structural_type_alias _ -> assert false
   | BBDCL_label s -> bbdcl_label s

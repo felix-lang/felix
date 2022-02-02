@@ -73,7 +73,7 @@ let rec uses_btype add bsym_table count_inits t =
  
   (* We only care about insts. *)
   match t with
-  | BTYP_inst (i,ts,_) ->
+  | BTYP_inst (`Nominal, i,ts,_) ->
       add i;
       List.iter f_btype ts
 

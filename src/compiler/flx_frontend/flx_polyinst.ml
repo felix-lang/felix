@@ -38,7 +38,7 @@ let flat_poly_fixup_type syms bsym_table polyinst sr t =
       end
     | _ -> assert false; 
     end
-  | BTYP_inst (i,ts,_) ->
+  | BTYP_inst (`Nominal,i,ts,_) ->
     let parent,bsym = Flx_bsym_table.find_with_parent bsym_table i in
     if debug then
     print_endline ("Inst: flat_poly_fixup_type is using polyinst to instantiate type " ^ Flx_bsym.id bsym ^
@@ -50,7 +50,7 @@ let flat_poly_fixup_type syms bsym_table polyinst sr t =
       if debug then  
       print_endline ("Inst: OTHER TYPE");
       let i',ts' = polyinst sr i ts in
-      let t' = btyp_inst (i',ts',Flx_kind.KIND_type) in
+      let t' = btyp_inst (`Nominal, i',ts',Flx_kind.KIND_type) in
       if debug then
       print_endline ("poly_fixup_type: " ^ Flx_monodebug.showts bsym_table i ts ^ " --> " ^ Flx_monodebug.showts bsym_table i' ts');
       t'

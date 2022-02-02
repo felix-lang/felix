@@ -23,6 +23,15 @@ let str_of_pmode  = function
   | `W -> "W"
   | `N -> "NULL"
 
+type instkind_t = [
+  | `Nominal (* nominal type: primitive or user defined *)
+  | `Alias (* type alias, to be eliminated *)
+]
+
+let str_of_instkind = function
+  | `Nominal -> "Nominal"
+  | `Alias -> "Alias"
+ 
 type btpattern_t = {
   pattern: t;
 
@@ -44,7 +53,8 @@ and t =
   | BTYP_sum of t list
   | BTYP_compactsum of t list
   | BTYP_unitsum of int
-  | BTYP_inst of bid_t * t list * Flx_kind.kind
+  | BTYP_inst of instkind_t * bid_t * t list * kind (* type instance with type args *)
+  | BTYP_finst of bid_t * kind list * kind * kind (* type function instance with kind args, domain, codomain kinds  *)
   | BTYP_vinst of bid_t * t list * Flx_kind.kind
   | BTYP_intersect of t list
   | BTYP_tuple of t list
@@ -120,7 +130,8 @@ let flat_iter
       let unitrep = BTYP_tuple [] in
       for i = 1 to k do f_btype unitrep done
   | BTYP_intersect ts -> List.iter f_btype ts
-  | BTYP_inst (i,ts,mt) -> f_bid i; List.iter f_btype ts
+  | BTYP_inst (it, i,ts,mt) -> f_bid i; List.iter f_btype ts
+  | BTYP_finst (i,ks,dom, cod) -> f_bid i (* no iteration of kinds yet *)
   | BTYP_vinst (i,ts,mt) -> f_bid i; List.iter f_btype ts
   | BTYP_tuple ts -> List.iter f_btype ts
   | BTYP_compacttuple ts -> List.iter f_btype ts
@@ -274,7 +285,8 @@ and str_of_btype typ =
   | BTYP_sum ts -> "BTYP_sum(" ^ ss ts ^")"
   | BTYP_compactsum ts -> "BTYP_compactsum(" ^ ss ts ^")"
   | BTYP_unitsum n -> string_of_int n
-  | BTYP_inst (i,ts,mt) -> "BTYP_inst("^string_of_int i^"["^ss ts^"]:"^Flx_kind.sk mt^")"
+  | BTYP_inst (it, i,ts,mt) -> "BTYP_inst("^str_of_instkind it ^","^string_of_int i^"["^ss ts^"]:"^Flx_kind.sk mt^")"
+  | BTYP_finst (i,ks,dom,cod) -> "BTYP_finst("^string_of_int i^"["^sks ks^"]:"^sk dom^"->"^sk cod^")"
   | BTYP_vinst (i,ts,mt) -> "BTYP_vinst("^string_of_int i^"["^ss ts^"]:"^Flx_kind.sk mt^")"
   | BTYP_tuple ts -> "BTYP_tuple(" ^ ss ts ^ ")"
   | BTYP_intersect ts -> "BTYP_intersect(" ^ ss ts ^ ")"
@@ -353,7 +365,7 @@ let rec islinear_type t =
   | BTYP_compactarray _
     -> true
 
-  | BTYP_inst (_,_,k)
+  | BTYP_inst (_,_,_,k)
   | BTYP_typeop (_,_,k)
   | BTYP_type_var (_,k) -> kind_ge2 KIND_compactlinear k
 
@@ -461,7 +473,7 @@ let complete_type t =
     | BTYP_fix (i,_) when (-i) > depth -> raise (Free_fixpoint t')
     | BTYP_type_apply (a,b) -> uf a;uf b
     | BTYP_type_map (a,b) -> uf a;uf b
-    | BTYP_inst (i,ts,mt) -> List.iter uf ts
+    | BTYP_inst (_,i,ts,mt) -> List.iter uf ts
     | BTYP_vinst (i,ts,mt) -> List.iter uf ts
     | BTYP_type_function (p,r,b) ->
         uf b
@@ -589,14 +601,17 @@ let btyp_compactsum ts =
   end
 
 
-let btyp_inst (bid, ts,mt) =
-  BTYP_inst (bid, ts,mt)
+let btyp_inst (it,bid, ts,mt) =
+  BTYP_inst (it,bid, ts,mt)
+
+let btyp_finst (bid, ks,dom, cod) =
+  BTYP_finst (bid, ks,dom,cod)
 
 let btyp_vinst (bid, ts,mt) =
   BTYP_vinst (bid, ts,mt)
 
 
-let btyp_int () = btyp_inst (Flx_concordance.flx_int, [], Flx_kind.kind_type)
+let btyp_int () = btyp_inst (`Nominal,Flx_concordance.flx_int, [], Flx_kind.kind_type)
 
 (** Construct a BTYP_array type. *)
 let btyp_array (t, n) =
@@ -1027,7 +1042,8 @@ let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
     | BTYP_tuple [] -> BTYP_unitsum k
     | _ -> BTYP_sum (Flx_list.repeat mapped_unit k)
     end
-  | BTYP_inst (i,ts,mt) -> btyp_inst (f_bid i, List.map f_btype ts,mt)
+  | BTYP_inst (it,i,ts,mt) -> btyp_inst (it,f_bid i, List.map f_btype ts,mt)
+  | BTYP_finst (i,ks,dom,cod) -> btyp_finst (f_bid i, ks, dom,cod)
   | BTYP_vinst (i,ts,mt) -> btyp_vinst (f_bid i, List.map f_btype ts,mt)
   | BTYP_intersect ts -> btyp_intersect (List.map f_btype ts)
   | BTYP_tuple ts -> btyp_tuple (List.map f_btype ts)
@@ -1307,7 +1323,7 @@ and unfold msg t =
         raise (Free_fixpoint t')
     | BTYP_type_apply (a,b) -> btyp_type_apply (uf a,uf b)
     | BTYP_type_map (a,b) -> btyp_type_map (uf a,uf b)
-    | BTYP_inst (i,ts,mt) -> btyp_inst (i,List.map uf ts,mt)
+    | BTYP_inst (it,i,ts,mt) -> btyp_inst (it,i,List.map uf ts,mt)
     | BTYP_vinst (i,ts,mt) -> btyp_vinst (i,List.map uf ts,mt)
     | BTYP_type_function (p,r,b) ->
         btyp_type_function (p,r,uf b)
@@ -1345,4 +1361,14 @@ let contains_uniq t =
     | _ -> () (* functions, pointers, etc, are ignored *)
   in
   try aux t; false with Not_found -> true 
+
+let rec contains_alias' t : unit =
+  match t with
+  | BTYP_inst (`Alias, _,_,_) -> raise Not_found 
+  | BTYP_inst (_, _,ts,_) -> List.iter contains_alias' ts
+  | t -> flat_iter ~f_btype:contains_alias' t
+
+let contains_alias t : bool = 
+  try contains_alias' t; false with | Not_found -> true 
+
 

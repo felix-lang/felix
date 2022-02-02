@@ -66,15 +66,19 @@ let rec lookup_qn_with_sig'
   qn
   signs
 in
-  (*
-  print_endline ("[lookup_qn_with_sig] " ^ string_of_qualified_name qn);
+(*
+  print_endline ("[lookup_qn_with_sig'] " ^ string_of_qualified_name qn);
   print_endline ("sigs = " ^ catmap "," (sbt bsym_table) signs);
   print_endline ("expr_fixlist is " ^
     catmap ","
     (fun (e,d) -> string_of_expr e ^ " [depth " ^si d^"]")
     rs.expr_fixlist
   );
-  *)
+*)
+  let signs = List.map (Flx_beta.beta_reduce "[lookup_qn_with_sig]" state.counter bsym_table sra) signs in
+(*
+  print_endline ("beta reduced sigs = " ^ catmap "," (sbt bsym_table) signs);
+*)
   let bt sr t =
     (*
     print_endline "NON PROPAGATING BIND TYPE";

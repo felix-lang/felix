@@ -224,7 +224,7 @@ let rec gen_type_name syms bsym_table (index,typ) =
     *)
 
 
-  | BTYP_inst (i,ts,_) ->
+  | BTYP_inst (`Nominal,i,ts,_) ->
     let bsym =
       try Flx_bsym_table.find bsym_table i
       with _ -> failwith ("[gen_type_name] can't find type" ^ string_of_bid i)
@@ -499,7 +499,7 @@ let rec gen_type syms bsym_table (index,typ) =
     "};\n"
 
 
-  | BTYP_inst (i,ts,_) ->
+  | BTYP_inst (`Nominal,i,ts,_) ->
     let bsym =
       try Flx_bsym_table.find bsym_table i
       with _ -> failwith ("[gen_type_name] can't find type" ^ string_of_bid i)

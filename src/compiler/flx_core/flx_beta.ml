@@ -170,9 +170,11 @@ print_endline ("Fixpoint adjust " ^ sbt bsym_table t);
 *)
   Flx_btype_rec.adjust_fixpoint t
 
+(*
 and mk_prim_type_inst i args =
   print_endline "MK_PRIM_TYPE";
   btyp_inst (i,args, kind_type)
+*)
 
 and beta_reduce calltag counter bsym_table sr t1 =
 (*
@@ -321,7 +323,8 @@ print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
 
   | BTYP_tuple_cons (t1,t2) -> btyp_tuple_cons (br t1) (br t2)
   | BTYP_tuple_snoc (t1,t2) -> btyp_tuple_snoc (br t1) (br t2)
-  | BTYP_inst (i,ts,mt) -> btyp_inst (i, List.map br ts,mt)
+  | BTYP_inst (it, i,ts,mt) -> btyp_inst (it,i, List.map br ts,mt)
+  | BTYP_finst (i,ks,dom,cod) -> btyp_finst (i, ks, dom, cod)
   | BTYP_vinst (i,ts,mt) -> btyp_vinst (i, List.map br ts,mt)
   | BTYP_rev t -> btyp_rev (br t)
   | BTYP_uniq t -> btyp_uniq (br t)

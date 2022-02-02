@@ -22,14 +22,14 @@ let rec expand bsym_table  counter sr t =
 print_endline ("Flx_expand_typedef: fixpoint, fudge metatype");
 print_endline ("Type is " ^ Flx_print.sbt bsym_table t);
 *)
-let mt = Flx_btype_kind.metatype sr t in
+      let mt = Flx_btype_kind.metatype sr t in
 (*
 print_endline ("KIND is " ^ Flx_kind.sk mt);
 *)
       Flx_btype.btyp_fix (i - level) mt 
     | None ->
       match t with
-      | Flx_btype.BTYP_inst (k,ts,mt) ->
+      | Flx_btype.BTYP_inst (it, k,ts,mt) ->
         begin try 
           let bsym = Flx_bsym_table.find bsym_table k in
           let bbdcl = Flx_bsym.bbdcl bsym in

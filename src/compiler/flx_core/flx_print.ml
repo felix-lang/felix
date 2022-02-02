@@ -712,15 +712,22 @@ and sb bsym_table depth fixlist counter prec tc =
       (match mt with KIND_type ->"" | _ -> ":"^sk mt)^
       ">"
 
-    | BTYP_inst (i,ts,mt) ->
+    | BTYP_inst (it,i,ts,mt) ->
       0, (match bsym_table with 
         | Some tab -> let name = qualified_name_of_bindex tab i in
           (* print_endline ("DEBUG: flx_print: BTYP_inst " ^ si i ^ ": " ^ name);  *)
-          name
-        | None -> "<Prim " ^ si i^">") ^
+          str_of_instkind it ^ " " ^ name
+        | None -> str_of_instkind it ^ "<Prim " ^ si i^">") ^
       (if List.length ts = 0 then "" else
       "[" ^cat ", " (map (sbt 9) ts) ^ "]:" ^ sk mt
       )
+
+    | BTYP_finst (i, ks, dom, cod) ->
+     0, (match bsym_table with 
+       | Some tab -> let name = qualified_name_of_bindex tab i in "typefunction " ^ name
+       | None -> "Typefunction " ^ string_of_int i) ^
+       (if List.length ks = 0 then "" else
+       "[" ^sks ks^ "]") ^ ":" ^ sk dom ^ "->" ^ sk cod 
 
     | BTYP_vinst (i,ts,mt) ->
       0, (match bsym_table with 
@@ -888,7 +895,7 @@ and sb bsym_table depth fixlist counter prec tc =
   
     | BTYP_void -> 0,"void"
 
-    | BTYP_type_apply (t1,t2) -> 2,sbt 2 t1 ^ " " ^ sbt 2 t2
+    | BTYP_type_apply (t1,t2) -> 2,"typeapply(" ^ sbt 2 t1 ^ "," ^ sbt 2 t2 ^ ")"
     | BTYP_type_map (t1,t2) -> 2,"_map " ^ sbt 2 t1 ^ " " ^ sbt 2 t2
     | BTYP_type_tuple ls ->
       begin match ls with
@@ -1147,6 +1154,13 @@ and string_of_iks ks =
     (fun (name,index, srt) -> string_of_id name ^ "<"^string_of_int index ^ ">:" ^str_of_sortcode srt)
   ks
 
+
+and string_of_bks' bks =
+  catmap ", " (fun (s, i, srt)-> s^"<" ^string_of_bid i^">:"^ str_of_sort srt) bks
+
+and string_of_bks = function
+  | [] -> ""
+  | bks -> "[" ^ string_of_bks' bks ^ "]"
 
 
 and string_of_bvs' bvs =
@@ -2797,6 +2811,10 @@ and string_of_bbdcl bsym_table bbdcl index : string =
     "nominal typedef " ^ name ^  string_of_bvs vs ^
     " = " ^ sobt t ^ "\n  = "^Flx_btype.st t^";"
 
+  | BBDCL_type_function (bks,t) ->
+    "typefunction " ^ name ^  string_of_bks bks ^
+    " = " ^ sobt t ^ "\n  = "^Flx_btype.st t^";"
+
   | BBDCL_structural_type_alias (vs,t) ->
     "structural typedef " ^ name ^  string_of_bvs vs ^
     " = " ^ sobt t ^ "\n  = "^Flx_btype.st t^";"
@@ -3068,6 +3086,7 @@ let print_symbols bsym_table =
     | BBDCL_invalid -> print_endline ("INVALID  " ^ id)
     | BBDCL_module -> print_endline ("MODULE " ^ id)
     | BBDCL_newtype _ -> print_endline ("NEWTYPE " ^ id)
+    | BBDCL_type_function _ -> print_endline ("TYPEFUN " ^ id)
     | BBDCL_nominal_type_alias _ -> print_endline ("NOMINAL TYPEDEF " ^ id)
     | BBDCL_structural_type_alias _ -> print_endline ("STRUCTURAL TYPEDEF " ^ id)
     | BBDCL_instance_type _ -> print_endline ("INSTANCE TYPE " ^ id)

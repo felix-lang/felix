@@ -118,7 +118,7 @@ match unfold "flx_lookup" ta with
   end
 
 (* Instance type, possibly struct or cstruct.  *)
-| BTYP_inst (i,ts',_) ->
+| BTYP_inst (_,i,ts',_) ->
   begin try
   handle_field_name state bsym_table build_env env rs 
     be bt cal_apply bind_type' mkenv 
@@ -127,12 +127,12 @@ match unfold "flx_lookup" ta with
   end
 
 (* pointer to instance *)
-| BTYP_ptr (mode,(BTYP_inst (i,ts',_) as r),[]) ->
+| BTYP_ptr (mode,(BTYP_inst (_,i,ts',_) as r),[]) ->
 (* NOTE: This may not work, unfold doesn't penetrate into a struct!
 However, if the struct is complete but polymorphic, it should work
 by unfolding the ts values ..
 *)
-  begin match unfold "flx_bind_record_proj" r with | BTYP_inst (i,ts',_) ->
+  begin match unfold "flx_bind_record_proj" r with | BTYP_inst (_,i,ts',_) ->
     begin try
     handle_field_name state bsym_table build_env env rs 
       be bt cal_apply bind_type' mkenv 

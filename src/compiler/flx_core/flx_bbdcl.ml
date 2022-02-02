@@ -28,6 +28,8 @@ type external_fun_kind_t = [
 
 (** Bound declarations. *)
 type t =
+  | BBDCL_type_function of bks_t * Flx_btype.t (* the btype must be a type function *)
+
   | BBDCL_virtual_type of bvs_t
   | BBDCL_invalid
   | BBDCL_module
@@ -107,6 +109,8 @@ let bbdcl_structural_type_alias (bvs, t) =
 let bbdcl_instance_type (bvs, t) =
   BBDCL_instance_type (bvs, t)
 
+let bbdcl_type_function (bks, t) =
+  BBDCL_type_function (bks, t)
 
 let bbdcl_external_type (bvs, quals, code, breqs) =
   BBDCL_external_type (bvs, quals, code, breqs)
@@ -193,6 +197,7 @@ let get_bvs = function
   | BBDCL_lemma -> []
   | BBDCL_reduce -> []
   | BBDCL_label _ -> []
+  | BBDCL_type_function _ -> []
 
 (* -------------------------------------------------------------------------- *)
 
@@ -245,6 +250,7 @@ let iter
 
   | BBDCL_newtype (_,t) -> f_btype t
   | BBDCL_nominal_type_alias (_,t) -> f_btype t
+  | BBDCL_type_function (_,t) -> f_btype t
   | BBDCL_structural_type_alias (_,t) -> f_btype t
   | BBDCL_instance_type (_,t) -> f_btype t
   | BBDCL_external_type (_,quals,_,breqs) ->
@@ -321,6 +327,7 @@ let map
       bbdcl_val (bvs,f_btype (Flx_btype.btyp_pointer t),`Ref)
   | BBDCL_val (bvs,t,kind) -> bbdcl_val (bvs,f_btype t,kind)
   | BBDCL_newtype (bvs,t) -> BBDCL_newtype (bvs,f_btype t)
+  | BBDCL_type_function (bks,t) -> BBDCL_type_function (bks,f_btype t)
   | BBDCL_nominal_type_alias (bvs,t) -> BBDCL_nominal_type_alias (bvs,f_btype t)
   | BBDCL_structural_type_alias (bvs,t) -> BBDCL_structural_type_alias (bvs,f_btype t)
   | BBDCL_instance_type (bvs,t) -> BBDCL_instance_type (bvs,f_btype t)

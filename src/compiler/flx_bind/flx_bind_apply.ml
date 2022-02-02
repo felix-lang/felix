@@ -243,7 +243,7 @@ print_endline ("  WITH TYPE " ^ Flx_print.sbt bsym_table (snd result));
             raise exn
           end
         (* NOTE THIS CASE HASN'T BEEN CHECKED FOR POLYMORPHISM YET *)
-        | BTYP_inst (i,ts',_) ->
+        | BTYP_inst (_,i,ts',_) ->
 (*
           print_endline (" ** Bound LHS of application and a nominal type");
 *)

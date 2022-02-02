@@ -67,6 +67,7 @@ let rec is_pure syms bsym_table i =
 
   (* Checking purity *)
   match Flx_bsym.bbdcl bsym with
+  | BBDCL_type_function _ -> assert false
   | BBDCL_nominal_type_alias _ -> assert false
   | BBDCL_structural_type_alias _ -> assert false
   | BBDCL_instance_type _ -> assert false
@@ -263,7 +264,7 @@ print_endline "Type has fun reached recursion limit, polymorphic recursion?";
         Hashtbl.replace cache t `Unsafe;
         raise Unsafe
 
-      | BTYP_inst (i,ts,_) ->
+      | BTYP_inst (`Nominal, i,ts,_) ->
         let bsym  = Flx_bsym_table.find bsym_table i in
         begin match Flx_bsym.bbdcl bsym with
         | BBDCL_newtype _ -> () (* FIXME *)
@@ -277,6 +278,7 @@ print_endline "Type has fun reached recursion limit, polymorphic recursion?";
 
         | _ -> assert false
         end
+      | BTYP_inst (`Alias, _,_,_) -> assert false
       | x ->
         try
           Flx_btype.flat_iter ~f_btype:(aux (limit - 1)) x;
@@ -321,7 +323,7 @@ print_endline "Type has ptr reached recursion limit, polymorphic recursion?";
         (* encode the more lenient condition here!! *)
         Hashtbl.replace cache t `Unsafe;
         raise Unsafe
-      | BTYP_inst (i,ts,_) ->
+      | BTYP_inst (`Nominal, i,ts,_) ->
         let bsym = Flx_bsym_table.find bsym_table i in
         begin match Flx_bsym.bbdcl bsym with
         | BBDCL_newtype _ -> () (* FIXME *)

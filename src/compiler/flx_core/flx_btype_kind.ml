@@ -83,7 +83,8 @@ print_endline ("Flx_btype_kind.metatype' case type_apply: " ^ Flx_btype.st typ);
     end
   | BTYP_type_var (i,k) -> k
   | BTYP_vinst (index,ts,k) -> k
-  | BTYP_inst (index,ts,k) -> k
+  | BTYP_inst (_,index,ts,k) -> k
+  | BTYP_finst (index,ks,dom,cod) -> kind_function (dom, cod)
   | BTYP_fix (i,k) -> k
 
   | BTYP_void

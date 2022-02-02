@@ -11,7 +11,7 @@ let fold (bsym_table: Flx_bsym_table.t) counter t =
     | BTYP_typeop (op,t,k) -> ax t 
     | BTYP_compactsum ls
     | BTYP_sum ls
-    | BTYP_inst (_,ls,_)
+    | BTYP_inst (_,_,ls,_)
     | BTYP_vinst (_,ls,_)
     | BTYP_compacttuple ls
     | BTYP_tuple ls -> List.iter ax ls
@@ -44,6 +44,7 @@ let fold (bsym_table: Flx_bsym_table.t) counter t =
     | BTYP_tuple_cons (a,b) -> ax a; ax b
     | BTYP_tuple_snoc (a,b) -> ax a; ax b
 
+    | BTYP_finst _
     | BTYP_instancetype _
     | BTYP_ellipsis
     | BTYP_label 
@@ -75,7 +76,6 @@ let fold (bsym_table: Flx_bsym_table.t) counter t =
     | BTYP_subtype_match _ -> () (* assume fixpoint can't span these boundaries *)
 
     | BBOOL _ -> ()
-      (* failwith ("[fold] unexpected metatype " ^ sbt sym_table t') *)
   in
     try aux [] 0 t; t
     with Found t -> t

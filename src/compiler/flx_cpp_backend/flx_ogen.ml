@@ -143,7 +143,7 @@ print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index
           with Not_found -> ()
       end args
 
-    | BTYP_inst (i,ts,_) ->
+    | BTYP_inst (`Nominal, i,ts,_) ->
       print_debug syms ("Thinking about type index " ^ si i ^ " ts = " ^ catmap "," (sbt bsym_table) ts);
       let bsym =
         try Flx_bsym_table.find bsym_table i

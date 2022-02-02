@@ -737,7 +737,7 @@ print_endline ("Flx_bbind: Adding type of index " ^ si symbol_index ^ " to cache
   | SYMDEF_union (cs) ->
     if state.print_flag then
       print_endline ("//Binding union " ^ si symbol_index ^ " --> " ^ sym.Flx_sym.id);
-    let ut = btyp_inst (
+    let ut = btyp_inst ( `Nominal,
       symbol_index, 
       List.map (fun (s,i,k) -> btyp_type_var (i,k)) bvs, 
       Flx_kind.KIND_type) 
@@ -807,7 +807,7 @@ print_endline (" &&&&&& SYMDEF_instance calling BBIND_SYMBOL");
 
   | SYMDEF_type_function (ks,t) -> 
 (*
-print_endline ("Binding type function .. ");
+print_endline ("Binding type function .. " ^ sym.Flx_sym.id);
 *)
     if get_structural_typedefs state then begin 
 (*
@@ -828,7 +828,8 @@ print_endline ("TRYING TO BIND typefun " ^ sym.Flx_sym.id ^"<"^ si symbol_index 
 (*
 print_endline ("Adding typefun " ^ sym.Flx_sym.id ^"<"^ si symbol_index ^ "> = " ^ Flx_btype.st t ^ " to bsym_table");
 *)
-    add_bsym None (bbdcl_nominal_type_alias (bvs, t))
+    let bks = List.map (fun (name, index, srt) -> name, index, Flx_kind.bind_sortcode srt) ks in
+    add_bsym None (bbdcl_type_function (bks, t))
    end
 
 

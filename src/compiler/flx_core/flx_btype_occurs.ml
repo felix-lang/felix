@@ -1,6 +1,8 @@
 open Flx_btype
 open Flx_bid
 
+(* Test with a type variable exists in a type expression *)
+
 let var_i_occurs i t =
   let rec f_btype t =
     match t with
@@ -31,12 +33,13 @@ let var_list_occurs ls t =
 let var_occurs bsym_table t =
   let rec aux' excl t = let aux t = aux' excl t in
     match t with
+    | BTYP_type_tuple ls
     | BTYP_type_set ls
     | BTYP_type_set_intersection ls
     | BTYP_type_set_union ls
     | BTYP_compactsum ls
     | BTYP_sum ls
-    | BTYP_inst (_,ls,_)
+    | BTYP_inst (_,_,ls,_)
     | BTYP_vinst (_,ls,_)
     | BTYP_compacttuple ls 
     | BTYP_intersect ls
@@ -63,6 +66,10 @@ let var_occurs bsym_table t =
     | BTYP_uniq a -> aux a
     | BTYP_borrowed a -> aux a
 
+    | BTYP_typeof (_, _)
+    | BTYP_none
+    | BBOOL _
+    | BTYP_finst (_,_,_,_) (* type function instances can contain kind variables but not type variables *)
     | BTYP_instancetype _
     | BTYP_ellipsis
     | BTYP_label
@@ -79,9 +86,15 @@ let var_occurs bsym_table t =
     | BTYP_tuple_cons (a,b) -> aux a; aux b
     | BTYP_tuple_snoc (a,b) -> aux a; aux b
 
-    | _ -> 
-      print_endline ("[var_occurs] unexpected metatype " ^ Flx_print.sbt bsym_table t);
-      failwith ("[var_occurs] unexpected metatype " ^ Flx_print.sbt bsym_table t)
+    | BTYP_polyvariant pvs -> List.iter (function | `Ctor (_,t) -> aux t | `Base t -> aux t) pvs
+       
+
+    (* FIXME: these should be handled *)
+    | BTYP_type_match (_, _)
+    | BTYP_subtype_match (_, _)
+    | BTYP_typeop (_, _, _)
+    -> ()
+
 
  in try aux' [] t; false with Not_found -> true
 

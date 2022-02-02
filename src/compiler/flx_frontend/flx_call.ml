@@ -37,7 +37,7 @@ let rec uses_type uses sr parent t =
 
   (* We only care about type instances. *)
   match t with
-  | BTYP_inst (i,ts,_) ->
+  | BTYP_inst (`Nominal, i,ts,_) ->
       add uses sr parent i;
       List.iter f_btype ts
 

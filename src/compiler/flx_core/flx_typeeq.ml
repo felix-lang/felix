@@ -58,13 +58,22 @@ let rec type_eq' sbt counter ltrail ldepth rtrail rdepth trail t1 t2 =
 
   | BTYP_label,BTYP_label -> true
   | BTYP_vinst (i1,ts1,_),BTYP_vinst (i2,ts2,_)
-  | BTYP_inst (i1,ts1,_),BTYP_inst (i2,ts2,_) ->
+  | BTYP_inst (_,i1,ts1,_),BTYP_inst (_,i2,ts2,_) ->
     (* kind should aqree already .. ? *)
     i1 = i2 &&
-    List.length ts1 = List.length ts2 &&
+    List.length ts1 = List.length ts2 && (* should dangwell agree is index does *)
     List.fold_left2
     (fun tr a b -> tr && te a b)
     true ts1 ts2
+
+  | BTYP_finst (i1,ks1,d1,c1),BTYP_finst (i2,ks2,c2,k2) ->
+    i1 = i2 &&
+    List.length ks1 = List.length ks2 && (* should dangwell agree is index does *)
+    List.fold_left2
+    (fun tr a b -> tr && Flx_kind.kind_eq a b)
+    true ks1 ks2
+
+
 
   | BTYP_unitsum i,BTYP_unitsum j -> i = j
 

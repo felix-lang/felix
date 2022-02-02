@@ -91,7 +91,7 @@ let gen_biface_header syms bsym_table modulename biface =
     "typedef ::flxusr::" ^  mname ^ "::" ^ export_name ^ " " ^ export_name ^ ";\n"
 
   | BIFACE_export_union (sr, idx, export_name) ->
-    let typ = Flx_btype.btyp_inst (idx,[],Flx_kind.KIND_type) in 
+    let typ = Flx_btype.btyp_inst (`Nominal, idx,[],Flx_kind.KIND_type) in 
     let sym = Flx_bsym_table.find bsym_table idx in 
     let fname = sym.Flx_bsym.id in
     "//EXPORT union "  ^ fname ^ ", type " ^ sbt bsym_table typ ^ " as " ^ export_name  ^ "\n" ^
@@ -105,7 +105,7 @@ let gen_biface_header syms bsym_table modulename biface =
     let bsym = Flx_bsym_table.find bsym_table idx in
     let sname = Flx_bsym.id bsym in
     let bbdcl = Flx_bsym.bbdcl bsym in
-    let typ = Flx_btype.btyp_inst (idx,[],Flx_kind.KIND_type) in
+    let typ = Flx_btype.btyp_inst (`Nominal, idx,[],Flx_kind.KIND_type) in
     let classname = cpp_type_classname syms bsym_table typ in
     "//EXPORT struct " ^ sname ^ "\n" ^
     "typedef ::flxusr::" ^ mname ^ "::" ^ classname ^ " " ^ sname ^ ";\n"

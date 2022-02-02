@@ -309,7 +309,7 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
           print_endline ("Type of function " ^ string_of_int i ^ " is " ^ sbt bsym_table ft);
 *)
           match ft with
-          | BTYP_function (BTYP_inst (dom,[],_),BTYP_inst (cod,[],_)) ->
+          | BTYP_function (BTYP_inst (`Nominal, dom,[],_),BTYP_inst (`Nominal, cod,[],_)) ->
 (*
             print_endline ("Domain index = " ^ string_of_int dom ^ " codomain index = " ^ string_of_int cod);
 *)
@@ -353,7 +353,7 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
           print_endline ("Type of function " ^ string_of_int i ^ " is " ^ sbt bsym_table ft);
 *)
           match ft with
-          | BTYP_function (BTYP_inst (dom,[],_),BTYP_inst (cod,[],_)) ->
+          | BTYP_function (BTYP_inst (`Nominal, dom,[],_),BTYP_inst (`Nominal, cod,[],_)) ->
 (*
             print_endline ("Domain index = " ^ string_of_int dom ^ " codomain index = " ^ string_of_int cod);
 *)

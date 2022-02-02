@@ -424,6 +424,7 @@ and process_inst syms bsym_table weak instps ref_insts1 i ts inst =
     "<" ^ string_of_bid i ^ ">[" ^
     catmap "," (sbt bsym_table) ts ^ "]");
   match Flx_bsym.bbdcl bsym with
+  | BBDCL_type_function _ -> assert false
   | BBDCL_nominal_type_alias _ -> assert false
   | BBDCL_structural_type_alias _ -> assert false
   | BBDCL_fun (props,vs,ps,ret,effects,exes) ->
@@ -453,7 +454,7 @@ and process_inst syms bsym_table weak instps ref_insts1 i ts inst =
     let hvarmap = hashtable_of_list vars in
     let tss = map (varmap_subst hvarmap) argtypes in
     iter rtr tss;
-    rtnr (btyp_inst (i,ts,Flx_kind.KIND_type))
+    rtnr (btyp_inst (`Nominal, i,ts,Flx_kind.KIND_type))
 
 
   | BBDCL_cstruct (vs,ps, reqs) ->
@@ -465,7 +466,7 @@ and process_inst syms bsym_table weak instps ref_insts1 i ts inst =
     iter rtr tss;
     let vs t = varmap_subst hvarmap t in
     do_reqs vs reqs;
-    rtnr (btyp_inst (i,ts,Flx_kind.KIND_type))
+    rtnr (btyp_inst (`Nominal, i,ts,Flx_kind.KIND_type))
 
   | BBDCL_struct (vs,ps) ->
     let argtypes = map snd ps in
@@ -474,11 +475,11 @@ and process_inst syms bsym_table weak instps ref_insts1 i ts inst =
     let hvarmap = hashtable_of_list vars in
     let tss = map (varmap_subst hvarmap) argtypes in
     iter rtr tss;
-    rtnr (btyp_inst (i,ts,Flx_kind.KIND_type));
+    rtnr (btyp_inst (`Nominal, i,ts,Flx_kind.KIND_type));
 
   | BBDCL_newtype (vs,t) ->
     rtnr t;
-    rtnr (btyp_inst (i,ts,Flx_kind.KIND_type))
+    rtnr (btyp_inst (`Nominal, i,ts,Flx_kind.KIND_type))
 
   | BBDCL_val (vs,t,_) ->
     if length vs <> length ts

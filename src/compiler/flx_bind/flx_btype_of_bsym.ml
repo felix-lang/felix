@@ -28,6 +28,7 @@ let btype_of_bsym state bsym_table sr bt bid bsym =
   match Flx_bsym.bbdcl bsym with
   | BBDCL_label _ -> btyp_label ()
   | BBDCL_invalid -> assert false
+  | BBDCL_type_function _ -> assert false
   | BBDCL_nominal_type_alias _ -> assert false
   | BBDCL_structural_type_alias _ -> assert false
   | BBDCL_module -> 
@@ -82,7 +83,7 @@ print_endline ("btype of bsym struct " ^ Flx_bsym.id bsym ^ "<" ^ si bid ^ ">, #
         ts
       in
       let t = btyp_tuple (List.map snd ls) in
-      let result = btyp_function (t, btyp_inst (bid, ts, Flx_kind.KIND_type)) in
+      let result = btyp_function (t, btyp_inst (`Nominal, bid, ts, Flx_kind.KIND_type)) in
 (*
 print_endline ("struct as function [btype_of_bsym] " ^ sbt bsym_table result);
 *)

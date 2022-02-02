@@ -92,7 +92,7 @@ let mono_union syms bsym_table virtualinst polyinst  mt bsym sr i ts (vs,cps) =
     let gadt = List.fold_left (fun acc (name,index,evs,d,c,gadt) -> 
        gadt || acc) false cps
     in
-    let ut = btyp_inst (i,ts,Flx_kind.KIND_type) in
+    let ut = btyp_inst (`Nominal,i,ts,Flx_kind.KIND_type) in
 if gadt then
 begin
 (*
@@ -286,6 +286,7 @@ end;
   let mt vars t = Flx_monofixup_base.fixup_type syms bsym_table vars bsym virtualinst polyinst sr t in
   let bbdcl = Flx_bsym.bbdcl bsym in
   match bbdcl with
+  | BBDCL_type_function _ -> assert false
   | BBDCL_nominal_type_alias _ -> assert false
   | BBDCL_structural_type_alias _ -> assert false
   | BBDCL_label s -> Some (bbdcl_label s)

@@ -46,6 +46,7 @@ let type_of_literal inner_bind_type state bsym_table env sr v =
   bt
 
 let handle_map sr (f,ft) (a,at) =
+(*
     let t =
       match ft with
       | BTYP_function (d,c) ->
@@ -65,6 +66,7 @@ let handle_map sr (f,ft) (a,at) =
       applies ((map[i] f) a) where map[i] denotes
       the map function generated for data structure i
       *)
+*)
       failwith "MAP NOT IMPLEMENTED"
 
 
@@ -245,13 +247,7 @@ print_endline ("flx_lookup.`EXPR_callback.bexpr_closure");
     be (Flx_strr.apl2 sri "pow" [a; b])
 
   | `EXPR_coercion (sr,(x,t)) ->
-(*
-print_endline ("Trying to bind explicit coercion" ^ string_of_expr e);
-*)
     let (e',t') as x' = be x in
-(*
-print_endline ("explicit coercioni argument bound " ^ string_of_expr x);
-*)
     let t'' = bt sr t in
     Flx_coerce.coerce state bsym_table sr x' t''
 
@@ -583,7 +579,7 @@ assert false
     let (e',t) as e  = be e in
     begin match t with
       | BTYP_type_var (_,k) 
-      | BTYP_inst (_,_,k)
+      | BTYP_inst (_,_,_,k)
         when Flx_kind.kind_ge2 Flx_kind.KIND_compactlinear k
         -> () 
       | BTYP_unitsum _
@@ -594,14 +590,14 @@ assert false
       | BTYP_tuple []
         -> ()
 
-      | BTYP_inst (i,_,_) when 
+      | BTYP_inst (_,i,_,_) when 
         begin match hfind "lookup" state.sym_table i with
         | { Flx_sym.symdef=SYMDEF_union _} -> true
         | _ -> false
         end  -> ()
       | BTYP_typeop (_,_,Flx_kind.KIND_compactlinear)
       | BTYP_type_apply (BTYP_type_function (_,Flx_kind.KIND_compactlinear,_),_)
-      | BTYP_type_apply (BTYP_inst(_,_,KIND_function (_,Flx_kind.KIND_compactlinear)),_)
+      | BTYP_type_apply (BTYP_inst(_,_,_,KIND_function (_,Flx_kind.KIND_compactlinear)),_)
         -> ()
       | _ -> clierrx "[Flx_bind_expression:595: E182] " sr ("Argument of caseno must be sum or union type, got " ^ sbt bsym_table t)
     end
@@ -1786,7 +1782,7 @@ print_endline ("`EXPR_variant_subtype_match_coercion");
       let ut = rt ut in
       let ut = match ut with | BTYP_uniq t -> t | t -> t in
       begin match ut with
-      | BTYP_inst (i,ts',_) ->
+      | BTYP_inst (_,i,ts',_) ->
         begin match hfind "lookup" state.sym_table i with
         | { Flx_sym.id=id; symdef=SYMDEF_union ls } ->
           let vidx =
@@ -1945,7 +1941,7 @@ print_endline ("match ho ctor, binding expr = " ^ string_of_expr e);
       print_endline ("ctor_arg: Constructor to extract: " ^ name ^ "[" ^ catmap "," string_of_typecode ts ^ "]"); 
 *)
       begin match ut with
-      | BTYP_inst (i,ts',_) ->
+      | BTYP_inst (_,i,ts',_) ->
         begin match hfind "lookup" state.sym_table i with
         | { Flx_sym.id=id; symdef=SYMDEF_union ls } ->
           let _,vs,_  = find_split_vs state.sym_table bsym_table i in

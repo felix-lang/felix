@@ -10,6 +10,10 @@ type kind =
   | KIND_tuple of kind list
   | KIND_function of kind * kind (* the kind of a type function from domain to codomain kinds *)
 
+type sort = | SORT_kind
+let str_of_sort s = match s with | SORT_kind -> "KIND"
+let bind_sortcode s = match s with | Flx_ast.SRT_kind -> SORT_kind
+
 let kind_eq k1 k2 = k1 = k2
 
 let rec sk k =
@@ -37,6 +41,11 @@ let kind_tuple ks = KIND_tuple ks
 (* this probably doesn't belong here .. *)
 type bv_t = string * Flx_bid.bid_t * kind
 type bvs_t = bv_t list
+
+type bk_t = string * Flx_bid.bid_t * sort  
+type bks_t = bk_t list
+
+let sks ks = String.concat "," (List.map sk ks)
 
 (* Unification *)
 type keqn_t = kind * kind

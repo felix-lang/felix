@@ -229,7 +229,7 @@ if name = debugid then
           print_endline ("lookup_name_in_table_dirs_with_sig finds struct constructor " ^ id);
           print_endline ("Record Argument type is " ^ catmap "," (sbt bsym_table) t2);
         end;
-        Some (bexpr_closure (btyp_inst (sye index,ts,Flx_kind.KIND_type)) (sye index,ts))
+        Some (bexpr_closure (btyp_inst (`Nominal, sye index,ts,Flx_kind.KIND_type)) (sye index,ts))
         (*
         failwith "NOT IMPLEMENTED YET"
         *)
@@ -406,7 +406,7 @@ if name = debugid then
                 )
             | _ -> false
           ) ->
-            Some (bexpr_closure (btyp_inst (sye i,ts,Flx_kind.KIND_type)) (sye i,ts))
+            Some (bexpr_closure (btyp_inst (`Nominal, sye i,ts,Flx_kind.KIND_type)) (sye i,ts))
 
         | _ ->
         let fs =

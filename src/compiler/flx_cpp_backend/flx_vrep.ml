@@ -11,7 +11,7 @@ let cal_variant_cases bsym_table t =
   | BTYP_sum ls -> List.length ls
   | BTYP_unitsum i -> i
   | BTYP_variant ls -> List.length ls
-  | BTYP_inst (i,ts,_) ->
+  | BTYP_inst (`Nominal, i,ts,_) ->
     let bsym =
       try Flx_bsym_table.find bsym_table i with Not_found -> assert false
     in
@@ -54,7 +54,7 @@ let cal_variant_maxarg bsym_table t =
   | BTYP_sum ls -> List.fold_left (fun r t -> max r (size t)) 0 ls
   | BTYP_unitsum i -> 0
   | BTYP_variant ls -> List.fold_left (fun r (_,t) -> max r (size t)) 0 ls
-  | BTYP_inst (i,ts,_) ->
+  | BTYP_inst (`Nominal, i,ts,_) ->
     let bsym =
       try Flx_bsym_table.find bsym_table i with Not_found -> assert false
     in
@@ -71,7 +71,7 @@ let cal_variant_maxarg bsym_table t =
   | _ -> assert false 
 
 let isnullptr bsym_table t = match t with
-  | BTYP_inst (i,_,_) ->
+  | BTYP_inst (`Nominal, i,_,_) ->
     let bsym =
       try Flx_bsym_table.find bsym_table i with Not_found -> assert false
     in
@@ -89,7 +89,7 @@ let isnullptr bsym_table t = match t with
   | _ -> false
 
 let weird_unit bsym_table t = match t with
-  | BTYP_inst (i,_,_) ->
+  | BTYP_inst (`Nominal, i,_,_) ->
     let bsym =
       try Flx_bsym_table.find bsym_table i with Not_found -> assert false
     in
@@ -100,7 +100,7 @@ let weird_unit bsym_table t = match t with
   | _ -> false
 
 let is_gadt bsym_table t = match t with
-  | BTYP_inst (i,_,_) ->
+  | BTYP_inst (`Nominal, i,_,_) ->
     let bsym =
       try Flx_bsym_table.find bsym_table i with Not_found -> assert false
     in

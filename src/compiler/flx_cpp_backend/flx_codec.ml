@@ -30,7 +30,7 @@ let rec get_encoder' syms bsym_table p typ : string list =
     ["b+=::flx::gc::generic::blit("^p^",sizeof("^tname^")); // pod"]
   else match t' with
   | BTYP_vinst _ -> assert false
-  | BTYP_inst (i,ts,_) ->
+  | BTYP_inst (`Nominal, i,ts,_) ->
     let bsym =
       try Flx_bsym_table.find bsym_table i
       with Not_found -> failwith
@@ -122,7 +122,7 @@ let rec get_decoder' syms bsym_table p typ : string list =
     ["i=::flx::gc::generic::unblit("^p^",sizeof("^tname^"),s,i); // pod"]
   else match t' with
   | BTYP_vinst _ -> assert false
-  | BTYP_inst (i,ts,_) ->
+  | BTYP_inst (`Nominal, i,ts,_) ->
     let bsym =
       try Flx_bsym_table.find bsym_table i
       with Not_found -> failwith

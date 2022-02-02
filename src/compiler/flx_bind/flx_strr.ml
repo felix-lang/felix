@@ -223,7 +223,7 @@ print_endline ("_strr Variant type " ^ Flx_print.sbt bsym_table t);
       be rs e
 
  
-    | BTYP_inst (i,ts,mt) ->
+    | BTYP_inst (_,i,ts,mt) ->
 (*
 print_endline ("Strr on nominal type");
 *)

@@ -213,7 +213,7 @@ print_endline ("** FINISH **** Calculating Function type for function " ^ sym.Fl
       *)
 
       let mt = Flx_kind.kind_type in
-      let result = btyp_function (bt sym.Flx_sym.sr t, btyp_inst (index, ts, mt)) in
+      let result = btyp_function (bt sym.Flx_sym.sr t, btyp_inst (`Nominal,index, ts, mt)) in
 (*
 print_endline ("struct as function [inner_type_of_index] " ^ sbt bsym_table result);
 *)

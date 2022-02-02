@@ -32,7 +32,7 @@ let check_recursion bsym_table t =
 
 let nominal_subtype bsym_table lhs rhs =
   match lhs, rhs with
-  | BTYP_inst (l,[],_),BTYP_inst(r,[],_) ->
+  | BTYP_inst (`Nominal,l,[],_),BTYP_inst(`Nominal,r,[],_) ->
     (* meta types have to agree if types do? *)
     if l <> r && not (Flx_bsym_table.is_indirect_supertype bsym_table l r)
     then raise Not_found
@@ -424,8 +424,21 @@ print_endline ("Polyrecord/record unification " ^ sbt bsym_table lhs ^ " = " ^ s
       | BTYP_label , BTYP_label -> ()
       | BTYP_void,BTYP_void -> ()
 
+      | BTYP_finst (i1,ks1,dom1,cod1), BTYP_finst (i2,ks2,dom2,cod2) ->
+       (* FIXME: later we should unify to get kind variables .. and handle subtyping, for now
+          equality will have to do
+       *)
+        if i1 <> i2 then raise Not_found 
+        else if List.length ks1 <> List.length ks2 then raise Not_found
+        else
+        begin
+         List.iter2 (fun k1 k2 -> if (Flx_kind.kind_eq k1 k2) then () else raise Not_found) ks1 ks2; 
+         s := None
+        end
+ 
+
       | BTYP_vinst (i1,ts1,mt1),BTYP_vinst (i2,ts2,mt2) 
-      | BTYP_inst (i1,ts1,mt1),BTYP_inst (i2,ts2,mt2) ->
+      | BTYP_inst (_,i1,ts1,mt1),BTYP_inst (_,i2,ts2,mt2) ->
 (*
 print_endline "Trying to unify instances (1)";
 *)

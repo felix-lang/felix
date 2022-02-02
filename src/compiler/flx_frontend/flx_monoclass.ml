@@ -17,9 +17,9 @@ with monomorphic types.
 (* this one should not do anything useful now *)
 let flat_typeclass_fixup_type syms bsym_table virtualinst sr t =
   match t with
-  | Flx_btype.BTYP_inst (i,ts,mt) ->
+  | Flx_btype.BTYP_inst (`Nominal, i,ts,mt) ->
     let i',ts' = virtualinst sr i ts in
-    let t = Flx_btype.btyp_inst (i',ts',mt) in
+    let t = Flx_btype.btyp_inst (`Nominal, i',ts',mt) in
     t
   | x -> x
 

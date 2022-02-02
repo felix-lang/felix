@@ -25,6 +25,7 @@ type external_fun_kind_t = [
 
 (** Bound declarations. *)
 type t = private
+  | BBDCL_type_function of bks_t * Flx_btype.t
   | BBDCL_virtual_type of bvs_t
   | BBDCL_invalid
   | BBDCL_module
@@ -102,6 +103,7 @@ val bbdcl_axiom : unit -> t
 val bbdcl_reduce : unit -> t
 val bbdcl_lemma : unit -> t
 val bbdcl_virtual_type : bvs_t -> t
+val bbdcl_type_function : bks_t * Flx_btype.t -> t
 
 (* -------------------------------------------------------------------------- *)
 

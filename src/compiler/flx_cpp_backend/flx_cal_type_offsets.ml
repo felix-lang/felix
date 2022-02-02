@@ -96,7 +96,9 @@ let rec get_offsets' syms bsym_table typ : offset_kind_t list =
 
   | BTYP_vinst _ -> assert false
 
-  | BTYP_inst (i,ts,_) ->
+  | BTYP_finst _  -> assert false
+  | BTYP_inst (`Alias, i,ts,_) -> assert false
+  | BTYP_inst (`Nominal, i,ts,_) ->
     let bsym =
       try Flx_bsym_table.find bsym_table i
       with Not_found -> failwith

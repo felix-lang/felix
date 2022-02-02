@@ -28,8 +28,9 @@ let rec is_pod bsym_table t =
   | BTYP_record (cps) -> List.fold_left (fun acc (_,t) -> acc && is_pod t) true cps 
   | BTYP_array (t,_) -> is_pod t
   | BTYP_vinst (k,ts,_) -> assert false
+  | BTYP_finst _ -> assert false
 
-  | BTYP_inst (k,ts,_) ->
+  | BTYP_inst (`Nominal, k,ts,_) ->
     let bsym = Flx_bsym_table.find bsym_table k in
     let bbdcl = Flx_bsym.bbdcl bsym in
   begin match Flx_bsym_table.find_bbdcl bsym_table k with

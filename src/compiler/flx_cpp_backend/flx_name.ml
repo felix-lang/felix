@@ -308,7 +308,7 @@ print_endline ("Flx_tgen.cpp_type_classname " ^ sbt bsym_table t);
 
   | BTYP_vinst (i,ts,_) -> assert false
 
-  | BTYP_inst (i,ts,_) ->
+  | BTYP_inst (`Nominal,i,ts,_) ->
     let bsym = Flx_bsym_table.find bsym_table i in
     let fname = Flx_bsym.id bsym in
     let bbdcl = Flx_bsym.bbdcl bsym in
@@ -387,6 +387,8 @@ print_endline ("[flx_name] One component union should have been removed");
     else
       "_poly_" ^ cid_of_bid i ^ "t_" ^ cid_of_bid (tix t)
   end
+  | BTYP_inst (`Alias, _,_,_) 
+  | BTYP_finst _
   | BTYP_rev _
   | BTYP_polyrecord _
   | BTYP_polyvariant _
@@ -481,9 +483,11 @@ and cpp_structure_name syms bsym_table t =
 
   | BTYP_unitsum k -> "_us" ^ string_of_int k
 
+  | BTYP_inst (`Alias,_,_,_)  -> assert false
+  | BTYP_finst _ -> assert false
   | BTYP_vinst _ -> assert false
 
-  | BTYP_inst (i,ts,_) ->
+  | BTYP_inst (`Nominal, i,ts,_) ->
     let bsym = Flx_bsym_table.find bsym_table i in
     let fname = Flx_bsym.id bsym in
     let bbdcl = Flx_bsym.bbdcl bsym in

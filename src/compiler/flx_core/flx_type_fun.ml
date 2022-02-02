@@ -9,6 +9,44 @@ open Flx_unify
 open Flx_maps
 open Flx_btype_subst
 open Flx_kind
+
+(* BETA REDUCTION OF APPLICATION.
+
+  The function must be a type function expression.
+  No lookup is done. If it's an instance, the reduction
+  cannot proceed.
+
+  The type must also contain fixpoints already.
+
+  If function contains a fixpoint term BTYP_fix,
+  the counter must be adjusted by +2 due to stripping off the
+  BTYP_type_apply term AND the BTYP_type_function term.
+  Note this is a Felix weirdo. The fixpoint counts levels down
+  to the binder, but the implicit binder is above so the counter is
+  always non-positive. The gap is reduced by beta-reduction so the term
+  has to be added to.
+
+  NOTE: ERRORS. The argument can be anything (except contain a fixpoint that is not
+  in the trail).
+
+  If the function term is a BTYP_function, the reduction proceeds by substitution
+  and fixpoint adjustment.
+
+  Otherwise we just return the original type function application term unreduced.
+
+  Three possible cases exist where a subsequent reduction will succeed:
+
+  1. A type alias is replace by a type function term
+  2. A type function instance is replace by a type function term
+  3. A type variable is replaced by a type function term
+
+  Other cases are universally an error. However we should only
+  call this function is we actually have a type function term already.
+
+*)
+
+
+
 let adjust bsym_table t =
 (*
 print_endline ("Fixpoint adjust " ^ sbt bsym_table t);
@@ -26,9 +64,10 @@ print_endline ("Application is " ^ sbt bsym_table t);
     print_endline ("Function = " ^ sbt bsym_table t1);
     print_endline ("Argument = " ^ sbt bsym_table t2);
 *)
-        let whole = 
-          try `Whole (List.nth termlist (-2-j))
-          with Failure "nth" -> `Unred t1 
+        let whole =
+          let index = -2-j in
+          if List.length termlist <= index then `Unred t1 
+          else `Whole (List.nth termlist index )
         in
         begin match whole with
         | `Unred t -> 
@@ -57,8 +96,7 @@ print_endline (sbt bsym_table (List.nth termlist (-2-j)));
 
 
 let type_apply br beta_reduce' calltag counter bsym_table sr termlist t t1 t2 = 
-(*
-print_endline ("Flx_beta: BTYP_type_apply\n  " ^ Flx_btype.st t1 ^ "\nto\n  " ^
+(* print_endline ("Flx_beta: BTYP_type_apply\n  " ^ Flx_btype.st t1 ^ "\nto\n  " ^ 
   Flx_btype.st t2);
 *)
 (* NOT clear if this is OK or not *)
@@ -67,6 +105,31 @@ print_endline ("Flx_beta: BTYP_type_apply\n  " ^ Flx_btype.st t1 ^ "\nto\n  " ^
     let t1 = br t1 in
     let t2 = br t2 in
 *)
+    let t1 = match t1 with
+    | BTYP_finst (index, ks, dom, cod) ->
+      begin try 
+       let bsym = Flx_bsym_table.find bsym_table index in
+       match bsym.bbdcl with
+       | BBDCL_type_function (bks, t) -> t (* FIXME: assumes bks empty *)
+
+       | _ -> raise Not_found
+      with Not_found -> t1
+      end      
+    | BTYP_inst (`Alias, index, vs, k) ->
+      begin try 
+       let bsym = Flx_bsym_table.find bsym_table index in
+       match bsym.bbdcl with
+       | BBDCL_structural_type_alias (bvs, t) 
+       | BBDCL_nominal_type_alias (bvs, t) ->
+         let params = List.map2 (fun (s,index,_) t -> index, t) bvs vs in
+         let t1 = list_subst counter params t1 in
+         t1
+       | _ -> raise Not_found
+      with Not_found -> t1
+      end    
+    | t1 -> t1
+    in
+
     begin
     let m1 = Flx_btype_kind.metatype sr t1 in
     let m2 = Flx_btype_kind.metatype sr t2 in
@@ -127,35 +190,8 @@ print_endline ("Calculated isrec= " ^ if isrec then "true" else "false");
          btyp_fix (j+1) (getmt())
        | _ -> assert false
     else 
+
     let t1 = if isrecfun then getrecfun () else unfold "flx_beta" t1 in
-(*
-    print_endline ("Function = " ^ sbt bsym_table t1);
-    print_endline ("Argument = " ^ sbt bsym_table t2);
-*)
-    let t1 = 
-      match t1 with
-      | BTYP_inst (index,_,_) ->
-(*
-        print_endline ("Flx_type_fun: beta-reduce finds type function instance "^string_of_int index^", lookup needed");
-*)
-        begin try
-          let bsym = Flx_bsym_table.find bsym_table index in
-(*
-          print_endline ("Found symbol " ^ Flx_bsym.id bsym);
-*)
-          let bbdcl = bsym.bbdcl in
-          begin match bbdcl with
-          | BBDCL_nominal_type_alias (_,t) -> t
-          | _ ->
-            print_endline ("Flx_type_fun: expected symbol "^Flx_bsym.id bsym ^" to be nominal type alias");
-            assert false
-          end
-        with Not_found ->
-          print_endline ("Flx_type_fun: CANNOT FIND BOUND SYMBOL "^ string_of_int index^ " IN SYMBOL TABLE");
-          assert false
-        end
-      | _ -> t1
-    in
     begin match t1 with
     | BTYP_type_function (ps,r,body) ->
       let params' =
@@ -186,6 +222,12 @@ assert false
 (*
       print_endline ("Body after reduction = " ^ sbt bsym_table t');
 *)
+
+(* FIXME: IS THIS RIGHT? SHOULDN'T THE ADJUST HAPPEN FIRST?  I mean, the top level
+beta reduction routine should always adjust. Hmmm.
+*)
+
+
       let t' = adjust bsym_table t' in
 (*
 print_endline ("Flx_beta: result of application is: " ^ Flx_btype.st t');

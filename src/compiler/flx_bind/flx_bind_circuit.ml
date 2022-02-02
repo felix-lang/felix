@@ -27,7 +27,7 @@ type device_descr_t = string * pin_descr_t list
 
 let cal_channel bsym_table (schannel,ischannel,oschannel) sr typ : int * string * Flx_btype.t =
   match typ with
-  | BTYP_inst (i,[t],_) ->
+  | BTYP_inst (`Nominal,i,[t],_) ->
      let direction = match i with
      | _ when i = schannel -> "io"
      | _ when i = oschannel -> "output"
@@ -64,14 +64,14 @@ let bind_circuit bsym_table (state : Flx_bexe_state.bexe_state_t) sr be (cs:Flx_
 print_endline ("Continuation starting function '_continuation_start' is " ^ Flx_print.sbe bsym_table start_continuation);
 *)
     let continuation_type_index = lun "cont" in
-    let continuation_type = Flx_btype.btyp_inst (continuation_type_index, [], Flx_kind.KIND_type) in 
+    let continuation_type = Flx_btype.btyp_inst (`Nominal, continuation_type_index, [], Flx_kind.KIND_type) in 
     let lmk name =
       let signs = [continuation_type] in
       let ts = [] in
       luf name ts signs
     in
     let fthread_type_index = lun "fthread" in
-    let fthread_type = Flx_btype.btyp_inst (fthread_type_index, [], Flx_kind.KIND_type) in
+    let fthread_type = Flx_btype.btyp_inst (`Nominal, fthread_type_index, [], Flx_kind.KIND_type) in
     let mk_thread = lmk "mk_thread" in
 (*
 print_endline ("Fthread constructor function 'mk_thread' is " ^ Flx_print.sbe bsym_table mk_thread);
@@ -395,7 +395,7 @@ print_endline ("SPawn Fthread svc call '_svc_fthread' is " ^ Flx_print.sbe bsym_
           vt,nw
       in
       let name = "pin_" ^ string_of_int index in
-      let stype = Flx_btype.btyp_inst (schannel, [vt], Flx_kind.KIND_type) in
+      let stype = Flx_btype.btyp_inst (`Nominal, schannel, [vt], Flx_kind.KIND_type) in
       let bbdcl = Flx_bbdcl.bbdcl_val (state.parent_vs,stype,`Val) in
       let bsym = Flx_bsym.create ~sr name bbdcl in 
       Flx_bsym_table.add bsym_table index state.parent bsym;
@@ -449,7 +449,7 @@ print_endline ("SPawn Fthread svc call '_svc_fthread' is " ^ Flx_print.sbe bsym_
           (* the type expected, ischannel,oschannel, or schannel, is NOT
             the actual variable type which is always just schannel
           *)
-          let ct = Flx_btype.btyp_inst (cast_schannelindex,[vt], Flx_kind.KIND_type) in
+          let ct = Flx_btype.btyp_inst (`Nominal, cast_schannelindex,[vt], Flx_kind.KIND_type) in
           let component = pin,(Flx_bexpr.bexpr_varname ct (vindex, parent_ts)) in
           component::acc
         )
