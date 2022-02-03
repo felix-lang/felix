@@ -365,8 +365,10 @@ let rec islinear_type t =
   | BTYP_compactarray _
     -> true
 
-  | BTYP_inst (_,_,_,k)
+  | BTYP_type_apply (BTYP_finst (_,_,_,k),_)
+  | BTYP_type_apply (BTYP_inst (_,_,_,KIND_function (_,k)),_)
   | BTYP_typeop (_,_,k)
+  | BTYP_inst (_,_,_,k)
   | BTYP_type_var (_,k) -> kind_ge2 KIND_compactlinear k
 
   | _ -> false
