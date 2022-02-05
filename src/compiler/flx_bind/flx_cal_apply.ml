@@ -37,6 +37,10 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
   end
   ;
 *)
+
+  let t1 = Flx_beta.beta_reduce "Flx_cal_apply:cal_apply'" state.counter bsym_table sr t1 in
+  let t2 = Flx_beta.beta_reduce "Flx_cal_apply:cal_apply'" state.counter bsym_table sr t2 in
+ 
   let result_type,reorder =
     let argt = unfold "flx_cal_apply" t1 in 
     match argt with

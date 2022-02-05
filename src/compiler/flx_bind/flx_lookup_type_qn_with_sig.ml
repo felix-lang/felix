@@ -68,7 +68,7 @@ in
 print_endline ("Lookup type qn with sig, name = " ^ string_of_qualified_name qn);
 *)
   let bt sr t =
-    inner_bind_type state bsym_table env sr rs t
+    inner_bind_type "lookup_type_qn_with_sig" state bsym_table env sr rs t
   in
   let handle_nonfunction_index index ts =
     print_endline ("Found non function? index " ^ string_of_bid index);

@@ -150,7 +150,7 @@ print_endline ("Trying to resolve overload for " ^ name ^ ", lenfs=" ^ string_of
     inner_build_env state bsym_table rs (Some i)
   in
   let bt rs sr i t =
-    inner_bind_type state bsym_table (env i) sr rs t
+    inner_bind_type "resolve_overload" state bsym_table (env i) sr rs t
   in
   let be i e =
     inner_bind_expression state bsym_table (env i) rs e

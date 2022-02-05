@@ -13,7 +13,6 @@ open Flx_mtypes2
 open Flx_typing
 open Flx_typing2
 open Flx_unify
-open Flx_beta
 open Flx_generic
 open Flx_overload
 open Flx_tpat
@@ -121,7 +120,7 @@ print_endline ("Bind type " ^ string_of_typecode t ^ " params = " ^
   let bt t = btp t params in
   let bi i ts = bind_type_index state bsym_table rs sr i ts mkenv in
   let bisub i ts = bind_type_index state bsym_table {rs with depth= rs.depth+1} sr i ts mkenv in
-  let br t = Flx_beta.beta_reduce "flx_lookup: bind_type'" state.counter bsym_table sr t in
+  (* let br t = Flx_beta.beta_reduce "flx_lookup: bind_type'" state.counter bsym_table sr t in *)
 
   let t =
   match t with
@@ -245,7 +244,7 @@ print_endline ("Bound variant = " ^ Flx_btype.st t);
             clierr sr ("Flx_bind_type.record extension: can't find  nominal type, expected typedef .." ^ string_of_int i)
           end
           
-        | _ -> clierrx "[flx_bind/flx_lookup.ml:802: E93] " sr ("Record extension requires bases be records too, got " ^ 
+        | _ -> clierrx "[flx_bind_type.ml:247: E93] " sr ("Record extension requires bases be records too, got " ^ 
           Flx_btype.st t ^ "=" ^
           sbt bsym_table t)
       )
@@ -544,7 +543,7 @@ print_endline ("type _map datatype = " ^ sbt bsym_table bt2);
 (*
 print_endline ("Binding `TYP_apply " ^ string_of_typecode t);
 *)
-    let x = br (btyp_type_apply (bt t1, bt t2)) in
+    let x = (* br *) (btyp_type_apply (bt t1, bt t2)) in
 (*
 print_endline ("  ***** Bound `TYP_apply: " ^ Flx_btype.st x );
 *)

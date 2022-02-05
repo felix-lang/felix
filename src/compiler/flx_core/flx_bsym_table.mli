@@ -38,8 +38,8 @@ val add_reduction_case: t -> string -> Flx_mtypes2.reduction_case_t ->  unit
 (* UNSAFE
 (** Updates a bound symbol in place while preserving the child-parent
  * relationships. *)
-val update : t -> bid_t -> Flx_bsym.t -> unit
 *)
+val update : t -> bid_t -> Flx_bsym.t -> unit
 
 (* ENTRY MUTATORS -- DONT CHANGE TABLE STRUCTURE *)
 (** Update a bound symbol's bbdcl in place. *)

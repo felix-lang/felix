@@ -13,7 +13,6 @@ open Flx_mtypes2
 open Flx_typing
 open Flx_typing2
 open Flx_unify
-open Flx_beta
 open Flx_generic
 open Flx_overload
 open Flx_tpat
@@ -23,6 +22,7 @@ open Flx_btype_occurs
 open Flx_btype_subst
 open Flx_bid
 
+(* NOTE: THIS MODULE DOES NOT DIRECTLY DO BETA REDUCTION *)
 
 (* This module produces a reference to either a nominal type, or a type alias,
 of the form 
@@ -77,7 +77,7 @@ let debug = false
 
 let rec bind_type_index 
   bind_type'
-  inner_bind_type
+  inner_bind_type (* why is this here it isn't used *)
   state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts mkenv
 =
   (* fixup the fixpoints *)

@@ -621,7 +621,9 @@ print_endline ("Flx_bind_bexe: UNIFIYING explicit ret="  ^ sbt bsym_table state.
 if funame="insert_unique'3_mf_3732" then
 print_endline ("Flx_bind_bexe: UNIFICATION DONE, result= " ^ string_of_bool uresult);
 *)
-    state.ret_type <- varmap_subst (Flx_lookup_state.get_varmap state.lookup_state) state.ret_type;
+    let rt = varmap_subst (Flx_lookup_state.get_varmap state.lookup_state) state.ret_type in
+    let rt = Flx_beta.beta_reduce "flx_bind_bexe: EXE_fun_return" state.counter bsym_table sr rt in
+    state.ret_type <- rt;
     if type_match bsym_table state.counter state.ret_type t' then
 (*
     if match maybe_matches bsym_table state.counter [state.ret_type, t'] with Some _ -> true | _ -> false then

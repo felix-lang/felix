@@ -65,7 +65,7 @@ let str_parent p = match p with | Some p -> string_of_int p | None -> "None"
 
 let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
 (*
-  print_endline (" ^^^^ BBIND_SYMBOL (subroutine) : Binding symbol "^sym.Flx_sym.id^" index=" ^ string_of_int symbol_index);
+  print_endline (" ^^^^ BIND_SYMBOL (subroutine) : Binding symbol "^sym.Flx_sym.id^" index=" ^ string_of_int symbol_index);
 *)
   (* If we've already processed this bid, exit early. We do this so we can avoid
    * any infinite loops in the symbols. *)
@@ -101,6 +101,7 @@ let rec bbind_symbol state bsym_table symbol_index sym_parent sym =
 print_endline ("Parent " ^ str_parent sym_parent ^ " mapped to true parent " ^ str_parent true_parent);
 *)
   (* let env = Flx_lookup.build_env state.lookup_state state.sym_table parent in  *)
+
   let env = Flx_lookup.build_env
     state.lookup_state
     bsym_table
@@ -108,7 +109,6 @@ print_endline ("Parent " ^ str_parent sym_parent ^ " mapped to true parent " ^ s
   in
   
   (*
-  print_endline "got ENVIRONMENT:";
   print_env_short env;
   *)
 
@@ -239,6 +239,7 @@ print_endline (" &&&&&& bind_type_uses calling BBIND_SYMBOL");
   (* bind the type variables *)
   let bvs = map (fun (s,i,tp) -> s,i, Flx_btype.bmt "Flx_bbind" tp) (fst ivs) in
 
+(* DEFINE HOW TO BIND A TYPE CONSTRAINT: DOES NOT BETA REDUCE *)
   let bind_type_constraint ivs =
     let cons =
       try
@@ -261,11 +262,29 @@ print_endline ("Binding type constraint: cons=" ^ sbt bsym_table cons);
 (*
 print_endline ("Binding type constraint: icons=" ^ sbt bsym_table icons);
 *)
-    let cons = btyp_typeop "_staticbool_and" (btyp_type_tuple [cons; icons]) Flx_kind.KIND_bool in
+    (* Special cases to reduce debug output *)
+    let cons = match cons,icons with 
+      | BBOOL true,x
+      | x, BBOOL true -> x
+      | _ -> btyp_typeop "_staticbool_and" (btyp_type_tuple [cons; icons]) Flx_kind.KIND_bool 
+    in
+(*
+print_endline ("[Flx_bind_symbol] Binding type constraint: cons=" ^ sbt bsym_table cons);
+*)
     cons
   in
+
+(* NOW ACTUALLY BIND TYPE CONSTRAINT *)
   let bcons = bind_type_constraint ivs in
-  let bcons = Flx_beta.beta_reduce "flx_bbind: constraint" state.counter bsym_table sym.Flx_sym.sr bcons in
+  let bcons = 
+    if bcons = bbool true then bcons else 
+(*
+    let _ = print_endline ("[Flx_bind_symbol] Beta reducing type constraint : bcons=" ^ sbt bsym_table bcons) in
+    let bcons = Flx_beta.beta_reduce "flx_bbind: constraint" state.counter bsym_table sym.Flx_sym.sr bcons in 
+    let _ = print_endline ("[Flx_bind_symbol] Beta reduced type constraint : bcons=" ^ sbt bsym_table bcons) in
+*)
+    bcons
+  in
 (*
   print_endline ("[flx_bbind] bound type constraint bcons = " ^ sbt bsym_table bcons);
 *)

@@ -134,6 +134,7 @@ if name = debugid then
 
   if name = debugid then begin
     print_endline ("Argument  sigs= " ^  catmap "->" (sbt bsym_table) arg_types);
+    print_endline ("spec_result = " ^  catmap "->" (sbt bsym_table) curry_domains);
     print_endline ("Candidate sigs= " ^  catmap "->" (sbt bsym_table) curry_domains);
   end;
 
@@ -837,10 +838,12 @@ if name = "accumulate" then print_endline "Considering function .. ";
       clierrx "[flx_bind/flx_overload.ml:1028: E250] " sr ("Failed to bind candidate return type! fn='" ^ name ^
         "', type=" ^ sbt bsym_table base_result)
   in
+  let spec_result = beta_reduce "flx_overload: consider(1) " counter bsym_table sr spec_result in
 
   let spec_domain = 
     specialize_domain sr base_vs entry_kind.sub_ts domain
   in
+  let spec_domain = beta_reduce "flx_overload: consider(2) " counter bsym_table sr spec_domain in
 (*
   print_endline ("Spec domain input to make_equations " ^ sbt bsym_table spec_domain);
 *)

@@ -143,6 +143,14 @@ let varmap_of_mgu mgu =
 let tsubst sr (vs:Flx_kind.bvs_t) ts t =
   varmap_subst (mk_varmap sr vs ts) t
 
+let ksubst sr (bks:Flx_kind.bks_t) ks t =
+  if List.length bks <> List.length ks then assert false;
+  if List.length bks <> 0 then begin
+    print_endline ("Flx_btype.ksubst (kind variable substitution) not implemented yet");
+    assert false
+  end;
+  t
+
 let neuter_polyrecs msg t = 
   let rec aux t = 
     match Flx_btype.map ~f_btype:aux t with

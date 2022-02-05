@@ -56,7 +56,8 @@ if index = 37461 then print_env env;
   (* Helper function that binds and beta reduces a type. *)
   let bt sr t =
     let t = bind_type' state bsym_table env rs sr t [] mkenv in
-    beta_reduce "flx_lookup: inner_type_of_index" state.counter bsym_table sr t
+    (* let t = beta_reduce "flx_lookup: inner_type_of_index" state.counter bsym_table sr t in *)
+    t
   in
 
   (* First check if we've already bound this index. If so, return the type of

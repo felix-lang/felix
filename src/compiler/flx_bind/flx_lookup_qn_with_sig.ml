@@ -83,7 +83,7 @@ in
     (*
     print_endline "NON PROPAGATING BIND TYPE";
     *)
-    inner_bind_type state bsym_table env sr rs t
+    inner_bind_type "lookup_qn_with_sig'" state bsym_table env sr rs t
   in
   let handle_nonfunction_index index ts =
     begin match get_data state.sym_table index with

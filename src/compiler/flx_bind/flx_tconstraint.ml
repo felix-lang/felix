@@ -144,7 +144,7 @@ print_endline ("type variable " ^ s ^ " constraint = " ^ str_of_kindcode tp);
     )
     vs
   in
-  let type_constraints =List.map (fun t -> Flx_beta.beta_reduce "build type constraints" counter bsym_table sr t) type_constraints in
+  (* let type_constraints =List.map (fun t -> Flx_beta.beta_reduce "build type constraints" counter bsym_table sr t) type_constraints in *)
   let tc = List.fold_left (fun acc t -> 
     match t with 
     | BTYP_tuple [] -> assert false; acc 

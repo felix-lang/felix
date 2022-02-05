@@ -180,10 +180,12 @@ and beta_reduce calltag counter bsym_table sr t1 =
 (*
   print_endline ("---------- " ^ calltag^ " Beta reduce " ^ sbt bsym_table t1 ^ "=" ^ Flx_btype.st t1);
 *)
+  let t1 = Flx_expand_typedef.expand bsym_table counter sr t1 in
   let t2 =
   try
   beta_reduce' calltag counter bsym_table sr [] t1
-  with
+  with exn -> t1
+(*
     | Not_found ->
         failwith ("Beta reduce called from " ^ calltag ^ " f ailed with Not_found in " ^
           sbt bsym_table t1)
@@ -193,11 +195,13 @@ print_endline ("Beta reduce failed with Failure");
           "\nmsg: " ^ s ^ "\nsr= " ^ Flx_srcref.short_string_of_src sr)
     | exn -> print_endline ("Beta reduce failed with exn = " ^ Printexc.to_string exn);
       raise exn
+  
   in
 (*
   print_endline ("============" ^ calltag^ "   reduced= " ^ sbt bsym_table t2 ^ "=" ^ Flx_btype.st t2);
 *)
-  t2
+*)
+  in t2
 
 and type_list_index counter bsym_table ls t =
   (*

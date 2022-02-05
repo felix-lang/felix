@@ -1,7 +1,11 @@
 open Flx_ast
 open Flx_typing
 
-let debugid = ""
+let debugid = 
+  try Sys.getenv "FLX_COMPILER_OVERLOAD_DEBUG_ID"   
+  with Not_found -> ""
+
+
 let strtyp t = Flx_print.string_of_typecode t
 
 (* see also "reorder" function .. hmm .. *)
@@ -141,12 +145,17 @@ if name = debugid then print_endline ("Can't find bound symbol table entry, bind
       with exn -> 
        print_endline ("[Flx_resolve] Binding: " ^ name ^ ": Can't bind base domain type " ^ strtyp base_domain);
        print_endline ("[Flx_resolve] " ^ Flx_srcref.long_string_of_src sym.Flx_sym.sr); 
-       print_endline (Printexc.to_string exn);
+       print_endline ("[Flx_resolve] Exception: " ^ Printexc.to_string exn);
+       print_endline ("{Flx_resolve] TERMINATING");
        assert false
     in
     let base_result = 
      try bt sym.Flx_sym.sr base_result 
-     with _ -> print_endline ("Can't bind base result type " ^ strtyp base_result); Flx_btype.btyp_none()
+     with exn -> 
+       print_endline ("[Flx_resolve] WARNING: Can't bind base result type " ^ strtyp base_result); 
+       print_endline ("[Flx_resolve] Exception: " ^ Printexc.to_string exn);
+       print_endline ("[Flx_resolve] Returning btyp_none()");
+       Flx_btype.btyp_none()
     in
     domain,base_result
   in

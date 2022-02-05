@@ -444,6 +444,7 @@ if i = 14871 then
 
 
 let fixup_typeclass_instance syms bsym_table sr i ts =
+  let ts = List.map (Flx_beta.beta_reduce "fixup_typeclass_instance" syms.counter bsym_table sr) ts in
   tcsubst syms bsym_table sr i ts
 
 

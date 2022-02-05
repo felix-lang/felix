@@ -42,7 +42,7 @@ let base_type_of_literal sr {Flx_literal.felix_type=t } = `TYP_name (sr,t,[])
 let type_of_literal inner_bind_type state bsym_table env sr v =
   let _,_,root,_,_ = List.hd (List.rev env) in
   let t = base_type_of_literal sr v in
-  let bt = inner_bind_type state bsym_table env sr rsground t in
+  let bt = inner_bind_type "Flx_bind_expression:type_of_literal" state bsym_table env sr rsground t in
   bt
 
 let handle_map sr (f,ft) (a,at) =
@@ -126,7 +126,13 @@ let rec bind_expression'
   let bt sr t =
     (* we're really wanting to call bind type and propagate depth ? *)
     let t = bind_type' state bsym_table env { rs with depth=rs.depth +1 } sr t [] mkenv in
+(*
+    print_endline ("Flx_bind_expression will try to beta reduce " ^ sbt bsym_table t);
+*)
     let t = beta_reduce "flx_lookup: bind_expression'(1)" state.counter bsym_table sr t in
+(*
+    print_endline ("Flx_bind_expression beta reduce result =  " ^ sbt bsym_table t);
+*)
     t
   in
   let ti sr i ts =

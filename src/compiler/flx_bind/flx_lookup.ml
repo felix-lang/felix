@@ -225,14 +225,14 @@ and lookup_qn_in_env'
    I should test that ..
 
 *)
-and inner_bind_type state (bsym_table:Flx_bsym_table.t) env sr rs (t:typecode_t) =
+and inner_bind_type calltag state (bsym_table:Flx_bsym_table.t) env sr rs (t:typecode_t) =
 (*
-  print_endline ("[inner bind_type] " ^ string_of_typecode t);
+  print_endline (calltag ^ "[inner bind_type] " ^ string_of_typecode t);
 *)
   let mkenv i = build_env state bsym_table (Some i) in
   let bt =
     try
-      bind_type' state bsym_table env rs sr t [] mkenv
+      bind_type' state bsym_table env rs sr t [] mkenv (* calls Flx_bind_type.bind_type *)
 
     with
       | Free_fixpoint b ->
@@ -243,12 +243,10 @@ and inner_bind_type state (bsym_table:Flx_bsym_table.t) env sr rs (t:typecode_t)
   in
 (*
   print_endline ("Bound type= " ^ sbt bsym_table bt);
-*)
   let bt =
-    try beta_reduce "flx_lookup: inner_bind_type" state.counter bsym_table sr bt
+    try beta_reduce (calltag ^ ":[flx_lookup: inner_bind_type] " ) state.counter bsym_table sr bt
     with Not_found -> failwith ("Beta reduce failed with Not_found " ^ sbt bsym_table bt)
   in
-(*
     print_endline ("Beta reduced type= " ^ sbt bsym_table bt);
 *)
     bt
@@ -1494,7 +1492,7 @@ let lookup_sn_in_env
 print_endline ("Lookup suffixed name " ^ string_of_suffixed_name sn);
 *)
   let sr = src_of_suffixed_name sn in
-  let bt t = inner_bind_type state bsym_table env sr rsground t in
+  let bt t = inner_bind_type "lookup_sn_in_env" state bsym_table env sr rsground t in
   match sn with
   | #qualified_name_t as x ->
     begin match
@@ -1504,7 +1502,7 @@ print_endline ("Lookup suffixed name " ^ string_of_suffixed_name sn);
     end
 
   | `AST_suffix (sr,(qn,suf)) ->
-    let bsuf = inner_bind_type state bsym_table env sr rsground suf in
+    let bsuf = inner_bind_type "lookup_sn_in_env" state bsym_table env sr rsground suf in
     (* OUCH HACKERY *)
     let (be,t) =
       lookup_qn_with_sig' state bsym_table sr sr env rsground qn [bsuf]
@@ -1517,7 +1515,7 @@ print_endline ("Lookup suffixed name " ^ string_of_suffixed_name sn);
 
 let bind_type state bsym_table env sr t =
   try
-  inner_bind_type state bsym_table env sr rsground t
+  inner_bind_type "Flx_lookup:bind_type" state bsym_table env sr rsground t
   with Not_found -> failwith "bind type raised Not_found [BUG]"
 
 let bind_expression state bsym_table env e  =

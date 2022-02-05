@@ -150,9 +150,8 @@ let type_apply br beta_reduce' calltag counter bsym_table sr termlist t t1 t2 =
        "Type="^ Flx_btype.st t1 ^", kind=" ^ Flx_kind.sk m1)
     end;
 
-
 (*
-print_endline ("Attempting to beta-reduce type function application " ^ sbt bsym_table t);
+print_endline ("Flx_beta " ^calltag ^ " Attempting to beta-reduce type function application " ^ sbt bsym_table t);
 *)
     let isrecfun = cal_isrecfun calltag bsym_table termlist t1 t in 
 (*
@@ -166,6 +165,9 @@ print_endline ("Calculated isrecfun = " ^ if isrecfun then "true" else "false");
     let isrec = 
       if isrecfun then
         let fn = getrecfun () in
+(*
+print_endline ("got recfun = " ^ sbt bsym_table fn);
+*)
         let arg = match fn with 
           | BTYP_type_function ([i,mt],ret,body) -> btyp_type_var (i,mt)
           | BTYP_type_function (ls,ret,body) -> 

@@ -48,7 +48,13 @@ let merge_con
 (*
 print_endline ("Merge cons: " ^ string_of_typecode con1 ^ " and " ^ string_of_typecode con2);
 *)
-  let t = `TYP_typeop (Flx_srcref.dummy_sr,"_staticbool_and", (`TYP_type_tuple [con1; con2]), Flx_ast.KND_bool) in
+  let t = 
+    match con1, con2 with
+    | `TYP_bool true, x 
+    | x, `TYP_bool true -> x
+    | _ -> 
+    `TYP_typeop (Flx_srcref.dummy_sr,"_staticbool_and", (`TYP_type_tuple [con1; con2]), Flx_ast.KND_bool) 
+  in
   let rtcr = uniq_list (rtcr1 @ rtcr2) in
   { raw_type_constraint=t; raw_typeclass_reqs=rtcr}
 

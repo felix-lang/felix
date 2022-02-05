@@ -163,13 +163,16 @@ and bind_dir
          print_endline ("Original exception: " ^ Printexc.to_string exn);
          raise exn
     in
+(*
     try
     beta_reduce "flx_lookup: bind_dir"
       state.counter
       bsym_table
       dummy_sr
       btyp
-    with exn -> print_endline ("Beta-reduction failed, type " ^ sbt bsym_table btyp); raise exn
+    with exn -> print_endline ("Flx_env: Beta-reduction failed, type " ^ sbt bsym_table btyp); raise exn
+*)
+    btyp
     ) ts' 
   in
   (*

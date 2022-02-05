@@ -20,6 +20,11 @@ open Flx_bbind_state
 
 let debug = false
 
+let showpasses = 
+  try let _ = Sys.getenv "FLX_COMPILER_SHOW_BINDING_PASSES" in true
+  with Not_found -> false
+
+
 let hfind msg h k =
   try Flx_sym_table.find h k
   with Not_found ->
@@ -43,9 +48,8 @@ let rec fix_typeofs state bsym_table t =
 
 
 let bbind (state:Flx_bbind_state.bbind_state_t) start_counter ref_counter bsym_table =
-(*
-print_endline ("Flx_bbind.bbind *********************** ");
-*)
+if showpasses then
+print_endline ("Flx_bbind.bbind *********************** " ^ string_of_int (Flx_bsym_table.length bsym_table));
   (* loop through all counter values [HACK] to get the indices in sequence, AND,
    * to ensure any instantiations will be bound, (since they're always using the
    * current value of state.counter for an index. Note that in the process of
@@ -54,16 +58,11 @@ print_endline ("Flx_bbind.bbind *********************** ");
    *)
   (* PASS 0, TYPEDEFS ONLY *)
 
-(*
-print_endline ("\n====================\nSetting type aliases to nominal\n===============\n");
-*)
+if showpasses then
+print_endline ("\n====================\nPASS 1 PLAIN BINDING: Setting type aliases to nominal\n===============\n");
   let saved_env_cache = Hashtbl.copy state.lookup_state.Flx_lookup_state.env_cache in
   let saved_visited = Hashtbl.copy state.visited in
 
-(*
-  let bsym_table_dummy = Flx_bsym_table.create_fresh () in 
-*)
-  let bsym_table_dummy = bsym_table in
   set_nominal_typedefs state;
   let counter = ref start_counter in
   while !counter < !ref_counter do
@@ -92,7 +91,7 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
 (*
         print_endline ("Binding typefun " ^ sym.Flx_sym.id ^ "<"^string_of_int i^"> = " ^ string_of_typecode t);
 *)
-                begin try Flx_bind_symbol.bbind_symbol state bsym_table_dummy i parent sym
+                begin try Flx_bind_symbol.bbind_symbol state bsym_table i parent sym
                 with Not_found ->
                   try match hfind "bbind" state.sym_table i with { Flx_sym.id=id } ->
                     print_endline ("Binding error, Not_found thrown binding " ^ id ^ " index " ^
@@ -109,7 +108,7 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
 (*
         print_endline ("Binding typedef " ^ sym.Flx_sym.id ^ "<"^string_of_int i^"> = " ^ string_of_typecode t);
 *)
-                begin try Flx_bind_symbol.bbind_symbol state bsym_table_dummy i parent sym
+                begin try Flx_bind_symbol.bbind_symbol state bsym_table i parent sym
                 with Not_found ->
                   try match hfind "bbind" state.sym_table i with { Flx_sym.id=id } ->
                     print_endline ("Binding error, Not_found thrown binding " ^ id ^ " index " ^
@@ -130,34 +129,47 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
   Flx_bsym_table.iter (fun bid parent bsym ->
     let bbdcl = Flx_bsym.bbdcl bsym in
     match bbdcl with
-    | BBDCL_nominal_type_alias _ -> print_endline ("typedef " ^ string_of_int bid ^ " -> " ^
-      Flx_print.string_of_bbdcl bsym_table_dummy bbdcl bid)
+    | BBDCL_type_function _ 
+    | BBDCL_nominal_type_alias _ -> print_endline (bsym.id ^ "    typedef " ^ string_of_int bid ^ " -> " ^
+      Flx_print.string_of_bbdcl bsym_table bbdcl bid)
     | _ -> ()
-  ) bsym_table_dummy;  
+  ) bsym_table;  
   print_endline ("\n==========================================\n");
 *)
-
+  (* DOING EXPANSION NOW *)
   Flx_bsym_table.iter (fun bid parent bsym ->
     let bbdcl = Flx_bsym.bbdcl bsym in
     let sr = Flx_bsym.sr bsym in
     match bbdcl with
     | BBDCL_nominal_type_alias (bvs,t) -> 
-      
+(*
+     print_endline ("******* EXPANDING TYPEDEF " ^ bsym.id); 
+*)
       let r = Flx_expand_typedef.expand bsym_table state.counter sr t in
       let b = bbdcl_structural_type_alias (bvs, r) in 
-      Flx_bsym_table.update_bbdcl bsym_table_dummy bid b
+      Flx_bsym_table.update_bbdcl bsym_table bid b
+
+    | BBDCL_type_function (bks,t) -> 
+(*
+     print_endline ("******* EXPANDING TYPEFUNCTION " ^ bsym.id); 
+*)
+      let r = Flx_expand_typedef.expand bsym_table state.counter sr t in
+      let b = bbdcl_type_function (bks, r) in 
+      Flx_bsym_table.update_bbdcl bsym_table bid b
  
     | _ -> ()
-  ) bsym_table_dummy;
+  ) bsym_table;
 (*
   print_endline ("\n=====================\n TYPEDEFS after expansion\n=====================\n");
   Flx_bsym_table.iter (fun bid parent bsym ->
     let bbdcl = Flx_bsym.bbdcl bsym in
     match bbdcl with
-    | BBDCL_structural_type_alias _ -> print_endline ("typedef " ^ string_of_int bid ^ " -> " ^
-      Flx_print.string_of_bbdcl bsym_table_dummy bbdcl bid)
+    | BBDCL_structural_type_alias _ -> print_endline (bsym.id ^ "     typedef " ^ string_of_int bid ^ " -> " ^
+      Flx_print.string_of_bbdcl bsym_table bbdcl bid)
+    | BBDCL_type_function (bks, t) -> print_endline (bsym.id ^ "      typefun " ^ string_of_int bid ^ " -> " ^
+      Flx_print.string_of_bbdcl bsym_table bbdcl bid)
     | _ -> ()
-  ) bsym_table_dummy;  
+  ) bsym_table;  
 *)
 (*
   print_endline ("\n=====================\n VAR CACHE (function codomains) \n=====================\n");
@@ -183,30 +195,16 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
   state.visited <-saved_visited;
   state.lookup_state.Flx_lookup_state.env_cache <- saved_env_cache;
 
-(*
-  (* copy the typedefs into the main symbol table *)
-   Flx_bsym_table.iter (fun bid parent bsym ->
-    let bbdcl = Flx_bsym.bbdcl bsym in
-    match bbdcl with
-    | BBDCL_structural_type_alias _ -> 
-      Flx_bsym_table.add bsym_table bid parent bsym;
-      Hashtbl.add state.visited bid ()
-    | _ -> 
-      print_endline ("Copy typedefs: Not copying " ^ string_of_int bid);
-      assert false;
-      ()
-  ) bsym_table_dummy;  
-*)
+if showpasses then
+  print_endline ("\n===================\nSetting type aliases to structural\n=======================\n");
 
-(*
-  print_endline ("\n===================\nSetting type aliases to structura\n=======================\n");
-*)
   (* PASS 1, TYPE ONLY *)
   set_structural_typedefs state;
 
-(*
-print_endline ("Fixing typeofs");
-*)
+if showpasses then
+  print_endline ("\n===================\nFixing typeofs \n=======================\n");
+
+
   Flx_bsym_table.iter (fun bid parent bsym ->
     let bbdcl = Flx_bsym.bbdcl bsym in
     let sr = Flx_bsym.sr bsym in
@@ -215,12 +213,19 @@ print_endline ("Fixing typeofs");
       let r = fix_typeofs state bsym_table t in 
       let b = bbdcl_structural_type_alias (bvs, r) in 
       Flx_bsym_table.update_bbdcl bsym_table bid b
+
+    | BBDCL_type_function (bks,t) -> 
+      let r = fix_typeofs state bsym_table t in 
+      let b = bbdcl_type_function (bks, r) in 
+      Flx_bsym_table.update_bbdcl bsym_table bid b
  
     | _ -> ()
-  ) bsym_table_dummy;
+  ) bsym_table;
 (*
 print_endline ("Done fixing typeofs");
 *)
+if showpasses then
+  print_endline ("\n===================\nBinding nominal types \n=======================\n");
   let counter = ref start_counter in
   while !counter < !ref_counter do
     let i = !counter in
@@ -257,6 +262,8 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
   done
   ;
 
+if showpasses then
+  print_endline ("\n===================\nHandling Subtyping Coercions\n=======================\n");
   (* PASS 2, SUBTYPE COERCIONS ONLY *)
   let counter = ref start_counter in
   while !counter < !ref_counter do
@@ -367,6 +374,8 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
   done
   ;
 
+if showpasses then
+  print_endline ("\n===================\nBinding non-deferred functions\n=======================\n");
   (* PASS 3, NON DEFERRED FUNCTIONS *)
   let defered = ref [] in
   let counter = ref start_counter in
@@ -397,6 +406,8 @@ print_endline ("Binding symbol " ^ symdef.Flx_sym.id ^ "<" ^ si i ^ ">");
   done
   ;
 
+if showpasses then
+  print_endline ("\n===================\nBinding deferred functions\n=======================\n");
   (* PASS 4 DEFERRED FUNCTIONS *)
 if (List.length (!defered) <> 0) then begin
 print_endline ("DEFERED PROCESSING STARTS");
@@ -421,6 +432,23 @@ print_endline ("[flx_bbind] DEFERED bind_symbol " ^ sym.Flx_sym.id ^ "?? calling
   (!defered)
   ;
 print_endline ("DEFERED PROCESSING ENDS");
-end
 
+end;
+
+if showpasses then
+print_endline ("\n===================\nBETA EVERYTHING \n=======================\n");
+
+Flx_bsym_table.iter 
+  (fun bid parent bsym ->
+    let f_btype t = Flx_beta.beta_reduce "Global beta reduction" state.counter bsym_table  Flx_srcref.dummy_sr t in
+    let f_bexpr e = Flx_bexpr.map ~f_btype e in
+    let f_bexe exe = Flx_bexe.map ~f_btype exe in 
+    let bbdcl = Flx_bbdcl.map ~f_btype ~f_bexe ~f_bexpr bsym.bbdcl in
+    let bsym = Flx_bsym.replace_bbdcl bsym bbdcl in 
+    Flx_bsym_table.update bsym_table bid bsym
+  ) bsym_table
+;
+
+if showpasses then
+print_endline ("\n===================\nBINDING COMPLETE \n=======================\n")
 
