@@ -66,7 +66,6 @@ let stack_calls syms bsym_table =
 (* Do some platform independent optimizations of the code. *)
 let optimize_bsym_table' syms bsym_table (root_proc: int option) =
   print_debug syms "//OPTIMISING";
-
   let bsym_table = print_time syms "[flx_opt]; Expanding Coercions (polymorphic)" begin fun () ->
   (* make wrappers for non-function functional values *)
   Flx_xcoerce.expand_coercions syms bsym_table end

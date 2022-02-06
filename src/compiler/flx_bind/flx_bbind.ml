@@ -441,8 +441,8 @@ print_endline ("\n===================\nBETA EVERYTHING \n=======================
 Flx_bsym_table.iter 
   (fun bid parent bsym ->
     let f_btype t = Flx_beta.beta_reduce "Global beta reduction" state.counter bsym_table  Flx_srcref.dummy_sr t in
-    let f_bexpr e = Flx_bexpr.map ~f_btype e in
-    let f_bexe exe = Flx_bexe.map ~f_btype exe in 
+    let rec f_bexpr e =  Flx_bexpr.map ~f_btype ~f_bexpr e in
+    let f_bexe exe = Flx_bexe.map ~f_btype ~f_bexpr exe in 
     let bbdcl = Flx_bbdcl.map ~f_btype ~f_bexe ~f_bexpr bsym.bbdcl in
     let bsym = Flx_bsym.replace_bbdcl bsym bbdcl in 
     Flx_bsym_table.update bsym_table bid bsym

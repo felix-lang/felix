@@ -262,6 +262,10 @@ justified by theory, it doesn't check if, for example, that
 compact linear type transformations are actually isomorphisms, etc
 *)
 and expand_coercion new_table bsym_table counter parent remap ((srcx,srct) as srce) dstt sr =
+(*
+print_endline ("Src type " ^ Flx_print.sbt bsym_table srct);
+print_endline ("Dst type " ^ Flx_print.sbt bsym_table dstt);
+*)
   if Flx_typeeq.type_eq (Flx_print.sbt bsym_table) counter srct dstt
   then srce
   else
@@ -392,9 +396,11 @@ and process_expr new_table bsym_table counter parent sr expr =
 
 let process_exe new_table bsym_table counter parent exe =
   let sr = Flx_bexe.get_srcref exe in
-  let newexe = Flx_bexe.map ~f_bexpr:(process_expr new_table bsym_table counter parent sr) exe in
 (*
   print_endline ("Old bexe=" ^ Flx_print.sbx bsym_table exe);
+*)
+  let newexe = Flx_bexe.map ~f_bexpr:(process_expr new_table bsym_table counter parent sr) exe in
+(*
   print_endline ("New bexe=" ^ Flx_print.sbx bsym_table newexe);
 *)
   newexe
