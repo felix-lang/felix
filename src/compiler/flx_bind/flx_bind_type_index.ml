@@ -77,7 +77,6 @@ let debug = false
 
 let rec bind_type_index 
   bind_type'
-  inner_bind_type (* why is this here it isn't used *)
   state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts mkenv
 =
   (* fixup the fixpoints *)
