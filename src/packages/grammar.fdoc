@@ -69,6 +69,15 @@
 syntax types {
   requires expressions;
 
+  // kind language: products and arrows and simple names only
+  skindexpr := k[sarrow_pri] =># "_1";
+  k[sarrow_pri] := k[>sarrow_pri] "->" k[sarrow_pri] =># "`(knd_arrow (,_1 ,_3))";
+  k[sproduct_pri] := k[>sproduct_pri] ("*" k[>sproduct_pri])+ =># "(chain 'knd_tuple _1 _2)" note "mul";
+  k[satomic_pri] := katom =># "_1";
+  katom := sname =># "`(knd_name ,_1)";
+  skindexpr_comma_list = list::commalist1<skindexpr>;
+ 
+
   stype := t[slambda_pri] =># "_1";
   stypeexpr := t[>sor_condition_pri] =># "_1";
   stypeexpr_comma_list = list::commalist1<stypeexpr>;
@@ -180,6 +189,7 @@ syntax types {
   t[sthename_pri] := "&>"          t[sthename_pri] =># "`(typ_wref ,_sr ,_2)";
   t[sthename_pri] := "@"           t[sthename_pri] =># "(tPrefix)";
   t[sthename_pri] := squalified_name =># "_1";
+  t[sthename_pri] := tfuncref =># "_1";
 
 // TYPE MATCH HACKS .. FIX LATER
   t[sthename_pri] := "?" sname =># "`(typ_patvar ,_sr ,_2)";
@@ -567,7 +577,8 @@ syntax expressions {
 
   ssimple_name_parts := sname =># "`(,_1 ())";
   ssimple_name_parts := sname "[" "]" =># "`(,_1 ())";
-  ssimple_name_parts := sname "[" stypeexpr_comma_list "]" =># "`(,_1 ,_3)";
+  ssimple_name_parts := sname "[" stypeexpr_comma_list "]" =># "`(,_1 (texprs ,_3))";
+  ssimple_name_parts := sname "<" skindexpr_comma_list ">" =># "`(,_1 (kexprs ,_3))";
 
   //$ Suffixed name (to name functions).
   ssuffixed_name := squalified_name "of" t[sthename_pri] =>#
@@ -1310,8 +1321,8 @@ syntax cbind {
                (tdec `(ast_abs_decl ,_sr ,_2 ,dfltvs (Pod) (Str ,_2) ,_5))
                (argt `(typ_tuple ,_sr (,(nos _2) ,(nos _2))))
                (eqdef `(ast_fun_decl ,_sr "==" ,dfltvs ,(mktylist argt) ,(nos "bool") (StrTemplate "$1==$2") rreq_true ""))
-               (instdef `(ast_instance ,_sr ,dfltvs (ast_name ,_sr "Eq" (,(nos _2))) (,eqdef)))
-               (inherit `(ast_inject_module ,_sr ,dfltvs (ast_name ,_sr "Eq" (,(nos _2)))))
+               (instdef `(ast_instance ,_sr ,dfltvs (ast_name ,_sr "Eq" (texprs (,(nos _2)))) (,eqdef)))
+               (inherit `(ast_inject_module ,_sr ,dfltvs (ast_name ,_sr "Eq" (texprs (,(nos _2))))))
              )
              `(ast_seq ,_sr ,(append `(,tdec ,instdef ,inherit) (map constdef _4)))
            )
@@ -1335,9 +1346,9 @@ syntax cbind {
                (tdec `(ast_abs_decl ,_sr ,_2 ,dfltvs (Pod) (Str ,_2) ,_5))
                (argt `(typ_tuple ,_sr (,(nos _2) ,(nos _2))))
                (eqdef `(ast_fun_decl ,_sr "==" ,dfltvs ,(mktylist argt) ,(nos "bool") (StrTemplate "$1==$2") rreq_true ""))
-               (instdef `(ast_instance ,_sr ,dfltvs (ast_name ,_sr "Eq" (,(nos _2))) (,eqdef)))
-               (inherit `(ast_inject_module ,_sr ,dfltvs (ast_name ,_sr "Eq" (,(nos _2)))))
-               (inherit2 `(ast_inject_module ,_sr ,dfltvs (ast_name ,_sr "Bits" (,(nos _2)))))
+               (instdef `(ast_instance ,_sr ,dfltvs (ast_name ,_sr "Eq" (texprs (,(nos _2)))) (,eqdef)))
+               (inherit `(ast_inject_module ,_sr ,dfltvs (ast_name ,_sr "Eq" (texprs (,(nos _2))))))
+               (inherit2 `(ast_inject_module ,_sr ,dfltvs (ast_name ,_sr "Bits" (texprs (,(nos _2))))))
              )
              `(ast_seq ,_sr ,(append `(,tdec ,instdef ,inherit ,inherit2) (map constdef _4)))
            )
@@ -4691,7 +4702,7 @@ syntax statements {
 
   //$ Allow T is Real to mean Real[T].
   // probably should generalise to use ast_lookup 
-  stypeclass_constraint := stypeexpr "is" sname =># "`(ast_name ,_sr ,_3 (,_1))";
+  stypeclass_constraint := stypeexpr "is" sname =># "`(ast_name ,_sr ,_3 (texprs (,_1)))";
 
   //$ A constraint specifying types require an instance
   //$ of a particular type class.
@@ -5146,7 +5157,7 @@ syntax texsyms {
                (outpolyvars `(,(append struct-polyvars polyvars) ,polyaux))
                (kind (if (isvoid? (first t5)) 'PRef 'PVal))
                (self-name 'self)
-               (self-type `(ast_name ,_sr ,struct-name ,struct-pvs))
+               (self-type `(ast_name ,_sr ,struct-name (texprs ,struct-pvs)))
                (self-arg `(,kind ,self-name ,self-type none)) 
                (self-args `((,self-arg) none))
                (args (cons self-args t4))
@@ -5200,10 +5211,10 @@ SCHEME """
        (self-type 
          (if (isvoid? (first t5))
            (begin ;; (display "procedure\n") 
-             `(typ_ref ,_sr (ast_name ,_sr ,struct-name ,struct-pvs))
+             `(typ_ref ,_sr (ast_name ,_sr ,struct-name (texprs ,struct-pvs)))
            )
            (begin ;; (display "function\n")
-             `(ast_name ,_sr ,struct-name ,struct-pvs)
+             `(ast_name ,_sr ,struct-name (texprs ,struct-pvs))
            )
          )
        )
@@ -5234,7 +5245,7 @@ syntax type_decls {
   skvar_comma_list := skvar ("," skvar)* =># "(cons _1 (map second _2))";
   skvar_comma_list := sepsilon =># "'()";
   skvarlist := sepsilon =># "'()";
-  skvarlist := "[" skvar_comma_list "]"=># "_2";
+  skvarlist := "<" skvar_comma_list ">"=># "_2";
   skf_declname := sname skvarlist =># "`(,_1 ,_2)";
 
 
@@ -5606,17 +5617,17 @@ syntax variables {
 @tangle chips.fsyn
 syntax chips {
   //$ input schannel type %<T
-  pintype := "%<" t[spower_pri] =># '`(ast_name ,_sr "ischannel" (,_2))';
+  pintype := "%<" t[spower_pri] =># '`(ast_name ,_sr "ischannel" (texprs (,_2)))';
 
   //$ output schannel type %>T
-  pintype := "%>" t[spower_pri] =># '`(ast_name ,_sr "oschannel" (,_2))';
+  pintype := "%>" t[spower_pri] =># '`(ast_name ,_sr "oschannel" (texprs (,_2)))';
 
   //$ input/output schannel type %<>T
-  pintype := "%<>" t[spower_pri] =># '`(ast_name ,_sr "ioschannel" (,_2))';
+  pintype := "%<>" t[spower_pri] =># '`(ast_name ,_sr "ioschannel" (texprs (,_2)))';
 
   //$ duplex schannel type %<INPUT%>OUTPUT
   pintype := "%<" t[spower_pri] "%>" t[spower_pri] =># 
-    '`(ast_name ,_sr "duplex_schannel" (,_2 ,_4))'
+    '`(ast_name ,_sr "duplex_schannel" (texprs (,_2 ,_4)))'
   ;
 
   pinspec :=  "pin" sname ":"  pintype =># "`(,_2 ,_4)"; 
@@ -6193,17 +6204,17 @@ syntax spipeexpr
   x[ssetunion_pri] := x[>ssetunion_pri] ">->" x[>ssetunion_pri] =># "(infix 'xpipe)"; 
 
   //$ input schannel type %<T
-  t[sprefixed_pri] := "%<" t[spower_pri] =># '`(ast_name ,_sr "ischannel" (,_2))';
+  t[sprefixed_pri] := "%<" t[spower_pri] =># '`(ast_name ,_sr "ischannel" (texprs (,_2)))';
 
   //$ output schannel type %>T
-  t[sprefixed_pri] := "%>" t[spower_pri] =># '`(ast_name ,_sr "oschannel" (,_2))';
+  t[sprefixed_pri] := "%>" t[spower_pri] =># '`(ast_name ,_sr "oschannel" (texprs (,_2)))';
 
   //$ input/output schannel type %<>T
-  t[sprefixed_pri] := "%<>" t[spower_pri] =># '`(ast_name ,_sr "ioschannel" (,_2))';
+  t[sprefixed_pri] := "%<>" t[spower_pri] =># '`(ast_name ,_sr "ioschannel" (texprs (,_2)))';
 
   //$ duplex schannel type %<INPUT%>OUTPUT
   t[sprefixed_pri] := "%<" t[spower_pri] "%>" t[spower_pri] =># 
-    '`(ast_name ,_sr "duplex_schannel" (,_2 ,_4))'
+    '`(ast_name ,_sr "duplex_schannel" (texprs (,_2 ,_4)))'
   ;
 }
 

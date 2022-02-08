@@ -27,6 +27,8 @@ let expr_of_qualified_name e =
   | `AST_lookup (sr,(e,name,ts)) -> `EXPR_lookup (sr,(e,name,ts))
   | `AST_index (sr,name,index) -> `EXPR_index (sr,name,index)
   | `AST_callback (sr,name) -> `EXPR_callback (sr,name)
+  | `AST_fname _  -> assert false (* fname and flookup are only for types *)
+  | `AST_flookup _  -> assert false (* fname and flookup are only for types *)
 
 let expr_of_suffixed_name e =
   match e with
@@ -38,6 +40,8 @@ let expr_of_suffixed_name e =
   | `AST_index (sr,name,index) -> `EXPR_index (sr,name,index)
   | `AST_callback (sr,name) -> `EXPR_callback (sr,name)
   | `AST_suffix (sr,(name,ts)) -> `EXPR_suffix (sr,(name,ts))
+  | `AST_fname _  -> assert false (* fname and flookup are only for types *)
+  | `AST_flookup _  -> assert false (* fname and flookup are only for types *)
 
 let type_of_list = function
   | [x] -> x
@@ -71,8 +75,10 @@ let string_of_type_name (t:typecode_t) = match t with
   | `TYP_ellipsis -> "`TYP_ellipsis"
   | `TYP_void _ -> "`TYP_void"
   | `TYP_name _ -> " `TYP_name"
+  | `TYP_fname _ -> " `TYP_fname"
   | `TYP_case_tag _ -> " `TYP_case_tag"
   | `TYP_lookup _ -> " `TYP_lookup"
+  | `TYP_flookup _ -> " `TYP_flookup"
   | `TYP_index _ -> " `TYP_index"
   | `TYP_callback _ -> " `TYP_callback"
   | `TYP_suffix _ -> " `TYP_suffix"

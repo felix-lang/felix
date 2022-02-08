@@ -88,6 +88,7 @@ and xtype_t sr x : typecode_t =
 (*
 print_endline ("sex2flx:type] " ^ Sex_print.string_of_sex x);
 *)
+  let ki x = kind_of_sex sr x in
   let ti t = xtype_t sr t in
   let ex e = xexpr_t sr e in
   match x with
@@ -108,14 +109,33 @@ print_endline ("sex2flx:type] " ^ Sex_print.string_of_sex x);
   | Id "typ_none" -> 
     `TYP_none
 
-  | Lst [Id "ast_name"; sr; id; Lst ts] -> 
-    let ts = map ti ts in
+  | Lst [Id "ast_name"; sr; id; indices] -> 
     let id = xid id in
-    `TYP_name (xsr sr, id, ts)
+    begin match indices with
+    | Lst []  -> `TYP_name (xsr sr, id, [])
+    | Lst [Id "texprs"; Lst ts] ->
+      let ts = map ti ts in
+      `TYP_name (xsr sr, id, ts)
+    | Lst [Id "kexprs"; Lst ks] ->
+      let ks = map ki ks in
+      `TYP_fname (xsr sr, id, ks)
+    | x -> err x "ast_name(typename)"
+    end
 
-  | Lst [Id "ast_lookup";  Lst [e; Str s; Lst ts]] -> 
+  | Lst [Id "ast_lookup";  Lst [e; Str s; indices]] -> 
    (* this is a hack should just process qualified names .. *)
-    `TYP_lookup (sr,(ex e, s,map ti ts))
+    begin match indices with
+    | Lst []  ->
+      `TYP_lookup (sr,(ex e, s, []))
+    | Lst [Id "texprs"; Lst ts] ->
+      let ts = map ti ts in
+      `TYP_lookup (sr,(ex e, s, ts))
+    | Lst [Id "kexprs"; Lst ks] ->
+      let ks = map ki ks in
+      `TYP_flookup (sr,(ex e, s, ks))
+    | x -> err x "ast_lookup(typename)"
+    end
+
   | Lst [Id "typ_typeset"; sr; Lst ts] ->
     `TYP_typeset (List.map ti ts)
 
@@ -336,10 +356,10 @@ print_endline ("sex2flx:expr] " ^ Sex_print.string_of_sex x);
   | Lst [Id "ast_vsprintf";  sr; Str s] -> `EXPR_vsprintf (xsr sr, s)
   | Lst [Id "ast_interpolate";  sr; Str s] -> `EXPR_interpolate (xsr sr, s)
   | Lst [Id "ast_noexpand"; sr; e] -> `EXPR_noexpand (xsr sr,ex e)
-  | Lst [Id "ast_name"; sr; id; Lst ts] -> 
-(*
-print_endline ("Processing ast_name "^xid id^" in xexpr");
-*)
+  | Lst [Id "ast_name"; sr; id; Lst []] -> 
+    let id = xid id in
+    `EXPR_name (xsr sr, id, [])
+  | Lst [Id "ast_name"; sr; id; Lst [Id "texprs"; Lst ts]] -> 
     let ts = map ti ts in
     let id = xid id in
     `EXPR_name (xsr sr, id, ts)
@@ -355,7 +375,10 @@ print_endline ("Processing ast_name "^xid id^" in xexpr");
   | Lst [Id "ast_projection";  sr; Int i; t] -> `EXPR_projection (xsr sr,ii i,ti t)
   | Lst [Id "ast_identity_function"; sr; t] -> `EXPR_identity_function (xsr sr, ti t)
   | Lst [Id "ast_array_projection";  sr; index; t] -> `EXPR_array_projection (xsr sr,xexpr_t (xsr sr) index,ti t)
-  | Lst [Id "ast_lookup";  Lst [e; Str s; Lst ts]] -> `EXPR_lookup (sr,(ex e, s,map ti ts))
+  | Lst [Id "ast_lookup";  Lst [e; Str s; Lst []]] -> 
+    `EXPR_lookup (sr,(ex e, s, []))
+  | Lst [Id "ast_lookup";  Lst [e; Str s; Lst [Id "texprs"; Lst ts]]] -> 
+    `EXPR_lookup (sr,(ex e, s,map ti ts))
 
   | Lst [Id "ast_apply";  sr; Lst [e1; e2]] -> 
     let sr = xsr sr in

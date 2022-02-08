@@ -130,6 +130,9 @@ and lookup_qn_in_env2'
   print_endline ("[lookup_qn_in_env2] qn=" ^ string_of_qualified_name qn);
   *)
   match qn with
+  | `AST_fname _ -> assert false (* only for type names *)
+  | `AST_flookup _ -> assert false (* only for type names *)
+
   | `AST_callback (sr,qn) -> clierrx "[flx_bind/flx_lookup.ml:317: E83] " sr "[lookup_qn_in_env2] qualified name is callback [not implemented yet]"
 (*
   | `AST_void sr -> clierrx "[flx_bind/flx_lookup.ml:318: E84] " sr "[lookup_qn_in_env2] qualified name is void"

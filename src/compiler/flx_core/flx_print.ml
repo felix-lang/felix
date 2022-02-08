@@ -50,6 +50,12 @@ let rec string_of_qualified_name (n:qualified_name_t) =
         if List.length ts = 0 then ""
         else "[" ^ catmap ", " string_of_typecode ts ^ "]"
       )
+  | `AST_fname (_,name,ts) ->
+      string_of_id name ^
+      (
+        if List.length ts = 0 then ""
+        else "[" ^ catmap ", " str_of_kindcode ts ^ "]"
+      )
   | `AST_case_tag (_,v) -> "case " ^ si v
   | `AST_typed_case (_,v,t) ->
     "(case " ^ si v ^
@@ -60,6 +66,12 @@ let rec string_of_qualified_name (n:qualified_name_t) =
       (
         if length ts = 0 then "" else
         "[" ^ catmap ", " string_of_typecode ts ^ "]"
+      )
+  | `AST_flookup (_,(e,name, ts)) ->
+      "(" ^ se e ^ ")::" ^ string_of_id name ^
+      (
+        if length ts = 0 then "" else
+        "[" ^ catmap ", " str_of_kindcode ts ^ "]"
       )
   | `AST_callback (_,name) -> "callback " ^string_of_qualified_name name
 
@@ -393,6 +405,12 @@ and st prec tc : string =
           if List.length ts = 0 then ""
           else "[" ^ catmap ", " string_of_typecode ts ^ "]"
         )
+    | `TYP_fname (_,name,ts) ->
+        0, string_of_id name ^
+        (
+          if List.length ts = 0 then ""
+          else "<" ^ catmap ", " str_of_kindcode ts ^ ">"
+        )
     | `TYP_case_tag (_,v) -> 0, "case " ^ si v
 
     | `TYP_lookup (_,(e,name, ts)) ->
@@ -401,6 +419,13 @@ and st prec tc : string =
         (
           if length ts = 0 then "" else
           "[" ^ catmap ", " string_of_typecode ts ^ "]"
+        )
+    | `TYP_flookup (_,(e,name, ts)) ->
+        0,
+        "(" ^ string_of_expr e ^ ")::" ^ string_of_id name ^
+        (
+          if length ts = 0 then "" else
+          "<" ^ catmap ", " str_of_kindcode ts ^ ">"
         )
     | `TYP_callback (_,name) -> 0, "callback " ^ string_of_qualified_name name
 

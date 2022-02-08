@@ -50,7 +50,6 @@ print_endline ("Handle type " ^ name ^ " ... bound type is " ^ sbt bsym_table t)
 
   | SYMDEF_type_function _ -> assert false
 
-  | SYMDEF_type_function _ 
   | SYMDEF_type_alias _ ->
 (*
 print_endline ("Lookup_type_name_in_table_dirs_with_sig: Handle type alias " ^ name ^ " ... binding type index " ^ string_of_int index);

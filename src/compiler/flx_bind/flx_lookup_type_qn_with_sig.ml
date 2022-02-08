@@ -24,6 +24,11 @@ open Flx_btype_subst
 open Flx_bid
 open Flx_name_lookup
 
+(* NOTE: how the heck can a type name have a sig? Sure, there are
+type functions, which take types as arguments, but we never do
+overloading or inference on type functions. At least not yet.
+*)
+
 let debug = false
 
 let rec lookup_type_qn_with_sig'
@@ -59,7 +64,7 @@ let lookup_type_qn_with_sig'
   bsym_table
   sra srn
   env rs
-  qn
+  (qn:Flx_ast.qualified_name_t)
   signs
 in
 
@@ -135,7 +140,15 @@ print_endline ("Lookup type qn with sig, name = " ^ string_of_qualified_name qn)
   in
   match qn with
   | `AST_callback (sr,qn) ->
-    failwith "[lookup_qn_with_sig] Callbacks not implemented yet"
+    failwith "[lookup_type_qn_with_sig] Callbacks not implemented yet"
+
+  | `AST_fname _ ->
+    failwith "[lookup_type_qn_with_sig] `AST_fname not implemented yet"
+
+  | `AST_flookup _ ->
+    failwith "[lookup_type_qn_with_sig] `AST_flookup not implemented yet"
+
+
 
 (*
   | `AST_void _ -> clierrx "[flx_bind/flx_lookup.ml:2796: E142] " sra "qualified-name is void"

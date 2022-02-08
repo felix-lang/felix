@@ -317,6 +317,9 @@ print_endline ("LOOKUP 1: varname " ^ si index);
       )
     end
 
+  | `AST_fname (sr,name,ts) -> assert false (* only for type names .. *)
+  | `AST_flookup _ -> assert false (* only for type names .. *)
+
   | `AST_name (sr,name,ts) ->
 (*
 print_endline ("lookup_qn_with_sig' [AST_name] " ^ name ^ ", sigs=" ^ catmap "," (sbt bsym_table) signs);

@@ -593,8 +593,10 @@ print_endline ("Binding `TYP_name " ^s^ " via params to " ^ sbt bsym_table t);
      btyp_instancetype sr
 
   | `TYP_name _
+  | `TYP_fname _
   | `TYP_case_tag _
   | `TYP_lookup _
+  | `TYP_flookup _
   | `TYP_callback _ as x ->
       let x =
         match qualified_name_of_typecode x with

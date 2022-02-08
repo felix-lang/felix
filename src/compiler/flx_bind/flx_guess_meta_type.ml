@@ -44,6 +44,28 @@ TODO!
 (* THIS IS USED in Flx_bind_type_index to bind a btyp_inst during the
 replacement of a typedef with a type expression which is NOT mapped to a structural or
 nominal type alias BBDCL entry by a common index, in other words, a simple typedef
+
+FIXME: it's impossible now to guess the type of a typedef without examining
+the typedef. So it follows you cannot guess the type of a reference to the
+typedef, i.e. the name without lookup. The RIGHT solution here is, if we can't
+be sure, to put a kind variable in.
+
+Later, the kind variable can be fixed by kind inference. In particular when
+we actually lookup a typedef, we can calculate the correct kind from the
+definition.
+
+The problem is, Felix has to provide a bound kind for every type reference,
+so routines which do NOT do lookup but need the kind have one.
+
+During binding, all the types are bound first, so there is now a place
+where the kind variables can be computed (when the refered to type
+is bound, the kind variable for that type can be computed.
+
+So .. this code WILL BREAK in advanced scenarios. So the way forward
+is simple: get rid of the routine entirely, and just always put a kind
+variable. After binding, do a kind unification pass to replace them
+with the correct kinds.
+
 *) 
 let rec guess_metatype sr t : kind =
   match t with
@@ -88,6 +110,14 @@ print_endline (" ** BOUND mata type is " ^ Flx_kind.sk bmt);
   | `TYP_index _
   | `TYP_lookup _ 
   | `TYP_name _ -> (* print_endline "A type name?"; *) kind_type
+
+  (* FIXME: these two cases are OBVIOUSLY WRONG *)
+  (* but without lookup there's no way to fix it *)
+  | `TYP_fname _ -> (* print_endline "A type name?"; *) kind_type
+  | `TYP_flookup _ -> (* print_endline "A type name?"; *) kind_type
+
+
+
   | `TYP_as _ -> print_endline "A type as (recursion)?"; assert false
 
   (* usually actual types! *)
