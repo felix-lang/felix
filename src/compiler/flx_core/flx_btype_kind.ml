@@ -3,8 +3,11 @@ open Flx_exceptions
 open Flx_kind
 
 let rec metatype sr term : kind =
+try
   let t = metatype' sr term in
   t
+with exn -> print_endline ("Mt FAIL " ^ Printexc.to_string exn);
+ assert false
 
 and metatype' sr typ : kind =
   let st t = Flx_btype.st t in
@@ -21,16 +24,32 @@ and metatype' sr typ : kind =
     kind_max (List.map (fun (_,t) -> mt t) bs)
  
   | BTYP_type_function (a,r,body) ->
+(*
+print_endline ("Meta type of type function .. return kind " ^ Flx_kind.sk r);
+*)
     let ps = List.map snd a in
     let argt =
       match ps with
       | [x] -> x
       | _ -> kind_tuple ps
     in
+(*
+print_endline ("Meta type of type function .. parameter kind " ^ Flx_kind.sk argt);
+*)
     let bk =  mt body in
+(*
+let _ = print_endline ("Meta type of type function body " ^ Flx_kind.sk bk) in
+*)
     if kind_ge2 r bk then
-      kind_function (argt,r)
+      let k = kind_function (argt,r) in
+(*
+      let _ = print_endline (" ** RESULT " ^ Flx_kind.sk k) in
+*)
+      k
     else 
+(*
+      let _ = print_endline ("Metatype error, function body kind isn't subkind of return kind") in
+*)
       clierrx "[Flx_btype_kind:32: E239] " sr
         (
           "Flx_btype_kind: In type function \n" ^

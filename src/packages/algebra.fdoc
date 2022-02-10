@@ -482,12 +482,13 @@ class FloatAddgrp[t] {
   virtual proc += (px:&t,y:t) { px <- *px + y; }
   virtual proc -= (px:&t,y:t) { px <- *px - y; }
 
+  axiom sym (x:t,y:t): x+y == y+x;
+/*
   reduce id (x:t): x+zero() => x;
   reduce id (x:t): zero()+x => x;
   reduce inv(x:t): x - x => zero();
   reduce inv(x:t): - (-x) => x;
-  axiom sym (x:t,y:t): x+y == y+x;
-
+*/
   fun add(x:t,y:t)=> x + y;
   fun plus(x:t)=> +x;
   fun sub(x:t,y:t)=> x - y;
@@ -503,7 +504,7 @@ with associativity added.
 class Addgrp[t] {
   inherit FloatAddgrp[t];
   axiom assoc (x:t,y:t,z:t): (x + y) + z == x + (y + z);
-  reduce inv(x:t,y:t): x + y - y => x;
+  //reduce inv(x:t,y:t): x + y - y => x;
 }
 
 @h2 Approximate Multiplicative Semi-Group With Unit.
@@ -521,8 +522,10 @@ class FloatMultSemi1[t] {
   virtual fun one: unit -> t;
   virtual fun * : t * t -> t;
   virtual proc *= (px:&t, y:t) { px <- *px * y; }
+/*
   reduce id (x:t): x*one() => x;
   reduce id (x:t): one()*x => x;
+*/
 }
 
 @h2 Multiplicative Semi-Group With Unit.
@@ -534,7 +537,7 @@ and satisfies the cancellation law.
 class MultSemi1[t] {
   inherit FloatMultSemi1[t];
   axiom assoc (x:t,y:t,z:t): (x * y) * z == x * (y * z);
-  reduce cancel (x:t,y:t,z:t): x * z ==  y * z => x == y;
+  //reduce cancel (x:t,y:t,z:t): x * z ==  y * z => x == y;
 }
 
 @h1 Rings

@@ -58,17 +58,18 @@ and sort_of_sex sr x : sortcode_t =
 and kind_of_sex sr x : kindcode_t =
   let ki k = kind_of_sex sr k in
   match x with
-  | Lst [Id "ast_name"; sr; Str "BORROWED"; Lst []] ->  KND_borrowed
-  | Lst [Id "ast_name"; sr; Str "LINEAR"; Lst []] ->  KND_linear
-  | Lst [Id "ast_name"; sr; Str "TYPE"; Lst []] ->  KND_type
-  | Lst [Id "ast_name"; sr; Str "UNITSUM"; Lst []] ->  KND_unitsum
-  | Lst [Id "ast_name"; sr; Str "BOOL"; Lst []] ->  KND_bool
-  | Lst [Id "ast_name"; sr; Str "NAT"; Lst []] ->  KND_nat
-  | Lst [Id "ast_name"; sr; Str "COMPACTLINEAR"; Lst []] ->  KND_compactlinear
-  | Lst [Id "ast_name"; sr; Str "GENERIC"; Lst []] ->  KND_generic
-
-  | Lst [Id "typ_arrow"; Lst[dom; cod]] -> KND_function (ki dom, ki cod)
-  | Lst [Id "typ_tuple"; sr; Lst ts] -> KND_tuple (List.map ki ts)
+  | Lst [Id "knd_name"; Str "BORROWED"] ->  KND_borrowed
+  | Lst [Id "knd_name"; Str "LINEAR"] ->  KND_linear
+  | Lst [Id "knd_name"; Str "TYPE"] ->  KND_type
+  | Lst [Id "knd_name"; Str "UNITSUM"] ->  KND_unitsum
+  | Lst [Id "knd_name"; Str "BOOL"] ->  KND_bool
+  | Lst [Id "knd_name"; Str "NAT"] ->  KND_nat
+  | Lst [Id "knd_name"; Str "COMPACTLINEAR"] ->  KND_compactlinear
+  | Lst [Id "knd_name"; Str "GENERIC"] ->  KND_generic
+  (* NOTE: this is a HACK .. will do for now *)
+  | Lst [Id "knd_name"; Str name] -> KND_var name 
+  | Lst [Id "knd_arrow"; Lst[dom; cod]] -> KND_function (ki dom, ki cod)
+  | Lst [Id "knd_tuple"; sr; Lst ts] -> KND_tuple (List.map ki ts)
   | _ ->
     print_endline ("Unexpected kind term"); 
     print_endline ( Sex_print.string_of_sex x );
@@ -298,13 +299,15 @@ print_endline ("sex2flx:type] " ^ Sex_print.string_of_sex x);
     Flx_typing.mktypelambda sr argss (kind_of_sex sr ret) (xtype_t sr body)
 
   | Lst ls ->  
-    print_endline ("flx_sex2flx]: Type expected: Unexpected sexp list: not type term"); 
-    print_endline ("elt=" ^ Flx_util.catmap "\nelt= " Sex_print.string_of_sex ls);
+    print_endline ("[flx_sex2flx]: Type expected: Unexpected sexp list: not type term"); 
+    print_endline ("ex= " ^ Sex_print.string_of_sex x );
+    print_endline (Flx_srcref.short_string_of_src sr);
     raise Not_type
 
   | _ -> 
     print_endline ("[flx_sex2flx]: Type expected: Unexpected sexp, not type term:"); 
     print_endline ("ex= " ^ Sex_print.string_of_sex x );
+    print_endline (Flx_srcref.short_string_of_src sr);
     raise Not_type
 
 

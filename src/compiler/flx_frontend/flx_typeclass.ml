@@ -17,7 +17,6 @@ open Flx_use
 open Flx_beta
 open Flx_bid
 open Flx_btype_subst
-open Flx_kind
 
 module CS = Flx_code_spec
 let drop l n = Flx_list.list_tail l n
@@ -57,7 +56,7 @@ let drop l n = Flx_list.list_tail l n
 *)
 
 
-let tcinst_chk syms bsym_table id sr i ts 
+let tcinst_chk syms bsym_table id sr i (ts: Flx_btype.t list)
   ((inst_vs:Flx_kind.bvs_t), inst_constraint, inst_ts, j) 
  =
 (*

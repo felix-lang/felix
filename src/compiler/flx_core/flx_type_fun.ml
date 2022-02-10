@@ -96,15 +96,24 @@ print_endline (sbt bsym_table (List.nth termlist (-2-j)));
 
 
 let type_apply br beta_reduce' calltag counter bsym_table sr termlist t t1 t2 = 
-(* print_endline ("Flx_beta: BTYP_type_apply\n  " ^ Flx_btype.st t1 ^ "\nto\n  " ^ 
+(*
+ print_endline ("Flx_beta: BTYP_type_apply\n  " ^ Flx_btype.st t1 ^ "\nto\n  " ^ 
   Flx_btype.st t2);
 *)
+
 (* NOT clear if this is OK or not *)
 (* ITS NOT! WE REQUIRE LAZY EVALUATION! Substitutiuon first, THEN reduction! *)
-(*
+(* NO NO NO. WE MUST BETA-REDUCE THE FUNCTION TERM BECAUSE IT MIGHT BE AN APPLICATION
+ITSELF
+*)
+
+
     let t1 = br t1 in
+(*
     let t2 = br t2 in
 *)
+(* NOTE: Since beta now calls expand first .. these should never occur *)
+(*
     let t1 = match t1 with
     | BTYP_finst (index, ks, dom, cod) ->
       begin try 
@@ -129,13 +138,15 @@ let type_apply br beta_reduce' calltag counter bsym_table sr termlist t t1 t2 =
       end    
     | t1 -> t1
     in
-
+*)
     begin
     let m1 = Flx_btype_kind.metatype sr t1 in
     let m2 = Flx_btype_kind.metatype sr t2 in
+
     begin match m1 with
     | KIND_function (d,c) ->
       if Flx_kind.kind_ge [d, m2] then () else
+      let _ = print_endline ("Function metatype domain doesn't agree with argument metatype") in
       Flx_exceptions.clierr sr
       ("Flx_beta: In application: " ^ 
        "\ntype apply requires domain of type function to agree with argument\n" ^
@@ -144,7 +155,7 @@ let type_apply br beta_reduce' calltag counter bsym_table sr termlist t t1 t2 =
        "\n\nFunction = " ^ Flx_btype.st t1 ^
        "\n\nArgument =" ^ Flx_btype.st t2 ^ ", kind=" ^ Flx_kind.sk m2)
 
-    | _ -> 
+    | _ -> print_endline ("Function metatype isn't function"); 
       Flx_exceptions.clierr sr 
       ("Flx_beta: type apply requires first argument to be KIND_function, got\n" ^ 
        "Type="^ Flx_btype.st t1 ^", kind=" ^ Flx_kind.sk m1)
@@ -154,9 +165,6 @@ let type_apply br beta_reduce' calltag counter bsym_table sr termlist t t1 t2 =
 print_endline ("Flx_beta " ^calltag ^ " Attempting to beta-reduce type function application " ^ sbt bsym_table t);
 *)
     let isrecfun = cal_isrecfun calltag bsym_table termlist t1 t in 
-(*
-print_endline ("Calculated isrecfun = " ^ if isrecfun then "true" else "false");
-*)
     let getrecfun () =
       match t1 with 
       | BTYP_fix (j,mt) -> List.nth termlist (-2-j)
@@ -192,10 +200,13 @@ print_endline ("Calculated isrec= " ^ if isrec then "true" else "false");
          btyp_fix (j+1) (getmt())
        | _ -> assert false
     else 
-
-    let t1 = if isrecfun then getrecfun () else unfold "flx_beta" t1 in
+    let t1 = if isrecfun then  getrecfun () else unfold "flx_beta" t1 in
     begin match t1 with
     | BTYP_type_function (ps,r,body) ->
+(*
+print_endline ("Attempting to apply type function " ^ Flx_print.sbt bsym_table t1 ^ "\n");
+print_endline ("To argument " ^ Flx_print.sbt bsym_table t2^ "\n");
+*)
       let params' =
         match ps with
         | [] -> []
@@ -224,7 +235,6 @@ assert false
 (*
       print_endline ("Body after reduction = " ^ sbt bsym_table t');
 *)
-
 (* FIXME: IS THIS RIGHT? SHOULDN'T THE ADJUST HAPPEN FIRST?  I mean, the top level
 beta reduction routine should always adjust. Hmmm.
 *)
@@ -232,7 +242,7 @@ beta reduction routine should always adjust. Hmmm.
 
       let t' = adjust bsym_table t' in
 (*
-print_endline ("Flx_beta: result of application is: " ^ Flx_btype.st t');
+print_endline ("Flx_beta: result of application is: " ^ Flx_btype.st t' ^ "\n**********************\n\n");
 *)
       t'
 

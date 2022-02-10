@@ -207,7 +207,7 @@ val flat_iter :
 val iter :
   ?f_bid:(bid_t -> unit) -> ?f_btype:(t -> unit) -> t -> unit
 val map :
-  ?f_bid:(bid_t -> bid_t) -> ?f_btype:(t -> t) -> t -> t
+  ?f_bid:(bid_t -> bid_t) -> ?f_btype:(t -> t) -> ?f_kind:(Flx_kind.kind -> Flx_kind.kind) -> t -> t
 val contains_uniq: t -> bool
 val adjust_fixpoint: t -> t
 val widen_fixgap : int -> t -> t

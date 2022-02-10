@@ -142,9 +142,6 @@ print_endline ("Lookup type qn with sig, name = " ^ string_of_qualified_name qn)
   | `AST_callback (sr,qn) ->
     failwith "[lookup_type_qn_with_sig] Callbacks not implemented yet"
 
-  | `AST_fname _ ->
-    failwith "[lookup_type_qn_with_sig] `AST_fname not implemented yet"
-
   | `AST_flookup _ ->
     failwith "[lookup_type_qn_with_sig] `AST_flookup not implemented yet"
 
@@ -190,6 +187,20 @@ print_endline ("Lookup type qn with sig, name = " ^ string_of_qualified_name qn)
       bsym_table
       sra srn
       env env rs name ts signs
+
+  | `AST_fname (sr, name, ks) ->
+    print_endline ("lookup_type_qn_with_sig': AST_fname " ^ name ^ " calling lookup_type_name_with_sig");
+    let t =
+      lookup_type_name_with_sig
+      state
+      bsym_table
+      sra srn
+      env env rs name [] signs
+    in
+    print_endline ("Got type: " ^ Flx_print.sbt bsym_table t);
+    assert false
+
+
 
   | `AST_index (sr,name,index) as x ->
     print_endline ("[lookup_type_qn_with_sig] AST_index " ^ string_of_qualified_name x);

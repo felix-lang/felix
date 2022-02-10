@@ -66,6 +66,8 @@ and kindcode_t =
   | KND_tuple of kindcode_t list
   | KND_tpattern of typecode_t
   | KND_special of string
+  | KND_var of string
+
 
 and sortcode_t = 
   | SRT_kind

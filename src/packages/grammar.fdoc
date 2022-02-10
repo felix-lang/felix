@@ -83,7 +83,7 @@ syntax types {
   stypeexpr_comma_list = list::commalist1<stypeexpr>;
 
   //$ Anonymous type function (lamda).
-  t[slambda_pri] := "fun" stypefun_args ":" stypeexpr "=>" stype =>#
+  t[slambda_pri] := "fun" stypefun_args ":" skindexpr "=>" stype =>#
     """
     `(typ_typefun ,_sr ,_2 ,_4 ,_6)
     """;
@@ -176,7 +176,7 @@ syntax types {
  
   t[sthename_pri] := "typeof" "(" sexpr ")" =># "`(typ_typeof ,_sr ,_3)";
 
-  t[sthename_pri] := "_typeop" "(" sstring "," stypeexpr "," stypeexpr ")" =>#
+  t[sthename_pri] := "_typeop" "(" sstring "," stypeexpr "," skindexpr ")" =>#
     "`(typ_typeop ,_sr ,_3 ,_5 ,_7)";
   t[sthename_pri] := "&" t[sthename_pri] =># "`(typ_ref ,_sr ,_2)";
 
@@ -826,6 +826,7 @@ syntax assertions {
     """;
 
      private sreduce_args := "(" stypeparameter_comma_list ")" =># "_2";
+     //private sreduction := stvarlist sreduce_args ":" sexpr "=>" sexpr =># "`(,_1 ,_2 ,_4 ,_6)";
      private sreduction := stvarlist sreduce_args ":" sexpr "=>" sexpr =># "`(,_1 ,_2 ,_4 ,_6)";
      private sreductions := sreduction =># "`(,_1)";
      private sreductions := sreduction "|" sreductions =># "(cons _1 _3)";  
@@ -2168,7 +2169,7 @@ syntax functions {
 
   //$ Function return type specification without post-condition.
   fun_return_type := ":" stypeexpr =># "`((,_2 none) ,dflteffects)";
-  fun_return_type := ":" "[" stypeexpr"]" stypeexpr =># "`((,_5 none) ,_3)";
+  fun_return_type := ":" "[" stypeexpr "]" stypeexpr =># "`((,_5 none) ,_3)";
 
   //$ Function return postcondition without type.
   fun_return_type := "expect" sexpr =># "`((typ_none (some ,_2)) ,dflteffects)";
@@ -4733,11 +4734,11 @@ syntax statements {
   seqorin:= sepsilon =># "'NoConstraint";
 
   //$ A type variable, possibly with an individual constraint.
-  stvar := sname seqorin =># """`(,_1 (ast_name ,_sr "TYPE" ()) ,_2)"""; 
+  stvar := sname seqorin =># """`(,_1 (knd_name "TYPE") ,_2)"""; 
 
   //$ A type variable with an individual constraint.
   //$ This is usually the same as a predicate.
-  stvar := sname ":" stypeexpr seqorin =># "`(,_1 ,_3 ,_4)";
+  stvar := sname ":" skindexpr seqorin =># "`(,_1 ,_3 ,_4)";
 
   //$ A list of type variables with optional individual constraints.
   stvar_comma_list := stvar ("," stvar)* =># "(cons _1 (map second _2))";
@@ -4752,12 +4753,12 @@ syntax statements {
     "(tvfixup _2 _3)";
 
 
-  stypeparameter := sname ":" t[sarrow_pri] =># "`(,_1 ,_3)";
-  stypeparameter := sname =># "`(,_1 typ_none)";
+  stypeparameter := sname ":" k[sarrow_pri] =># "`(,_1 ,_3)";
+  stypeparameter := sname =># '`(,_1 (knd_name "TYPE"))';
   stypeparameter_comma_list := sepsilon =># "()";
   stypeparameter_comma_list := stypeparameter ("," stypeparameter)* =># "(cons _1 (map second _2))";
 
-  stypefun_arg := sname =># "`((,_1 typ_none))";
+  stypefun_arg := sname =># '`((,_1 (knd_name "TYPE")))';
   stypefun_arg := "(" stypeparameter_comma_list ")" =># "_2";
   stypefun_args := stypefun_arg+  =># "_1";
 
@@ -5252,7 +5253,7 @@ syntax type_decls {
   //$ Typedef fun create a type function or functor.
   //$ It maps some types to another type.
   //$ This is the simple expression form.
-  stmt := "typefun" skf_declname stypefun_args ":" stypeexpr "=>" stype ";" =>#
+  stmt := "typefun" skf_declname stypefun_args ":" skindexpr "=>" stype ";" =>#
     """
     `(mktypefun ,_sr ,(first _2) ,(second _2) ,_3 ,_5 ,_7)
     """;
@@ -5260,7 +5261,7 @@ syntax type_decls {
   //$ Typedef fun create a type function or functor.
   //$ It maps some types to another type.
   //$ This is the simple matching form.
-  stmt := "typefun" skf_sdeclname ":" stypeexpr "=" stype_matching+ ";" =>#
+  stmt := "typefun" skf_sdeclname ":" skindexpr "=" stype_matching+ ";" =>#
     """
     (if (eq? 'typ_arrow (first _4))
       (let (

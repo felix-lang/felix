@@ -786,26 +786,31 @@ print_endline ("Flx_bind_bexe: UNIFICATION DONE, result= " ^ string_of_bool ures
           index
           parent_ts
       in
+(* NOTE: this shoud already be done.... *)
+      let lhst = Flx_beta.beta_reduce "flx_bind_bexe: EXE_init" state.counter bsym_table sr lhst in
+(*
+print_endline ("Beta reduced LHS is not actually reduced: " ^ sbt bsym_table lhst);
+*)
       let rhst = Flx_fold.minimise bsym_table state.counter rhst in
       if type_match bsym_table state.counter lhst rhst
       then begin 
         let bexe = bexe_init (sr,index,(e',rhst)) in
         [bexe]
       end 
-    else 
-    if ge bsym_table state.counter lhst rhst then
-    let bexe = bexe_init (sr,index,bexpr_coerce ((e',rhst), lhst)) in
-      [bexe]
-    else
-      clierrx "[flx_bind/flx_bind_bexe.ml:782: E30A] " sr
-        (
-          "[bind_exe: init] initialising expression \n" ^
-          sbe bsym_table (e',rhst) ^
-          "\nof type\n" ^
-          sbt bsym_table rhst ^
-          "\nis not a supertype of the declared variable type:\n" ^ 
-          sbt bsym_table lhst 
-        )
+      else 
+        if ge bsym_table state.counter lhst rhst then
+        let bexe = bexe_init (sr,index,bexpr_coerce ((e',rhst), lhst)) in
+          [bexe]
+        else
+          clierrx "[flx_bind/flx_bind_bexe.ml:782: E30A] " sr
+            (
+              "[bind_exe: init] initialising expression \n" ^
+              sbe bsym_table (e',rhst) ^
+              "\nof type\n" ^
+              sbt bsym_table rhst ^
+              "\nis not a supertype of the declared variable type:\n" ^ 
+              sbt bsym_table lhst 
+            )
     end
 
   | EXE_assign (l,r) ->

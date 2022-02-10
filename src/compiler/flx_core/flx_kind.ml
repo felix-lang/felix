@@ -1,4 +1,9 @@
 (* See Flx_btype_kind for routine metatype, which finds the bound kind of a bound type *)
+
+type sort = | SORT_kind
+let str_of_sort s = match s with | SORT_kind -> "KIND"
+let bind_sortcode s = match s with | Flx_ast.SRT_kind -> SORT_kind
+
 type kind =
   | KIND_type    (* copyable *)
   | KIND_linear  (* copyable or unique *)
@@ -9,12 +14,7 @@ type kind =
   | KIND_nat
   | KIND_tuple of kind list
   | KIND_function of kind * kind (* the kind of a type function from domain to codomain kinds *)
-
-type sort = | SORT_kind
-let str_of_sort s = match s with | SORT_kind -> "KIND"
-let bind_sortcode s = match s with | Flx_ast.SRT_kind -> SORT_kind
-
-let kind_eq k1 k2 = k1 = k2
+  | KIND_var of string
 
 let rec sk k =
   match k with
@@ -27,6 +27,34 @@ let rec sk k =
   | KIND_nat -> "NAT"
   | KIND_tuple ks -> "(" ^ Flx_util.catmap ", " sk ks ^")"
   | KIND_function (d,c) -> sk d ^ " -> " ^ sk c
+  | KIND_var s -> s
+
+
+let map f (k:kind):kind = match k with
+  | KIND_tuple ks -> KIND_tuple (List.map f ks)
+  | KIND_function (a,b) -> KIND_function (f a, f b)
+  | k -> k
+
+type bk_t = string * Flx_bid.bid_t * sort  
+type bks_t = bk_t list
+
+let sks ks = String.concat "," (List.map sk ks)
+
+
+let rec ksubst1 (knd:kind) (name:string) (k:kind) : kind =
+  match knd with
+  | KIND_var name' when name = name' -> k
+  | knd -> map (fun knd -> ksubst1 knd name k) knd
+
+let ksubst sr (bks:bks_t) (ks: kind list) (k:kind):kind =
+  if List.length bks <> List.length ks then assert false;
+  if List.length bks <> 0 then begin
+  let knks = List.map2 (fun (name, index, srt) k -> name,k) bks ks in
+  let k = List.fold_left (fun acc (name,k)  -> ksubst1 acc name k) k knks in
+  k
+  end else k
+
+let kind_eq k1 k2 = k1 = k2
 
 let kind_type = KIND_type
 let kind_linear = KIND_linear
@@ -37,16 +65,11 @@ let kind_bool = KIND_bool
 let kind_nat = KIND_nat
 let kind_function (d, c) = KIND_function (d,c)
 let kind_tuple ks = KIND_tuple ks
+let kind_var s = KIND_var s
 
 (* this probably doesn't belong here .. *)
 type bv_t = string * Flx_bid.bid_t * kind
 type bvs_t = bv_t list
-
-type bk_t = string * Flx_bid.bid_t * sort  
-type bks_t = bk_t list
-
-let sks ks = String.concat "," (List.map sk ks)
-
 (* Unification *)
 type keqn_t = kind * kind
 type keqns_t = keqn_t list
@@ -55,7 +78,10 @@ type keqns_t = keqn_t list
  subyping chain:
  unitsum -> compactlinear -> linear -> type -> borrowed
 *)
-let ksolve_subtypes add_eqn lhs rhs =
+
+type kmgu_t = (string * kind) list
+
+let ksolve_subtypes add_eqn lhs rhs (mgu:kmgu_t ref) =
   match lhs, rhs with
   | KIND_borrowed, KIND_borrowed
   | KIND_borrowed, KIND_type
@@ -92,35 +118,55 @@ let ksolve_subtypes add_eqn lhs rhs =
   | KIND_function (ld,lc), KIND_function (rd,rc) ->
     add_eqn (rd,ld); add_eqn (lc,rc)
 
+  | KIND_var name, x ->
+   (* we add the specialisation to the MGU unless it is
+   already in there. If it is in there with the same value,
+   just proceed. If it is in there with a different value,
+   we have to barf *)
+   if not (List.mem_assoc name !mgu) then
+     mgu := (name, x) :: !mgu
+   else if x = List.assoc name !mgu then ()
+   else raise Not_found
+    
+
   | _ -> raise Not_found
 
 
 
-(* returns true if lhs >= rhs for all eqns *)
-let kind_ge (eqns:keqns_t) = 
-  try
-    let history : keqns_t ref = ref eqns in
-    let eqns : keqns_t ref = ref eqns in
-    let add_eqn (eqn:keqn_t) =
-      if List.mem eqn (!history) then ()
-      else begin
-         eqns := eqn :: (!eqns);
-         history := eqn :: (!eqns)
-      end
-    in
-    let rec loop () : unit =
-      match !eqns with
-      | [] -> ()
-      | h :: t ->
-        eqns := t;
-        let (lhs,rhs): keqn_t = h in 
-        ksolve_subtypes add_eqn lhs rhs;
-        loop ()
-    in
-    loop ();
-    true
+(* returns the MGU if eqns can be satisfied, otherwise raises Not_found.
+Note, they're actually inequalities, and, this is the specialisation
+version of unification.
+*)
+let kind_unif (eqns:keqns_t) : kmgu_t = 
+  let mgu = ref [] in
+  let history : keqns_t ref = ref eqns in
+  let eqns : keqns_t ref = ref eqns in
+  let add_eqn (eqn:keqn_t) =
+    if List.mem eqn (!history) then ()
+    else begin
+       eqns := eqn :: (!eqns);
+       history := eqn :: (!eqns)
+    end
+  in
+  let rec loop () : unit =
+    match !eqns with
+    | [] -> ()
+    | h :: t ->
+      eqns := t;
+      let (lhs,rhs): keqn_t = h in 
+      ksolve_subtypes add_eqn lhs rhs mgu;
+      loop ()
+  in
+  loop ();
+  !mgu
 
+(* returns true if lhs >= rhs for all eqns *)
+let kind_ge eqns =
+  try 
+    let _ =  kind_unif eqns  in
+    true
   with Not_found -> false
+
 
 let kind_ge2 a b = kind_ge [a,b]
 

@@ -6,7 +6,7 @@ let rec find_in_list counter t lst =
      if Flx_typeeq.type_eq (Flx_btype.st) counter h t then Some i else
      find_in_list counter t tail
 
-let rec expand bsym_table  counter sr t =
+let rec expand bsym_table  counter sr (t:Flx_btype.t):Flx_btype.t = 
 (*
 print_endline ("EXPAND " ^ Flx_print.sbt bsym_table t);
 *)
@@ -72,7 +72,7 @@ print_endline ("processed ts = " ^ catmap "," Flx_btype.st ts);
 *)
         end
 
-      | BTYP_finst (index,ks,dom,cod) ->
+      | BTYP_finst (index,ks,dom,cod) -> 
         begin try
           let bsym = Flx_bsym_table.find bsym_table index in
           let bbdcl = Flx_bsym.bbdcl bsym in
@@ -81,13 +81,21 @@ print_endline ("processed ts = " ^ catmap "," Flx_btype.st ts);
 (*
         print_endline ("EXPANDING FUNCTION "^bsym.id^" INSTANCE");
 *)
-            let salias = Flx_btype_subst.ksubst sr bks ks alias in (* kind variable substitution *)
-            aux ((t,level)::trail) level salias (* NO level increment *)
+            let ksubst (knd:Flx_kind.kind):Flx_kind.kind = Flx_kind.ksubst sr bks ks knd in
+            let rec f_btype t = Flx_btype.map ~f_btype ~f_kind:ksubst t in
+            let alias = f_btype alias in
+(*
+print_endline ("Flx_expand_typedef: expanded type function with kind subs  =\n **** " ^ Flx_print.sbt bsym_table t);
+*)
+            begin match alias with
+            | BTYP_type_function _ ->
+              aux ((t,level)::trail) level alias (* NO level increment *)
+            | _ -> assert false
+            end
           | _ -> assert false
           end
         with Not_found -> assert false
         end
-
       | _ -> Flx_btype.map ~f_btype:(aux (trail) (level+1)) t
   in
 (*
@@ -106,4 +114,3 @@ print_endline ("processed ts = " ^ catmap "," Flx_btype.st ts);
 (*
   end
 *) 
-

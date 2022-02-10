@@ -927,13 +927,13 @@ let rec bmt msg mt = match mt with
   | Flx_ast.KND_bool -> kind_bool
   | Flx_ast.KND_function (t1,t2) -> kind_function (bmt msg t1, bmt msg t2)
   | Flx_ast.KND_tuple(ts) -> kind_tuple(List.map (bmt msg) ts)
-  | _ -> kind_type 
-(*
-  | Flx_ast.KND_tpattern t -> print_endline ("BMT tpattern fail " ^ msg); assert false
+  | Flx_ast.KND_var s -> kind_var s
+
+  (* this is wrong, we actually need to examine the pattern to find the kind *)
+  | Flx_ast.KND_tpattern t -> kind_type (*  print_endline ("BMT tpattern fail " ^ msg); assert false *)
   | Flx_ast.KND_typeset ts -> print_endline ("BMT typeset fail " ^ msg); assert false 
-  | Flx_ast.KND_generic -> print_endline ("BMT generic fail " ^ msg); assert false
+  | Flx_ast.KND_generic -> kind_type (* requied at least for GADTs to work *) 
   | Flx_ast.KND_special s -> print_endline ("BMT special fail " ^ msg); assert false
-*)
 
 (* -------------------------------------------------------------------------- *)
 
@@ -1028,7 +1028,7 @@ let reduce_typeop op t k =
 
 (** Recursively iterate over each bound type and transform it with the
  * function. *)
-let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
+let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) ?(f_kind=fun k->k) = function
   | BBOOL v -> bbool v
   | BTYP_typeof (i,t) -> btyp_typeof (f_bid i, t)
   | BTYP_typeop (op,t,k) -> btyp_typeop op (f_btype t) k
@@ -1046,8 +1046,8 @@ let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
     | _ -> BTYP_sum (Flx_list.repeat mapped_unit k)
     end
   | BTYP_inst (it,i,ts,mt) -> btyp_inst (it,f_bid i, List.map f_btype ts,mt)
-  | BTYP_finst (i,ks,dom,cod) -> btyp_finst (f_bid i, ks, dom,cod)
-  | BTYP_vinst (i,ts,mt) -> btyp_vinst (f_bid i, List.map f_btype ts,mt)
+  | BTYP_finst (i,ks,dom,cod) -> btyp_finst (f_bid i, List.map f_kind ks, f_kind dom, f_kind cod)
+  | BTYP_vinst (i,ts,mt) -> btyp_vinst (f_bid i, List.map f_btype ts,f_kind mt)
   | BTYP_intersect ts -> btyp_intersect (List.map f_btype ts)
   | BTYP_tuple ts -> btyp_tuple (List.map f_btype ts)
   | BTYP_compacttuple ts -> btyp_compacttuple (List.map f_btype ts)
@@ -1077,13 +1077,13 @@ let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) = function
   | BTYP_borrowed t -> btyp_borrowed (f_btype t)
 
   | BTYP_void as x -> x
-  | BTYP_fix _ as x -> x
+  | BTYP_fix (i,k) -> btyp_fix i (f_kind k)
   | BTYP_tuple_cons (a,b) -> btyp_tuple_cons (f_btype a) (f_btype b)
   | BTYP_tuple_snoc (a,b) -> btyp_tuple_snoc (f_btype a) (f_btype b)
   | BTYP_type_tuple ts -> btyp_type_tuple (List.map f_btype ts)
   | BTYP_type_function (its, a, b) ->
-      btyp_type_function (List.map (fun (i,t) -> f_bid i,t) its, a, f_btype b)
-  | BTYP_type_var (i,t) -> btyp_type_var (f_bid i,t)
+      btyp_type_function (List.map (fun (i,k) -> f_bid i,f_kind k) its, f_kind a, f_btype b)
+  | BTYP_type_var (i,k) -> btyp_type_var (f_bid i,f_kind k)
   | BTYP_type_apply (a, b) -> btyp_type_apply (f_btype a, f_btype b)
   | BTYP_type_map (a, b) -> btyp_type_map (f_btype a, f_btype b)
   | BTYP_type_match (t,ps) ->

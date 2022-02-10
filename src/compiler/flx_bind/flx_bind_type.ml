@@ -98,7 +98,7 @@ bind_type'
   bind_type_index
   bind_expression'
   lookup_type_qn_with_sig'
-  lookup_qn_in_env'
+  (lookup_qn_in_env': lookup_state_t -> 'a -> env_t -> 'b -> qualified_name_t -> entry_kind_t * typecode_t list)
   lookup_qn_with_sig'
   state
   bsym_table
@@ -592,13 +592,64 @@ print_endline ("Binding `TYP_name " ^s^ " via params to " ^ sbt bsym_table t);
 (* print_endline ("Trying to bind instancetype"); *)
      btyp_instancetype sr
 
+  | `TYP_fname (sr, name, ks) ->
+(*
+print_endline ("Lookup type function name " ^ name);
+*)
+    let hackname : qualified_name_t  = (`AST_name (sr, name, []) :> qualified_name_t) in
+(*
+print_endline ("Munged qualified name " ^ Flx_print.string_of_qualified_name hackname);
+*)
+    let {base_sym=index; spec_vs=spec_vs; sub_ts=sub_ts} , ts = lookup_qn_in_env' state bsym_table env rs hackname in
+(*
+print_endline ("Found it " ^ name ^ "="^ string_of_int index);
+*)
+    (* we have a problem now: we've found a view of the typefunction, this can happen
+    if the type function is inside a polymorphic class which is opened. The substitution
+    of ts in the view with the vs of the environment must be done, but it cannot be done
+    right now because the type function may not have been bound yet, 
+    but we cannot defer it either, because the BTYP_finst construction only allows
+    for kinding substitutions. We will have to FIXME this later. The type function
+    itself does not support type variable indices, only kind indices.
+    *)
+    let ks = List.map (Flx_btype.bmt "[Flx_bind_type:TYP_fname]") ks in
+    let sym = Flx_sym_table.find state.sym_table index in
+    let dom, cod = match sym.symdef with
+      | SYMDEF_type_function (iks, t) ->
+        (* this constraint requires explicit specification of kind variable bindings.
+           It will be removed when we do kind unification.
+           This has to happen anyhow, in order to kind check the bindings specified
+           produce the correct type function kindings
+           and since this requires unification anyhow, we might as well use
+           the KMGU produced to fix the ks if they're not specified,
+           since we need the KMGU in any case to check, if they are specified,
+           they agree with the infered ones. ... but for now .. hackery
+        *)
+        assert (List.length iks = List.length ks); 
+        begin match t with
+        | `TYP_typefun (kps, cod, body) -> 
+           let dom = match kps with
+           | [] -> KND_tuple [] (* kind unit .. *)
+           | [_,k] -> k
+           | kps -> KND_tuple (List.map snd kps)
+           in dom,cod
+        | _ -> assert false
+        end
+      | _ -> assert false
+    in 
+    let dom = Flx_btype.bmt "Flx_bind_type:bind_type TYP_fname(dom)" dom in 
+    let cod = Flx_btype.bmt "Flx_bind_type:bind_type TYP_fname(cod)" cod in
+    btyp_finst (index, ks, dom, cod)    
+
+  | `TYP_flookup _ ->
+print_endline ("Lookup type function name here");
+     assert false
+
   | `TYP_name _
-  | `TYP_fname _
   | `TYP_case_tag _
   | `TYP_lookup _
-  | `TYP_flookup _
   | `TYP_callback _ as x ->
-      let x =
+      let x : qualified_name_t =
         match qualified_name_of_typecode x with
         | Some q -> q
         | None -> assert false

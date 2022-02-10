@@ -10,7 +10,6 @@ open Flx_typing
 open Flx_name_map
 open List
 open Flx_bid
-open Flx_kind
 
 module L = Flx_literal
 
@@ -381,6 +380,7 @@ and str_of_kindcode (k:kindcode_t) : string =
   | KND_function (d,c) -> str_of_kindcode d ^ " -> " ^ str_of_kindcode c
   | KND_special s -> s
   | KND_tpattern t -> "TPATTERN(" ^ st 0 t ^ ")"
+  | KND_var s -> "kvar_" ^ s
 
 
 and st prec tc : string =
@@ -676,7 +676,7 @@ and sb bsym_table depth fixlist counter prec tc =
     match tc with
     | BBOOL b -> 0,("BBOOL " ^ string_of_bool b)
     | BTYP_typeop (op,t,k) -> 0,
-      ("_typeop(" ^ op ^ "," ^ sbt 0 t ^ "," ^ sk k ^ ")")
+      ("_typeop(" ^ op ^ "," ^ sbt 0 t ^ "," ^ Flx_kind.sk k ^ ")")
 
     | BTYP_typeof (i,t) -> 0,
       "typeof<context=" ^ string_of_int i ^ ">(" ^ string_of_expr t ^ ")"
@@ -734,7 +734,7 @@ and sb bsym_table depth fixlist counter prec tc =
        )
 
     | BTYP_type_var (i,mt) -> 0,"<T" ^ string_of_bid i ^
-      (match mt with KIND_type ->"" | _ -> ":"^sk mt)^
+      (match mt with KIND_type ->"" | _ -> ":"^Flx_kind.sk mt)^
       ">"
 
     | BTYP_inst (it,i,ts,mt) ->
@@ -744,7 +744,7 @@ and sb bsym_table depth fixlist counter prec tc =
           str_of_instkind it ^ " " ^ name
         | None -> str_of_instkind it ^ "<Prim " ^ si i^">") ^
       (if List.length ts = 0 then "" else
-      "[" ^cat ", " (map (sbt 9) ts) ^ "]:" ^ sk mt
+      "[" ^cat ", " (map (sbt 9) ts) ^ "]:" ^ Flx_kind.sk mt
       )
 
     | BTYP_finst (i, ks, dom, cod) ->
@@ -752,7 +752,7 @@ and sb bsym_table depth fixlist counter prec tc =
        | Some tab -> let name = qualified_name_of_bindex tab i in "typefunction " ^ name
        | None -> "Typefunction " ^ string_of_int i) ^
        (if List.length ks = 0 then "" else
-       "[" ^sks ks^ "]") ^ ":" ^ sk dom ^ "->" ^ sk cod 
+       "[" ^Flx_kind.sks ks^ "]") ^ ":" ^ Flx_kind.sk dom ^ "->" ^ Flx_kind.sk cod 
 
     | BTYP_vinst (i,ts,mt) ->
       0, (match bsym_table with 
@@ -761,7 +761,7 @@ and sb bsym_table depth fixlist counter prec tc =
           name
         | None -> "<Virtual type " ^ si i^">") ^
       (if List.length ts = 0 then "" else
-      "[" ^cat ", " (map (sbt 9) ts) ^ "]:" ^ sk mt
+      "[" ^cat ", " (map (sbt 9) ts) ^ "]:" ^ Flx_kind.sk mt
       )
 
     | BTYP_intersect ls ->
@@ -934,10 +934,10 @@ and sb bsym_table depth fixlist counter prec tc =
          "fun (" ^ cat ", "
          (
            map
-           (fun (i,t)-> "T" ^ string_of_bid i ^ ": " ^ sk t)
+           (fun (i,t)-> "T" ^ string_of_bid i ^ ": " ^ Flx_kind.sk t)
            args
          ) ^
-         "): " ^ sk ret ^ "=" ^ sbt 8 body ^" endfun"
+         "): " ^ Flx_kind.sk ret ^ "=" ^ sbt 8 body ^" endfun"
        )
   in
     let txt,lst = string_of_fixpoints depth !fixlist in
@@ -1181,7 +1181,7 @@ and string_of_iks ks =
 
 
 and string_of_bks' bks =
-  catmap ", " (fun (s, i, srt)-> s^"<" ^string_of_bid i^">:"^ str_of_sort srt) bks
+  catmap ", " (fun (s, i, srt)-> s^"<" ^string_of_bid i^">:"^ Flx_kind.str_of_sort srt) bks
 
 and string_of_bks = function
   | [] -> ""
@@ -1189,7 +1189,7 @@ and string_of_bks = function
 
 
 and string_of_bvs' bvs =
-  catmap ", " (fun (s, i,mt)-> s^"<" ^string_of_bid i^">:"^ sk mt) bvs
+  catmap ", " (fun (s, i,mt)-> s^"<" ^string_of_bid i^">:"^ Flx_kind.sk mt) bvs
 
 and string_of_bvs = function
   | [] -> ""
@@ -3040,7 +3040,7 @@ let print_env_short e =
   in
   List.iter print_level e
 
-let print_function_body bsym_table id i (bvs:bvs_t) ps exes =
+let print_function_body bsym_table id i (bvs:Flx_kind.bvs_t) ps exes =
   print_endline "";
   print_endline ("BODY OF " ^ string_of_id id ^ "<" ^ string_of_bid i ^ "> [" ^
   string_of_bvs bvs ^
