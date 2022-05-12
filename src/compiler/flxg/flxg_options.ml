@@ -23,7 +23,7 @@ let fixit file =
   let s =
     if n>1 then
       if String.sub s (n-1) 1 = Flx_filesys.dir_sep
-      then String.sub s (n-1) 1
+      then String.sub s 0 (n-1)
       else s
     else s
   in

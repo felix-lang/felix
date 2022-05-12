@@ -61,6 +61,7 @@ print_endline ("Solve subtypes " ^ Flx_btype.str_of_btype lhs ^ " >=? " ^ Flx_bt
   (* here we throw away uniq part of argument type passing a value *)
   | BTYP_borrowed t1, BTYP_uniq t2 -> add_ge (t1,t2)
 
+  (* NOTE: should we check if the type var is dependent or not?? *)
   | BTYP_type_var _, BTYP_uniq _ -> add_eq (lhs,rhs) (* hack to assign type variable *)
   | t1, BTYP_uniq t2 -> add_ge (t1,t2)
 

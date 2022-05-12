@@ -46,13 +46,13 @@ let rec ksubst1 (knd:kind) (name:string) (k:kind) : kind =
   | KIND_var name' when name = name' -> k
   | knd -> map (fun knd -> ksubst1 knd name k) knd
 
+let ksubst_eqns sr knks k = 
+  List.fold_left (fun acc (name,k)  -> ksubst1 acc name k) k knks
+
 let ksubst sr (bks:bks_t) (ks: kind list) (k:kind):kind =
   if List.length bks <> List.length ks then assert false;
-  if List.length bks <> 0 then begin
   let knks = List.map2 (fun (name, index, srt) k -> name,k) bks ks in
-  let k = List.fold_left (fun acc (name,k)  -> ksubst1 acc name k) k knks in
-  k
-  end else k
+  ksubst_eqns sr knks k
 
 let kind_eq k1 k2 = k1 = k2
 
@@ -118,6 +118,15 @@ let ksolve_subtypes add_eqn lhs rhs (mgu:kmgu_t ref) =
   | KIND_function (ld,lc), KIND_function (rd,rc) ->
     add_eqn (rd,ld); add_eqn (lc,rc)
 
+  (* We assume at the moment, all variables are dependent. A variable
+     can get on the wrong side because of the contravariance of function 
+     domains. FIXME: we need to do as in the type unification algo,
+     and keep track of which are the dependent variables!
+
+     EMERGENCY QUESTION: what happens in the type unification algo?
+  *)
+  
+  | x, KIND_var name 
   | KIND_var name, x ->
    (* we add the specialisation to the MGU unless it is
    already in there. If it is in there with the same value,
