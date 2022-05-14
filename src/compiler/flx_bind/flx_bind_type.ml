@@ -357,7 +357,7 @@ print_endline ("Flx_bind_type `TYP_var " ^ string_of_int i);
 (*
 print_endline ("FUDGE: Binding `TYP_var " ^ si i ^ ", HACKING KIND TO TYPE");
 *)
-      btyp_type_var (i, Flx_kind.KIND_linear)
+      btyp_type_var (i, Flx_kind.KIND_var "AnyKind")
     end
 
   | `TYP_as (t,s) ->

@@ -38,7 +38,7 @@ let cal_ret_type'
   | { Flx_sym.id=id;
       sr=sr;
       dirs=dirs;
-      symdef=SYMDEF_function ((ps,_),rt,effects,props,exes)
+      symdef=SYMDEF_function ((ps,_),rt',effects,props,exes)
     } ->
 (*
 print_endline ("+++++++++++++++++++++++++++++");
@@ -47,7 +47,19 @@ print_endline ("+++++ UNBOUND return type is " ^ string_of_typecode rt);
     begin match rt with | `TYP_var j when j = index -> print_endline ("RETURN TYPE UNSPECIFIED") | _ -> () end;
 print_endline ("Trying to bind type .. if function index variable, we get a recurse?");
 *)
-    let rt = bind_type' state bsym_table env rs sr rt args mkenv in
+    let declared_ret = not (index = (match rt' with `TYP_var k -> k | _ -> 0)) in
+
+    let rt = 
+      if declared_ret then
+        bind_type' state bsym_table env rs sr rt' args mkenv
+      else
+       (* since we don't know the kind of the type we have to use a kind variable,
+          unfortunately unification checks but does not return a kind mgu and
+          so the kind is lost
+       *)
+       let kv = Flx_kind.kind_var "Dummy" in 
+       btyp_type_var (index, kv) 
+    in
 (*
 print_endline ("Type bound; " ^ sbt bsym_table rt);
 *)
@@ -133,13 +145,16 @@ print_endline ("Calling bind_epression'");
         in
         let t = beta_reduce "flx_lookup: cal_ret_type, return expr type" state.counter bsym_table sr t in
 (*
+print_endline ("Return expression type = " ^ Flx_btype.st t);
+*)
+(*
 print_endline "Flx_lookup: about to check calculated and registered return type";
 print_endline ("Return type = " ^ Flx_btype.st !ret_type);
 print_endline ("Return expression type = " ^ Flx_btype.st t);
 *)
         if pvtype then
           () (* use the declared return type, let the coercion be inserted later *) 
-        else
+        else 
         begin 
           let result = Flx_do_unify.do_unify
              state.counter
@@ -170,9 +185,10 @@ print_endline ("Return expression type = " ^ Flx_btype.st t);
             (
               "[cal_ret_type2] Inconsistent return type of " ^ id ^ "<" ^
               string_of_bid index ^ ">" ^
-              "\nDeclared Return type       : " ^ str_of_btype rt ^ "\n  = " ^ sbt bsym_table rt ^
-              "\nProgressive infered type   : " ^ str_of_btype !ret_type ^ "\n  = " ^ sbt bsym_table !ret_type ^
-              "\nType of Return Instruction : " ^ str_of_btype t ^ "\n  = " ^ sbt bsym_table t
+              "\nDeclared Unbound Return type : " ^ Flx_print.string_of_typecode rt' ^
+              "\nDeclared Return type         : " ^ str_of_btype rt ^ "\n  = " ^ sbt bsym_table rt ^
+              "\nProgressive infered type     : " ^ str_of_btype !ret_type ^ "\n  = " ^ sbt bsym_table !ret_type ^
+              "\nType of Return Argument      : " ^ str_of_btype t ^ "\n  = " ^ sbt bsym_table t
             )
           end
        end

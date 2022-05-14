@@ -787,7 +787,8 @@ print_endline ("Flx_bind_bexe: UNIFICATION DONE, result= " ^ string_of_bool ures
           parent_ts
       in
 (* NOTE: this shoud already be done.... *)
-      let lhst = Flx_beta.beta_reduce "flx_bind_bexe: EXE_init" state.counter bsym_table sr lhst in
+      let lhst = Flx_beta.beta_reduce "flx_bind_bexe: EXE_init:lhs" state.counter bsym_table sr lhst in
+      let rhst = Flx_beta.beta_reduce "flx_bind_bexe: EXE_init:rhs" state.counter bsym_table sr rhst in
 (*
 print_endline ("Beta reduced LHS is not actually reduced: " ^ sbt bsym_table lhst);
 *)

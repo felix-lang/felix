@@ -174,8 +174,9 @@ let guess_meta_type state bsym_table bt index : kind =
     match entry with
     | SYMDEF_instance_type t
     | SYMDEF_type_function (_,t)  -> 
-      print_endline ("Guess meta type of type function...");
-      guess_metatype sr t
+      let k = guess_metatype sr t in
+      print_endline ("Guess meta type of type function... " ^ Flx_kind.sk k);
+      k
 
     | SYMDEF_type_alias t  -> 
       guess_metatype sr t

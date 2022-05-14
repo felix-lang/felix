@@ -458,7 +458,7 @@ and st prec tc : string =
       ^
       "\nendmatch"
 
-    | `TYP_var i -> 0,"<var " ^ string_of_bid i ^ ">"
+    | `TYP_var i -> 0,"<typevar " ^ string_of_bid i ^ ">"
     | `TYP_unitsum k ->
       0,
       begin match k with

@@ -229,6 +229,14 @@ and solve_subsumption nominal_subtype counter lhs rhs  dvars (s:vassign_t option
         add_eqn (t1,t2)
 
 
+(* NOTE: This case allows SUBKINDING! This should NOT be allowed in
+   the subsumption routine .. it should only be allowed in the
+   subtyping routine .. but it isn't in there so we need to preserve
+   this code for the moment
+
+   In fact we need to extra the kind level MGU and return that
+   too ......
+*)
       | (BTYP_type_var (i,mi) as ti), (BTYP_type_var (j,mj) as tj)->
         (* meta type have to agree *)
         if i <> j then
