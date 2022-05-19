@@ -747,7 +747,11 @@ print_endline ("Flx_bind_bexe: UNIFICATION DONE, result= " ^ string_of_bool ures
           index
           parent_ts
       in
+
+      let lhst = Flx_beta.beta_reduce "Flx_bind_bexe:iinit.lhst" state.counter bsym_table sr lhst in
+      let rhst = Flx_beta.beta_reduce "Flx_bind_bexe:iinit.rhst" state.counter bsym_table sr rhst in
       let rhst = Flx_fold.minimise bsym_table state.counter rhst in
+
       if type_match bsym_table state.counter lhst rhst
       then begin 
             let bexe = bexe_init (sr,index,(e',rhst)) in

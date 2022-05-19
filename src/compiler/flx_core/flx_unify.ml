@@ -728,7 +728,7 @@ let str_of_cmp = function
 | `Greater-> " > "
 
 let compare_sigs bsym_table counter a b =
-  let b = Flx_btype_subst.alpha_convert counter b in (* alpha convert one of the terms *)
+  let b = Flx_alpha.alpha_convert counter b in (* alpha convert one of the terms *)
   let ab = ge bsym_table counter a b in
   let ba =  ge bsym_table counter b a in
   let result = match ab,ba with

@@ -14,39 +14,6 @@ let var_subst t (i, j) =
 
 let vars_subst ls t = List.fold_left var_subst t ls
 
-(* NOTE: BUG perhaps .. this ONLY converts function parameters! *)
-let rec alpha counter t =
-  match t with
-  | BTYP_type_function (ps,r,b) ->
-      let remap_list = List.map (fun (i,_) -> i, fresh_bid counter) ps in
-      let remap i = List.assoc i remap_list in
-      let cvt t = alpha counter (vars_subst remap_list t) in
-      let ps = List.map (fun (i,t) -> remap i,t) ps in
-      btyp_type_function (ps, r, cvt b)
-  | t -> Flx_btype.map ~f_btype:(alpha counter) t
-
-let alpha_convert counter t =
-  let t = alpha counter t in (* convert function parameters first *)
-  let remap_list = ref [] in
-  let remap i = 
-    try List.assoc i !remap_list
-    with Not_found ->
-      let j = fresh_bid counter in
-      remap_list := (i,j) :: !remap_list;
-      j
-  in
-  let rec aux t = match t with
-  | BTYP_type_function (ps,r,b) ->
-    (* now leave function parameters alone, they're bound and already converted *)
-    List.iter (fun (i,_) -> remap_list := (i,i) :: !remap_list) ps; 
-    btyp_type_function (ps, r, aux b)
-
-  | BTYP_type_var (i,mt) -> btyp_type_var (remap i, mt)
-
-  | t -> Flx_btype.map ~f_btype:aux t
-  in aux t
-
-
 let term_subst counter src i arg =
   let rec aux level t =
     match t with
@@ -70,12 +37,9 @@ let term_subst counter src i arg =
   in
   aux 0 src 
 
-let list_subst counter x t =
-  let t = alpha counter t in
-  List.fold_left (fun t1 (i,t2) ->
-    term_subst counter t1 i (alpha counter t2))
-  t
-  x
+let list_subst counter ls t =
+  let t = Flx_alpha.alpha_convert counter t in
+  List.fold_left (fun t1 (i,t2) -> term_subst counter t1 i t2) t ls
 
 let varmap0_subst varmap t =
   let rec f_btype t =

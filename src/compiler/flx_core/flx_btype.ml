@@ -35,7 +35,7 @@ let str_of_instkind = function
 type btpattern_t = {
   pattern: t;
 
-  (* pattern type variables, including 'any' vars *)
+  (* pattern type variables, including 'any' vars, these are the dependent variables to use in unification *)
   pattern_vars: BidSet.t;
 
   (* assignments for 'as' vars *)
@@ -1091,9 +1091,9 @@ let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) ?(f_kind=fun k->k) = funct
         List.map begin fun (tp, t) ->
           { tp with
             pattern = f_btype tp.pattern;
-            assignments = List.map
-              (fun (i, t) -> f_bid i, f_btype t)
-              tp.assignments },
+            pattern_vars = BidSet.map f_bid tp.pattern_vars;
+            assignments = List.map (fun (i, t) -> f_bid i, f_btype t) tp.assignments
+          },
           f_btype t
         end ps
       in

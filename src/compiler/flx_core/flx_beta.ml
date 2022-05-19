@@ -224,6 +224,7 @@ and type_list_index counter bsym_table ls t =
   in aux ls 0
 
 and beta_reduce' calltag counter bsym_table sr termlist t =
+let spc = "  *** " in
 (*
   print_endline ("BETA REDUCE' " ^ sbt bsym_table t ^ " trail length = " ^
     si (List.length termlist));
@@ -457,7 +458,10 @@ print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
   (* can't reduce *)
   | BTYP_type_map (t1,t2) -> btyp_type_map (br t1, br t2)
 
-  | BTYP_type_apply (t1,t2) -> Flx_type_fun.type_apply br beta_reduce' calltag counter bsym_table sr termlist t t1 t2
+  | BTYP_type_apply (t1,t2) -> 
+    let t1 = Flx_alpha.alpha_convert counter t1 in
+    Flx_type_fun.type_apply br beta_reduce' calltag counter bsym_table sr termlist t t1 t2
+
   | BTYP_type_match (tt,pts) ->
   begin
 (*
@@ -466,10 +470,7 @@ print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
     let tt = br tt in
     let new_matches = ref [] in
     List.iter (fun ({pattern=p; pattern_vars=dvars; assignments=eqns}, t') ->
-      (*
-      print_endline (spc ^"Tring to unify argument with " ^
-        sbt bsym_table p');
-      *)
+      (* print_endline (spc ^"Tring to unify argument with " ^ sbt bsym_table p); *)
       let p =  br p in
       let x =
         {
@@ -479,38 +480,39 @@ print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
         }, t'
       in
       match maybe_unification bsym_table counter [p,tt] with
-      | Some _ -> new_matches := x :: !new_matches
+      | Some _ -> 
+        (* print_endline (spc ^"Argument unifies with  " ^ sbt bsym_table p); *)
+        new_matches := x :: !new_matches
       | None ->
-        (*
-        print_endline (spc ^"Discarding pattern " ^ sbt bsym_table p');
-        *)
+        (* print_endline (spc ^"Discarding pattern " ^ sbt bsym_table p); *)
         ()
     )
     pts
     ;
     let pts = List.rev !new_matches in
+(* print_endline (spc ^ "Found " ^ string_of_int (List.length pts) ^ " unifies"); *)
     match pts with
     | [] ->
-      (*
       print_endline ("[beta-reduce] typematch failure " ^ sbt bsym_table t);
-      *)
       t 
 
     | ({pattern=p';pattern_vars=dvars;assignments=eqns},t') :: _ ->
       try
+        (* print_endline (spc ^ "Redo unification now setting dependent vars"); *)
+        (* print_endline ( spc ^ "Dvars = { " ^ catmap ", " si (Flx_bid.BidSet.elements dvars) ^ "}"); *)
         let mgu = unification bsym_table counter [p', tt] dvars in
-        (*
-        print_endline "Typematch success";
-        *)
+        (* print_endline (spc ^ "Typematch success"); *)
         let t' = list_subst counter (mgu @ eqns) t' in
         let t' = br t' in
-        (*
-        print_endline ("type match reduction result=" ^ sbt bsym_table t');
-        *)
+        (* print_endline ("type match reduction result=" ^ sbt bsym_table t'); *)
         adjust bsym_table t'
-      with Not_found -> btyp_type_match (tt,pts)
+      with 
+       | Not_found ->
+         (* print_endline ("Match failed to reduce redex, return original term"); *)
+         btyp_type_match (tt,pts)
 
   end
+
   | BTYP_subtype_match (tt,pts) ->
   begin
 (*
