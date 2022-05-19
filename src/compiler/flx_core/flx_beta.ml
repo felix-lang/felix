@@ -164,7 +164,7 @@ print_endline ("Flx_beta:fixup:aux: hacking meta type of fixpoint!");
 
 *)
 
-and adjust bsym_table t =
+let adjust bsym_table t =
 (*
 print_endline ("Fixpoint adjust " ^ sbt bsym_table t);
 *)
@@ -176,11 +176,10 @@ and mk_prim_type_inst i args =
   btyp_inst (i,args, kind_type)
 *)
 
-and beta_reduce calltag counter bsym_table sr t1 =
+let rec beta_reduce calltag counter bsym_table sr t1 =
 (*
   print_endline ("---------- " ^ calltag^ " Beta reduce " ^ sbt bsym_table t1 ^ "=" ^ Flx_btype.st t1);
 *)
-  let t1 = Flx_expand_typedef.expand bsym_table counter sr t1 in
   let t2 =
   try
   beta_reduce' calltag counter bsym_table sr [] t1
@@ -255,19 +254,6 @@ let spc = "  *** " in
   in
   match tli with
   | Some j ->
-        (*
-        print_endline "+++Trail:";
-        let i = ref 0 in
-        iter (fun t -> print_endline (
-          "    " ^ si (!i) ^ " ---> " ^sbt bsym_table t)
-          ; decr i
-        )
-        (t::termlist)
-        ;
-        print_endline "++++End";
-    print_endline ("Beta find fixpoint " ^ si (-j-1));
-    print_endline ("Repeated term " ^ sbt bsym_table t);
-    *)
 (* HACK: meta type of fixpoint guessed *)
     let mt = Flx_btype_kind.metatype sr t in
 (*
@@ -287,6 +273,68 @@ print_endline "Type list index returned None";
   let br t' = beta_reduce' calltag counter bsym_table sr (t::termlist) t' in
   let st t = sbt bsym_table t in
   match t with
+  (* STAND ALONE TYPEDEF *)
+  | BTYP_inst (`Alias, index,ts,mt) -> 
+    let ts = List.map br ts in
+    begin try 
+      let bsym = Flx_bsym_table.find bsym_table index in
+      let bbdcl = Flx_bsym.bbdcl bsym in
+      begin match bbdcl with
+      | Flx_bbdcl.BBDCL_structural_type_alias (bvs, alias) 
+      | Flx_bbdcl.BBDCL_nominal_type_alias (bvs, alias) ->
+(*
+print_endline ("Found typedef " ^ Flx_bsym.id bsym ^ "<"^string_of_int index^"> alias=" ^ Flx_btype.st alias);
+print_endline ("bvs/tvs= " ^ catmap ", " (fun ((s,i), t) -> s^"<" ^ string_of_int i ^ "> <-- " ^ Flx_btype.st t) (List.combine bvs ts));
+*)
+       let salias = Flx_btype_subst.tsubst sr bvs ts alias in
+       (* NOTE: the reference is NOT put on the trail because this would upset the depth count *)
+       beta_reduce' calltag counter bsym_table sr termlist alias
+(*
+print_endline ("typedef " ^ Flx_bsym.id bsym ^ " after substitution =" ^ Flx_btype.st alias);
+*)
+       
+      | _ ->  
+(*
+print_endline ("Found non-typedef" ^ Flx_bsym.id bsym ^ "<" ^ string_of_int k ^ ">");
+            let ts = List.map (aux trail level) ts in
+            btyp_inst (k,ts) 
+*)
+        assert false
+      end
+    with Not_found -> 
+print_endline ("Flx_expand_typedef: Unable to find symbol " ^ string_of_int index ^ " in bound symbol table!");
+      assert false
+(*
+print_endline ("Found unknown <" ^ string_of_int k ^ ">");
+print_endline ("raw ts = " ^ catmap "," Flx_btype.st ts); 
+            let ts = List.map (aux ((t, level+1)::trail) (level+1)) ts in
+print_endline ("processed ts = " ^ catmap "," Flx_btype.st ts); 
+            btyp_inst (k,ts) 
+*)
+    end
+
+    (* STAND ALONE TYPE FUNCTION *)
+    | BTYP_finst (index,ks,dom,cod) -> 
+      begin try
+        let bsym = Flx_bsym_table.find bsym_table index in
+        let bbdcl = Flx_bsym.bbdcl bsym in
+        begin match bbdcl with
+        | Flx_bbdcl.BBDCL_type_function (bks, alias)  ->
+          let ksubst (knd:Flx_kind.kind):Flx_kind.kind = Flx_kind.ksubst sr bks ks knd in
+          let rec f_btype t = Flx_btype.map ~f_btype ~f_kind:ksubst t in
+          let alias = f_btype alias in
+          begin match alias with
+          | BTYP_type_function _ -> alias
+          | _ -> assert false
+          end
+        | _ -> 
+          print_endline ("ERROR: finst doesn't refer to type function");
+          assert false
+        end
+      with Not_found -> assert false
+      end
+
+  | BTYP_inst (`Nominal, i,ts,mt) -> btyp_inst (`Nominal,i, List.map br ts,mt)
   | BTYP_typeop (op,t,k) -> 
 (*
 print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
@@ -302,34 +350,8 @@ print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
 
   | BTYP_type_function (p,r,b) -> t
 
-  (* NOTE: we do not reduce a type function  by itself!
-     it is only reduced when it is applied. This doesn't make
-     sense! Why? Because the special rules for reducing type
-     function applications are based on whether the function
-     calls itself against its own parameter .. and are independent
-     of the argument. HMMMM!
-
-     HOWEVER, the unrolling when the function is NOT applied to its
-     own parameter cannot be done without replacing  the parameter
-     with its argument. This is because the branch containing the
-     recursive application may get reduced away by a type match
-     (or not) and that has to be applied to the actual argument.
-     If it isn't reduced away, we have to unroll the fixpoint
-     to recover the function as a whole, then apply that to the
-     argument expression AFTER any parameter is replaced  by the
-     original argument terms (so any typematch can work)
-  *)
-  (*
-    let b = fixup counter p b in
-    let b' = beta_reduce' counter bsym_table sr (t::termlist) b in
-    let t = BTYP_type_function (p, br r, b') in
-    t
-  *)
-
   | BTYP_tuple_cons (t1,t2) -> btyp_tuple_cons (br t1) (br t2)
   | BTYP_tuple_snoc (t1,t2) -> btyp_tuple_snoc (br t1) (br t2)
-  | BTYP_inst (it, i,ts,mt) -> btyp_inst (it,i, List.map br ts,mt)
-  | BTYP_finst (i,ks,dom,cod) -> btyp_finst (i, ks, dom, cod)
   | BTYP_vinst (i,ts,mt) -> btyp_vinst (i, List.map br ts,mt)
   | BTYP_rev t -> btyp_rev (br t)
   | BTYP_uniq t -> btyp_uniq (br t)
