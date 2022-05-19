@@ -137,6 +137,7 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
   print_endline ("\n==========================================\n");
 *)
   (* DOING EXPANSION NOW *)
+(*
   Flx_bsym_table.iter (fun bid parent bsym ->
     let bbdcl = Flx_bsym.bbdcl bsym in
     let sr = Flx_bsym.sr bsym in
@@ -159,6 +160,7 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
  
     | _ -> ()
   ) bsym_table;
+*)
 (*
   print_endline ("\n=====================\n TYPEDEFS after expansion\n=====================\n");
   Flx_bsym_table.iter (fun bid parent bsym ->

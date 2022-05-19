@@ -22,7 +22,7 @@ open class Unique
   fun unwrap[T] : _borrowed T -> T = "($t)";
 
   // functor for typing
-  typefun uniq (T:LINEAR):LINEAR => _uniq T;
+  typefun uniq (T:TYPE):LINEAR => _uniq T;
 
   // NOTE: DEPRECATED
   // peek inside the box without changing livenes state
