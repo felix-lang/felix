@@ -74,7 +74,7 @@ let rec type_apply br beta_reduce' calltag counter bsym_table sr termlist t f ar
      with Not_found -> 
        print_endline ("Flx_type_function : Unable to find symbol " ^ string_of_int index ^ " in bound symbol table!");
        assert false
-    end
+     end
 
   | BTYP_type_function (ps,r,body) ->
     let params' =

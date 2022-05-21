@@ -1394,9 +1394,6 @@ print_endline (string_of_int symbol_index ^ " Adding virtual type " ^ id ^ " to 
 
   | DCL_fun (props, ts,t,c,reqs,prec) ->
 (*
-if id = "bind" then print_endline ("Adding fun bind index=" ^ string_of_int symbol_index);
-*)
-(*
 print_endline ("Adding DCL_fun " ^ id ^ " to symbol table " ^ name);
 *)
       (* Add the function to the sym_table. *)

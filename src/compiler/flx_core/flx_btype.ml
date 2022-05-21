@@ -100,6 +100,7 @@ and t =
   | BTYP_tuple_snoc of t * t 
 
   (* type sets *)
+  | BTYP_in of t * t (* type in typeset *)
   | BTYP_type_set of t list (** open union *)
   | BTYP_type_set_union of t list (** open union *)
   | BTYP_type_set_intersection of t list (** open union *)
@@ -184,6 +185,7 @@ let flat_iter
         *)
         f_btype t
       end ps
+  | BTYP_in (t,tset) -> f_btype t; f_btype tset
   | BTYP_type_set ts -> List.iter f_btype ts
   | BTYP_type_set_union ts -> List.iter f_btype ts
   | BTYP_type_set_intersection ts -> List.iter f_btype ts
@@ -346,6 +348,7 @@ and str_of_btype typ =
   | BTYP_tuple_snoc (h,t) -> "BTYP_tuple_snoc (" ^ s h ^"<**>" ^ s t^")"
 
   (* type sets *)
+  | BTYP_in (t,tset) -> "BTYP_in (" ^s t^ " in " ^ s tset ^")"
   | BTYP_type_set ts -> "BTYP_type_set(" ^ss ts^ ")"
   | BTYP_type_set_union ts -> "BTYP_type_set_union("^ ss ts^")"
   | BTYP_type_set_intersection ts -> "BTYP_type_set_intersection(" ^ ss ts ^ ")"
@@ -899,6 +902,7 @@ let btyp_type_match (t, ps) =
 let btyp_subtype_match (t, ps) =
   BTYP_subtype_match (t, ps)
 
+let btyp_in (t,  tset) = BTYP_in (t,tset)
 
 (** Construct a BTYP_type_set type. *)
 let btyp_type_set ts =
@@ -1112,6 +1116,7 @@ let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) ?(f_kind=fun k->k) = funct
       in
       btyp_subtype_match (f_btype t, ps)
 
+  | BTYP_in (t,tset) -> btyp_in (f_btype t, f_btype tset)
   | BTYP_type_set ts ->
       let g acc elt =
         (* SHOULD USE UNIFICATIION! *)

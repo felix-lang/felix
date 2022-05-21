@@ -136,43 +136,6 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
   ) bsym_table;  
   print_endline ("\n==========================================\n");
 *)
-  (* DOING EXPANSION NOW *)
-(*
-  Flx_bsym_table.iter (fun bid parent bsym ->
-    let bbdcl = Flx_bsym.bbdcl bsym in
-    let sr = Flx_bsym.sr bsym in
-    match bbdcl with
-    | BBDCL_nominal_type_alias (bvs,t) -> 
-(*
-     print_endline ("******* EXPANDING TYPEDEF " ^ bsym.id); 
-*)
-      let r = Flx_expand_typedef.expand bsym_table state.counter sr t in
-      let b = bbdcl_structural_type_alias (bvs, r) in 
-      Flx_bsym_table.update_bbdcl bsym_table bid b
-
-    | BBDCL_type_function (bks,t) -> 
-(*
-     print_endline ("******* EXPANDING TYPEFUNCTION " ^ bsym.id); 
-*)
-      let r = Flx_expand_typedef.expand bsym_table state.counter sr t in
-      let b = bbdcl_type_function (bks, r) in 
-      Flx_bsym_table.update_bbdcl bsym_table bid b
- 
-    | _ -> ()
-  ) bsym_table;
-*)
-(*
-  print_endline ("\n=====================\n TYPEDEFS after expansion\n=====================\n");
-  Flx_bsym_table.iter (fun bid parent bsym ->
-    let bbdcl = Flx_bsym.bbdcl bsym in
-    match bbdcl with
-    | BBDCL_structural_type_alias _ -> print_endline (bsym.id ^ "     typedef " ^ string_of_int bid ^ " -> " ^
-      Flx_print.string_of_bbdcl bsym_table bbdcl bid)
-    | BBDCL_type_function (bks, t) -> print_endline (bsym.id ^ "      typefun " ^ string_of_int bid ^ " -> " ^
-      Flx_print.string_of_bbdcl bsym_table bbdcl bid)
-    | _ -> ()
-  ) bsym_table;  
-*)
 (*
   print_endline ("\n=====================\n VAR CACHE (function codomains) \n=====================\n");
   Hashtbl.iter (fun i t ->

@@ -15,6 +15,8 @@ and metatype' sr typ : kind =
   if not (Flx_btype.iscopyable_type typ) then kind_linear else
   match typ with
   | BBOOL _ -> KIND_bool
+  | BTYP_in _ -> KIND_bool
+
   | BTYP_typeop (_,_,k) -> k
   | BTYP_uniq _ -> KIND_linear
   | BTYP_borrowed _ -> KIND_borrowed

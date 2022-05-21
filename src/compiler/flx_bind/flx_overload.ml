@@ -322,10 +322,8 @@ print_endline ("Scanning type variable " ^ s ^ "<" ^ si j' ^ ">: " ^ str_of_kind
         (* this is not really right, kinds do act as constraints *)
         match tp with
         | KND_tpattern t -> 
-(*
-if id = debugid then
-print_endline (" .. found tpattern .. analysing .. ");
-*)
+(* if id = debugid then *)
+print_endline (" .. found tpattern .. analysing .. " ^ string_of_typecode t);
           type_of_tpattern counter t
         | KND_generic (* overload treats this as a type variable in this routine *)
         | KND_linear
@@ -413,13 +411,13 @@ if i = 7123 then
 print_endline ("Flx_overload, constraint FUDGE");
 *)
             (* let t1 = btyp_type_var (i, btyp_type 0) in *)
-            let t1 = btyp_type_var (i, kind_linear) in
+            let t1 = btyp_type_var (i, kind_type) in
 (*
 if k = 7123 then
 print_endline ("Flx_overload, constraint FUDGE");
 *)
             (* let t2 = btyp_type_var (k, btyp_type 0) in *)
-            let t2 = btyp_type_var (k, kind_linear) in
+            let t2 = btyp_type_var (k, kind_type) in
 
             print_endline ("Adding equation " ^ sbt bsym_table t1 ^ " = " ^
               sbt bsym_table t2);
@@ -461,7 +459,7 @@ if i = 7123 then
 print_endline ("Flx_overload, extra FUDGE");
 *)
         (* let t1 = btyp_type_var (i, btyp_type 0) in *)
-        let t1 = btyp_type_var (i, kind_linear) in
+        let t1 = btyp_type_var (i, kind_type) in
         extra_eqns := (t1,t2) :: !extra_eqns
       end eqns1;
 
@@ -621,14 +619,10 @@ if name = debugid then print_endline ("BUILDING TYPE CONSTRAINTS");
 *)
     let type_constraint = build_type_constraints counter bsym_table (bt sr) id sr base_vs in
 if name = debugid then print_endline ("TYPE CONSTRAINTS BUILT");
-(*
 if name = debugid then
     print_endline ("type constraint1(build_type_constraints) " ^ sbt bsym_table type_constraint);
-*)
-(*
 if name = debugid then
     print_endline ("type constraint2(con) " ^ sbt bsym_table con);
-*)
 (*
     let con = 
        try  btyp_typeop "_type_to_staticbool" con Flx_kind.KIND_bool 
@@ -640,10 +634,8 @@ if name = debugid then
     print_endline ("type constraint2(con) as staticbool: " ^ sbt bsym_table con);
 *)
     let type_constraint = btyp_typeop "_staticbool_and" (btyp_type_tuple [type_constraint; con]) Flx_kind.KIND_bool in
-(*
 if name = debugid then
     print_endline ("type constraint(merged) " ^ sbt bsym_table type_constraint);
-*)
 (*
 if name = debugid then
     print_endline ("Raw type constraint " ^ sbt bsym_table type_constraint);
@@ -940,10 +932,8 @@ if name = debugid then
     )
   in
   let env_traint = btyp_typeop "_staticbool_and" (btyp_type_tuple (filter_out_units ls)) kind_bool in
-(*
 if name = debugid then 
 print_endline ("ENVIRONMENT CONSTRAINT BUILT = " ^ sbt bsym_table env_traint);
-*)
   (* HACK for the moment *)
   let aux i =
     match

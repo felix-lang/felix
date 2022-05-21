@@ -4,13 +4,55 @@ open Flx_util
 open Flx_types
 open Flx_btype
 open Flx_mtypes2
-
+open Flx_bid
 open Flx_print
 open Flx_typing
 open Flx_unify
 open Flx_maps
 open Flx_btype_subst
 open Flx_kind
+
+let rec expand_typeset bsym_table counter sr t = 
+  let fe t = expand_typeset bsym_table counter sr t in
+  match t with
+  | BTYP_type_set ls
+  | BTYP_type_set_union ls ->
+     Flx_list.uniq_list (List.concat (List.map fe ls))
+  | BTYP_inst (`Alias,index,ts,mt) ->
+    begin try 
+       let bsym = Flx_bsym_table.find bsym_table index in
+       let bbdcl = Flx_bsym.bbdcl bsym in
+       begin match bbdcl with
+       | Flx_bbdcl.BBDCL_structural_type_alias (bvs, alias) 
+       | Flx_bbdcl.BBDCL_nominal_type_alias (bvs, alias) ->
+         let alias = Flx_btype_subst.tsubst sr bvs ts alias in
+         let alias = beta_reduce "Flx_beta:expand_typeset" counter bsym_table bsym.Flx_bsym.sr alias in
+         fe alias
+       | _ ->  assert false
+       end
+     with Not_found -> 
+       print_endline ("Flx_beta.expand_typeset: Unable to find symbol " ^ string_of_int index ^ " in bound symbol table!");
+       assert false
+    end
+  | t -> [t]
+
+and reduce_typeset_membership bsym_table counter sr elt tset =
+  let ls = expand_typeset bsym_table counter sr tset in
+  let e = BidSet.empty in
+  let un = bbool true in
+  let lss = List.rev_map (fun t -> {pattern=t; pattern_vars=e; assignments=[]},un) ls in
+  let fresh = Flx_bid.fresh_bid counter in
+  let dflt =
+    {
+      pattern = btyp_type_var (fresh,Flx_kind.kind_type);
+      pattern_vars = BidSet.singleton fresh;
+      assignments=[]
+    },
+    bbool false
+  in
+  let lss = List.rev (dflt :: lss) in
+  Flx_btype.btyp_type_match (elt, lss)
+
 
 (* fixpoint reduction: reduce
    Fix f. Lam x. e ==> Lam x. Fix z. e [f x -> z]
@@ -89,7 +131,7 @@ open Flx_kind
   function application.
 *)
 
-let rec fixup counter ps body =
+and fixup counter ps body =
  let param = match ps with
    | [] -> assert false
    | [i,mt] -> btyp_type_var (i,mt)
@@ -164,7 +206,7 @@ print_endline ("Flx_beta:fixup:aux: hacking meta type of fixpoint!");
 
 *)
 
-let adjust bsym_table t =
+and adjust bsym_table t =
 (*
 print_endline ("Fixpoint adjust " ^ sbt bsym_table t);
 *)
@@ -176,7 +218,7 @@ and mk_prim_type_inst i args =
   btyp_inst (i,args, kind_type)
 *)
 
-let rec beta_reduce calltag counter bsym_table sr t1 =
+and beta_reduce calltag counter bsym_table sr t1 =
 (*
   print_endline ("---------- " ^ calltag^ " Beta reduce " ^ sbt bsym_table t1 ^ "=" ^ Flx_btype.st t1);
 *)
@@ -390,6 +432,9 @@ print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
 
   | BTYP_type_set ls -> btyp_type_set (List.map br ls)
 
+  | BTYP_in (elt, tset) ->
+    reduce_typeset_membership bsym_table counter sr elt tset
+ 
   | BTYP_type_set_union ls ->
     let ls = List.rev_map br ls in
     (* split into explicit typesets and other terms

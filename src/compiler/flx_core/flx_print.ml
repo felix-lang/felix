@@ -852,6 +852,8 @@ and sb bsym_table depth fixlist counter prec tc =
       end
 
 
+    | BTYP_in (t1,t2) -> 6,sbt 2 t1 ^ " isin " ^ sbt 6 t2
+
     | BTYP_type_set ls ->
       begin match ls with
       | [] -> 9,"UNEXPECTED EMPTY TYPESET = void"

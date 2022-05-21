@@ -22,63 +22,25 @@ open Flx_btype_occurs
 open Flx_btype_subst
 open Flx_bid
 
+
+(* NEW RULES. bind_type MAY NOT 
+  lookup in the bound symbol table 
+  beta reduce anything
+
+  It is permitted ONLY to actually replace names with indices
+  by lookup in the unbound symbol table, and,
+  replace unbound terms with corresponding bound terms
+
+  In particular, it is used to bind typedefs and type functions
+  putting them in the bound symbol table, so that subsequent binding
+  of non-type terms eg variables and functions, can find bound types
+  in the bound symbol table: at THAT point only ALL the nominal types
+  typedefs, and type functions must be in the bound symbol table.
+
+  The types can then be beta-reduced.
+*)
+
 let debug = false 
-
-let rec expand_typeset t =
-  match t with
-  | BTYP_type_tuple ls
-  | BTYP_type_set ls
-  | BTYP_type_set_union ls -> List.fold_left (fun ls t -> expand_typeset t @ ls) [] ls
-  | x -> [x]
-
-let handle_typeset state sr elt tset =
-  let ls = expand_typeset tset in
-  (* x isin { a,b,c } is the same as
-    typematch x with
-    | a => 1
-    | b => 1
-    | c => 1
-    | _ => 0
-    endmatch
-
-    ** THIS CODE ONLY WORKS FOR BASIC TYPES **
-
-    This is because we don't know what to do with any
-    type variables in the terms of the set. The problem
-    is that 'bind type' just replaces them with bound
-    variables. We have to assume they're not pattern
-    variables at the moment, therefore they're variables
-    from the environment.
-
-    We should really allow for patterns, however bound
-    patterns aren't just types, but types with binders
-    indicating 'as' assignments and pattern variables.
-
-    Crudely -- typesets are a hack that we should get
-    rid of in the future, since a typematch is just
-    more general .. however we have no way to generalise
-    type match cases so they can be named at the moment.
-
-    This is why we have typesets.. so I need to fix them,
-    so the list of things in a typeset is actually
-    a sequence of type patterns, not types.
-
-  *)
-  let e = BidSet.empty in
-  let un = bbool true in
-  let lss = List.rev_map (fun t -> {pattern=t; pattern_vars=e; assignments=[]},un) ls in
-  let fresh = fresh_bid state.counter in
-  let dflt =
-    {
-      pattern = btyp_type_var (fresh,Flx_kind.KIND_type);
-      pattern_vars = BidSet.singleton fresh;
-      assignments=[]
-    },
-    bbool false
-  in
-  let lss = List.rev (dflt :: lss) in
-  btyp_type_match (elt, lss)
-
 
 let rec bind_type'
   bind_type_index
@@ -328,17 +290,10 @@ print_endline ("Calling Flx_beta.adjust, possibly incorrectly, type = " ^ sbt bs
   | `TYP_none ->
     failwith "Unexpected `TYP_none in bind type"
 
-  | `TYP_typeset ts
-  | `TYP_setunion ts ->
-    btyp_type_set (expand_typeset (btyp_type_set (List.map bt ts)))
-
+  | `TYP_typeset ts -> btyp_type_set (List.map bt ts)
+  | `TYP_setunion ts -> btyp_type_set_union (List.map bt ts)
   | `TYP_setintersection ts -> btyp_type_set_intersection (List.map bt ts)
-
-
-  | `TYP_isin (elt,typeset) ->
-      let elt = bt elt in
-      let typeset = bt typeset in
-      handle_typeset state sr elt typeset
+  | `TYP_isin (elt,tset) -> btyp_in (bt elt, bt tset)
 
   | `TYP_var i ->
 (*

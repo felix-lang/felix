@@ -49,6 +49,7 @@ let var_occurs bsym_table t =
     | BTYP_polyrecord (ls,s,v) -> List.iter (fun (s,t) -> aux t) ls; aux v
     | BTYP_variant ls -> List.iter (fun (s,t) -> aux t) ls
 
+    | BTYP_in (a, b) 
     | BTYP_compactrptsum (a,b)
     | BTYP_compactarray (a,b)
     | BTYP_rptsum (a,b)

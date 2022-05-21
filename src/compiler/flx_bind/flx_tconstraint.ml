@@ -27,7 +27,7 @@ let debug = false
 *)
 
 
-let build_constraint_element counter bt sr i p1 =
+let build_constraint_element counter bsym_table bt sr i p1 =
 (*
 print_endline ("Build type constraints for type variable " ^string_of_int i ^": " ^ str_of_kindcode p1);
 *)
@@ -41,7 +41,7 @@ print_endline ("Build type constraints for type variable " ^string_of_int i ^": 
   | KND_function _ 
   | KND_tuple _ -> bbool true
 
-  | KND_tpattern p1 ->
+  | KND_tpattern p1 -> assert false; (* I don't think this is used anymore *)
   begin
   (* special case, no constraint, represent by just 'true' (unit type) *)
   match p1 with
@@ -89,26 +89,39 @@ print_endline ("Build type constraints for type variable " ^string_of_int i ^": 
     varset1 explicit_vars1
   in
   let un = bbool true in (* the 'true' value of the type system *)
-  let elt = btyp_type_var (i, Flx_kind.kind_linear) in
+  let elt = btyp_type_var (i, Flx_kind.kind_type) in
   let p1 = bt p1 in
   let rec fe t = match t with
   | BTYP_type_set ls
   | BTYP_type_set_union ls ->
      uniq_list (concat (map fe ls))
-
+  | BTYP_inst (`Alias,index,ts,mt) ->
+    begin try 
+       let bsym = Flx_bsym_table.find bsym_table index in
+       let bbdcl = Flx_bsym.bbdcl bsym in
+       begin match bbdcl with
+       | Flx_bbdcl.BBDCL_structural_type_alias (bvs, alias) 
+       | Flx_bbdcl.BBDCL_nominal_type_alias (bvs, alias) ->
+         let alias = Flx_btype_subst.tsubst sr bvs ts alias in
+         let alias = Flx_beta.beta_reduce "Tconstraint" counter bsym_table bsym.Flx_bsym.sr alias in
+         fe alias
+       | _ ->  assert false
+       end
+     with Not_found -> 
+       print_endline ("Flx_tconstraint: Unable to find symbol " ^ string_of_int index ^ " in bound symbol table!");
+       assert false
+    end
   | t -> [t]
   in
   let tyset ls =
-(*
 print_endline ("Generating type match for typeset " ^ Flx_util.catmap ", " Flx_btype.st ls);
-*)
     let e = BidSet.empty in
     let un = bbool true in
     let lss = rev_map (fun t -> {pattern=t; pattern_vars=e; assignments=[]},un) ls in
     let fresh = fresh_bid counter in
     let dflt =
       {
-        pattern = btyp_type_var (fresh, Flx_kind.kind_linear);
+        pattern = btyp_type_var (fresh, Flx_kind.kind_type);
         pattern_vars = BidSet.singleton fresh;
         assignments=[]
       },
@@ -124,15 +137,9 @@ print_endline ("Generating type match for typeset " ^ Flx_util.catmap ", " Flx_b
   | _ -> assert false (* unexpected kind *)
 
 let build_type_constraints counter bsym_table bt name sr vs =
-(*
-print_endline ("building type constraints for " ^ name);
-*)
   let type_constraints =
     map (fun (s,i,tp) ->
-(*
-print_endline ("type variable " ^ s ^ " constraint = " ^ str_of_kindcode tp);
-*)
-      let tp = build_constraint_element counter bt sr i tp in
+      let tp = build_constraint_element counter bsym_table bt sr i tp in
       (*
       if tp <> btyp_tuple [] then
         print_endline (

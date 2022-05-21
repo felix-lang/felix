@@ -371,6 +371,7 @@ print_endline ("External primitive instance, registering whole type " ^ sbt bsym
   | BTYP_type_set_intersection _
   | BTYP_inst (`Alias,_,_,_)
   | BTYP_finst _ 
+  | BTYP_in _ 
     ->
     clierrx "[flx_frontend/flx_treg.ml:287: E360] " sr
     (

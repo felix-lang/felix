@@ -561,15 +561,15 @@ ps;
     let fix_typeset t =
       let extra_tvars = ref [] in
       let rec fix_excl t =
-	match t with
-	| `TYP_apply (`TYP_name (_,"!",[]), `TYP_name (sr,name,[])) ->
-	  let n = seq() in
-	  let var = "T" ^ string_of_bid n in
-	  let v = var, KND_tpattern (`TYP_name (sr,name,[])) in
-	  let arg = `TYP_name (sr,var,[]) in
-	  extra_tvars := v :: !extra_tvars;
-	  arg
-       | t -> Flx_maps.map_type fix_excl t
+        match t with
+        | `TYP_apply (`TYP_name (_,"!",[]), `TYP_name (sr,name,[])) ->
+          let n = seq() in
+          let var = "T" ^ string_of_bid n in
+          let v = var, KND_tpattern (`TYP_name (sr,name,[])) in
+          let arg = `TYP_name (sr,var,[]) in
+          extra_tvars := v :: !extra_tvars;
+          arg
+        | t -> Flx_maps.map_type fix_excl t
       in
       let t = fix_excl t in
       !extra_tvars, t

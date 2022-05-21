@@ -68,6 +68,7 @@ and t = private
   | BTYP_subtype_match of t * (btpattern_t * t) list
   | BTYP_tuple_cons of t * t
   | BTYP_tuple_snoc of t * t
+  | BTYP_in of t * t (* type in typeset *)
   | BTYP_type_set of t list
   | BTYP_type_set_union of t list
   | BTYP_type_set_intersection of t list
@@ -183,6 +184,8 @@ val btyp_type_set_union : t list -> t
 val btyp_type_set_intersection : t list -> t
 val btyp_typeof: (int * Flx_ast.expr_t) -> t
 val btyp_typeop: string -> t -> kind -> t
+val btyp_in: t * t -> t
+
 val reduce_typeop : string -> t -> kind -> t
 
 val bbool: bool -> t
