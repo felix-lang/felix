@@ -35,6 +35,7 @@ let hfind msg h k =
 let rec fix_typeofs state bsym_table t = 
   match t with
   | BTYP_typeof (symbol_index,expr) ->
+print_endline ("Found typeof to fix: " ^ Flx_btype.st t);
     let env = Flx_lookup.build_env
       state.lookup_state bsym_table (Some symbol_index)
     in
@@ -42,6 +43,7 @@ let rec fix_typeofs state bsym_table t =
       state.lookup_state bsym_table env expr
     in
     let typ = snd be in
+print_endline ("Fixed typeof : " ^ Flx_btype.st t ^ ", set to " ^ Flx_btype.st typ);
     typ
   | _ -> Flx_btype.map ~f_btype:(fix_typeofs state bsym_table) t
 
@@ -178,6 +180,12 @@ if showpasses then
       let r = fix_typeofs state bsym_table t in 
       let b = bbdcl_structural_type_alias (bvs, r) in 
       Flx_bsym_table.update_bbdcl bsym_table bid b
+
+    | BBDCL_nominal_type_alias (bvs,t) -> 
+      let r = fix_typeofs state bsym_table t in 
+      let b = bbdcl_structural_type_alias (bvs, r) in 
+      Flx_bsym_table.update_bbdcl bsym_table bid b
+
 
     | BBDCL_type_function (bks,t) -> 
       let r = fix_typeofs state bsym_table t in 

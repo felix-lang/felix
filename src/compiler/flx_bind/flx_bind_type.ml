@@ -348,14 +348,16 @@ print_endline ("Flx_bind_type.TYP_typeof fixpoint metatype hack! Expression " ^ 
 *)
         btyp_fix fixdepth (Flx_kind.KIND_type)
       end else begin
-        if debug then
+        if debug then 
         print_endline ("Flx_bind_type.`TYP_typeof.Start tentative binding of typeof (" ^ string_of_expr e ^ ")");
         let t = snd (bind_expression' state bsym_table env rs e []) in
-        if debug then
+        if debug then 
         print_endline ("Flx_bind_type.`TYP_typeof.end tentative binding of typeof (" ^string_of_expr e^ ")");
         t
       end
     end else begin
+      if debug then 
+      print_endline ("Flx_bind_type.DEFER `TYP_typeof(" ^ string_of_expr e ^ ")");
       match env with
       | (parent,_,_,_,_)::_ ->
         btyp_typeof (parent, e)
