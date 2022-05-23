@@ -262,7 +262,9 @@ and type_list_index counter bsym_table (ls: (Flx_btype.t * int) list) t =
         false
       end
     then begin 
+(*
       print_endline ("Type list index found term " ^ Flx_btype.st hd ^ " in trail depth " ^ string_of_int depth);
+*)
       Some depth
     end
     else aux tl 
@@ -307,7 +309,9 @@ print_endline ("Flx_beta: beta-reduce: hacking metatype of fixpoint, type is " ^
 print_endline ("Flx_beta: kind is " ^ sk mt);
 *)
     let fp = btyp_fix (j-depth) mt  in
+(*
 print_endline ("Beta-reduce: type list index found term in trail, returning fixpoint " ^ sbt bsym_table fp);
+*)
     fp
 
   | None ->
@@ -322,8 +326,9 @@ print_endline "Type list index returned None";
     let ts = List.map br ts in
     begin try 
       let bsym = Flx_bsym_table.find bsym_table index in
+(*
       if bsym.Flx_bsym.id = "any" then print_endline ("Beta reduce any!");
-
+*)
       let bbdcl = Flx_bsym.bbdcl bsym in
       begin match bbdcl with
       | Flx_bbdcl.BBDCL_structural_type_alias (bvs, alias) 
