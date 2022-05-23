@@ -1,0 +1,36 @@
+@h1 Functor composition
+@felix
+
+typefun comp<J,K,L>
+(f: K->J, g :L -> K):L -> J 
+ =>  fun (t:L):J => f(g(t))
+;
+
+
+typedef pair = fun (A:TYPE, B:TYPE):TYPE => A * B;
+typedef diag = fun (X: TYPE): TYPE * TYPE => X, X;
+
+// we want to construct the functor  equivalent to this:
+typedef pairofdiag = fun (T:TYPE):TYPE=> pair(diag(T));
+var x: pairofdiag int = 1,2;
+println$ x;
+
+// So here, g is diag: TYPE-> TYPE * TYPE
+// and f is pair: TYPE * TYPE -> TYPE
+// J is f codomain, the final result TYPE
+// K is f domain, and g codomain TYPE * TYPE
+// L is g domain, TYPE
+// so the composite is TYPE -> TYPE
+
+typedef pairofdiag2 = comp<TYPE,TYPE * TYPE, TYPE> (pair, diag);
+
+var y : pairofdiag2 int = 1,2;
+println$ y; 
+
+typedef pairofdiag3 = comp(pair, diag); // J,K,L deduced!
+var z : pairofdiag3 int = 1,2;
+println$ z;
+
+@expect
+@
+
