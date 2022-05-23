@@ -133,9 +133,9 @@ if name = debugid then
   let curry_domains = spec_domain :: curry_domains in
 
   if name = debugid then begin
-    print_endline ("Argument  sigs= " ^  catmap "->" (sbt bsym_table) arg_types);
-    print_endline ("spec_result = " ^  catmap "->" (sbt bsym_table) curry_domains);
-    print_endline ("Candidate sigs= " ^  catmap "->" (sbt bsym_table) curry_domains);
+    print_endline ("Argument  sigs= " ^  catmap ", " (sbt bsym_table) arg_types);
+    print_endline ("spec_result = " ^  catmap ", " (sbt bsym_table) curry_domains);
+    print_endline ("Candidate sigs= " ^  catmap ", " (sbt bsym_table) curry_domains);
   end;
 
   (* equations for user specified assignments *)
@@ -145,7 +145,7 @@ if name = debugid then
 
   if name = debugid then begin
     print_endline "TS EQUATIONS ARE:";
-    List.iter (fun (t1,t2) -> print_endline (sbt bsym_table t1 ^ " = " ^ sbt bsym_table t2))
+    List.iter (fun (t1,t2) -> print_endline (Flx_btype.st t1 ^ " = " ^ Flx_btype.st t2))
     eqns
   end;
 
@@ -187,12 +187,9 @@ if name = debugid then begin
   List.iter (fun (t1,t2) -> print_endline (sbt bsym_table t1 ^ " = " ^ sbt bsym_table t2))
   eqns
 end;
-  (* WRONG!! dunno why, but it is! *)
-(*
+if name = debugid then 
   print_endline ("DEPENDENT VARIABLES ARE " ^ catmap "," si
-    (BidSet.fold (fun i l-> i::l) !dvars []));
-  print_endline "...";
-*)
+    (BidSet.elements !dvars));
 (*
 if name = debugid then print_endline "Trying unification";
 *)
@@ -322,7 +319,7 @@ print_endline ("Scanning type variable " ^ s ^ "<" ^ si j' ^ ">: " ^ str_of_kind
         (* this is not really right, kinds do act as constraints *)
         match tp with
         | KND_tpattern t -> 
-(* if id = debugid then *)
+if id = debugid then
 print_endline (" .. found tpattern .. analysing .. " ^ string_of_typecode t);
           type_of_tpattern counter t
         | KND_generic (* overload treats this as a type variable in this routine *)
@@ -717,10 +714,7 @@ let consider
 : overload_result option =
   (* Helper function to simplify the bind type function. *)
   let bt sr t = bt sr entry_kind.base_sym t in
-
-(*
-if name = debugid then print_endline ("Considering .." ^ name);
-*)
+if name = debugid then print_endline ("Considering .." ^ name ^ "<" ^ string_of_int entry_kind.base_sym ^ ">");
   let id, sr, base_vs, parent_vs, con, domain, base_result, arg_types =
     Flx_resolve.resolve sym_table bsym_table entry_kind.base_sym bt be arg_types 
   in
@@ -745,19 +739,18 @@ if name = debugid then print_endline ("Resolve done for " ^ name);
   end
   ;
   *)
-(*
+if name = debugid then 
   print_endline ("CONSIDER: " ^ id ^ "|-> " ^string_of_myentry bsym_table entry_kind);
-*)
-(*
+if name = debugid then 
   begin
-    print_endline ("PARENT VS=" ^ catmap "," (fun (s,i,mt)->s^"<"^si i^">:" ^ string_of_typecode mt) parent_vs);
-    print_endline ("base VS=" ^ catmap "," (fun (s,i,mt)->s^"<"^si i^">" ^ string_of_typecode mt) base_vs);
+    print_endline ("PARENT VS=" ^ catmap "," (fun (s,i,mt)->s^"<"^si i^">:" ^ str_of_kindcode mt) parent_vs);
+    print_endline ("base VS=" ^ catmap "," (fun (s,i,mt)->s^"<"^si i^">" ^ str_of_kindcode mt) base_vs);
     print_endline ("sub TS=" ^ catmap "," (sbt bsym_table) entry_kind.sub_ts);
-    print_endline ("spec VS=" ^ catmap "," (fun (s,i)->s^"<"^si i^">") entry_kind.spec_vs);
+    print_endline ("spec VS=" ^ catmap "," (fun (s,i, k)->s^"<"^si i^":"^Flx_kind.sk k ^">") entry_kind.spec_vs);
     print_endline ("input TS=" ^ catmap "," (sbt bsym_table) input_ts);
   end
   ;
-*)
+
   (* these are wrong .. ? or is it just shitty table?
      or is the mismatch due to unresolved variables? *)
   if (List.length base_vs != List.length entry_kind.sub_ts) then begin
@@ -830,15 +823,22 @@ if name = "accumulate" then print_endline "Considering function .. ";
       clierrx "[flx_bind/flx_overload.ml:1028: E250] " sr ("Failed to bind candidate return type! fn='" ^ name ^
         "', type=" ^ sbt bsym_table base_result)
   in
+if name = debugid then 
+  print_endline ("Spec result input to make_equations " ^ sbt bsym_table spec_result);
+
   let spec_result = beta_reduce "flx_overload: consider(1) " counter bsym_table sr spec_result in
+if name = debugid then 
+  print_endline ("Spec result input to make_equations post beta " ^ sbt bsym_table spec_result);
 
   let spec_domain = 
     specialize_domain sr base_vs entry_kind.sub_ts domain
   in
-  let spec_domain = beta_reduce "flx_overload: consider(2) " counter bsym_table sr spec_domain in
-(*
+if name = debugid then 
   print_endline ("Spec domain input to make_equations " ^ sbt bsym_table spec_domain);
-*)
+
+  let spec_domain = beta_reduce "flx_overload: consider(2) " counter bsym_table sr spec_domain in
+if name = debugid then 
+  print_endline ("Spec domain input to make_equations post beta " ^ sbt bsym_table spec_domain);
 
 (*
 if name = debugid then 
@@ -926,6 +926,7 @@ if name = debugid then
         let r = match con with | `TYP_tuple [] -> bbool true | _ -> bt rs call_sr ix con in
 *)
         let r = bt rs call_sr ix con in
+        let r = Flx_beta.beta_reduce "Flx_overload:overload':env_traint" counter bsym_table call_sr r in
         r
       ) 
       env

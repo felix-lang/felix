@@ -137,6 +137,7 @@ let cal_call state bsym_table sr ((be1,t1) as tbe1) ((_,t2) as tbe2) =
       end
     end
   in
+  let t1 = Flx_beta.beta_reduce "Flx_bind_bexe:cal_call" state.counter bsym_table sr t1 in
   match unfold "flx_bind_bexe" t1 with
 
   (* special handling of non-returning function. Instead of returning

@@ -451,6 +451,7 @@ print_endline ("join: binding return type");
 *)
     (* We don't need to bind the intermediary type. *)
     let brt = bt' rt in
+    let brt = Flx_beta.beta_reduce "Flx_bind_symbol:bexes" state.counter bsym_table sym.Flx_sym.sr brt in 
 (*
 if sym.Flx_sym.id = "join" then 
 print_endline ("join: bound return type");

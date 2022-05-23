@@ -41,7 +41,7 @@ print_endline ("Build type constraints for type variable " ^string_of_int i ^": 
   | KND_function _ 
   | KND_tuple _ -> bbool true
 
-  | KND_tpattern p1 -> assert false; (* I don't think this is used anymore *)
+  | KND_tpattern p1 -> 
   begin
   (* special case, no constraint, represent by just 'true' (unit type) *)
   match p1 with
@@ -114,7 +114,9 @@ print_endline ("Build type constraints for type variable " ^string_of_int i ^": 
   | t -> [t]
   in
   let tyset ls =
+(*
 print_endline ("Generating type match for typeset " ^ Flx_util.catmap ", " Flx_btype.st ls);
+*)
     let e = BidSet.empty in
     let un = bbool true in
     let lss = rev_map (fun t -> {pattern=t; pattern_vars=e; assignments=[]},un) ls in

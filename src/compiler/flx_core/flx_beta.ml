@@ -224,7 +224,7 @@ and beta_reduce calltag counter bsym_table sr t1 =
 *)
   let t2 =
   try
-  beta_reduce' calltag counter bsym_table sr [] t1
+  beta_reduce' calltag counter bsym_table sr 0 [] t1
   with exn -> t1
 (*
     | Not_found ->
@@ -238,19 +238,20 @@ print_endline ("Beta reduce failed with Failure");
       raise exn
   
   in
+*)
+  in 
 (*
   print_endline ("============" ^ calltag^ "   reduced= " ^ sbt bsym_table t2 ^ "=" ^ Flx_btype.st t2);
 *)
-*)
-  in t2
+  t2
 
-and type_list_index counter bsym_table ls t =
+and type_list_index counter bsym_table (ls: (Flx_btype.t * int) list) t =
   (*
   print_endline ("Comparing : " ^ sbt bsym_table t ^ " with ..");
   *)
-  let rec aux ls n = match ls with
+  let rec aux ls = match ls with
   | [] -> None
-  | hd :: tl ->
+  | (hd, depth) :: tl ->
     (*
     print_endline ("Candidate : " ^ sbt bsym_table hd);
     *)
@@ -260,11 +261,14 @@ and type_list_index counter bsym_table ls t =
         print_endline ("Exception: " ^ Printexc.to_string x);
         false
       end
-    then Some n
-    else aux tl (n+1)
-  in aux ls 0
+    then begin 
+      print_endline ("Type list index found term " ^ Flx_btype.st hd ^ " in trail depth " ^ string_of_int depth);
+      Some depth
+    end
+    else aux tl 
+  in aux ls 
 
-and beta_reduce' calltag counter bsym_table sr termlist t =
+and beta_reduce' calltag counter bsym_table sr depth (termlist: (Flx_btype.t * int) list) t =
 let spc = "  *** " in
 (*
   print_endline ("BETA REDUCE' " ^ sbt bsym_table t ^ " trail length = " ^
@@ -283,7 +287,7 @@ let spc = "  *** " in
 *)
   if List.length termlist > 200
   then begin
-    print_endline ("Trail=" ^ catmap "\n" (sbt bsym_table) termlist);
+    print_endline ("Trail=" ^ catmap "\n" (fun (t,depth) -> string_of_int depth ^ ": " ^sbt bsym_table t) termlist);
     failwith  ("Trail overflow, infinite expansion: BETA REDUCE " ^
     sbt bsym_table t ^ "\ntrail length = " ^ si (List.length termlist))
   end;
@@ -302,17 +306,15 @@ let spc = "  *** " in
 print_endline ("Flx_beta: beta-reduce: hacking metatype of fixpoint, type is " ^ sbt bsym_table t);
 print_endline ("Flx_beta: kind is " ^ sk mt);
 *)
-    let fp = btyp_fix (-j - 1) mt  in
-(*
+    let fp = btyp_fix (j-depth) mt  in
 print_endline ("Beta-reduce: type list index found term in trail, returning fixpoint " ^ sbt bsym_table fp);
-*)
     fp
 
   | None ->
 (*
 print_endline "Type list index returned None";
 *)
-  let br t' = beta_reduce' calltag counter bsym_table sr (t::termlist) t' in
+  let br t' = beta_reduce' calltag counter bsym_table sr (depth+1) termlist t' in
   let st t = sbt bsym_table t in
   match t with
   (* STAND ALONE TYPEDEF *)
@@ -320,21 +322,15 @@ print_endline "Type list index returned None";
     let ts = List.map br ts in
     begin try 
       let bsym = Flx_bsym_table.find bsym_table index in
+      if bsym.Flx_bsym.id = "any" then print_endline ("Beta reduce any!");
+
       let bbdcl = Flx_bsym.bbdcl bsym in
       begin match bbdcl with
       | Flx_bbdcl.BBDCL_structural_type_alias (bvs, alias) 
       | Flx_bbdcl.BBDCL_nominal_type_alias (bvs, alias) ->
-(*
-print_endline ("Found typedef " ^ Flx_bsym.id bsym ^ "<"^string_of_int index^"> alias=" ^ Flx_btype.st alias);
-print_endline ("bvs/tvs= " ^ catmap ", " (fun ((s,i), t) -> s^"<" ^ string_of_int i ^ "> <-- " ^ Flx_btype.st t) (List.combine bvs ts));
-*)
-       let salias = Flx_btype_subst.tsubst sr bvs ts alias in
-       (* NOTE: the reference is NOT put on the trail because this would upset the depth count *)
-       beta_reduce' calltag counter bsym_table sr termlist alias
-(*
-print_endline ("typedef " ^ Flx_bsym.id bsym ^ " after substitution =" ^ Flx_btype.st alias);
-*)
-       
+       let alias = Flx_btype_subst.tsubst sr bvs ts alias in
+       let alias = beta_reduce' calltag counter bsym_table sr  depth ((t,depth)::termlist) alias in
+       alias 
       | _ ->  
 (*
 print_endline ("Found non-typedef" ^ Flx_bsym.id bsym ^ "<" ^ string_of_int k ^ ">");
@@ -527,7 +523,7 @@ print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
 
   | BTYP_type_apply (t1,t2) -> 
     let t1 = Flx_alpha.alpha_convert counter t1 in
-    Flx_type_fun.type_apply br beta_reduce' calltag counter bsym_table sr termlist t t1 t2
+    Flx_type_fun.type_apply br beta_reduce' calltag counter bsym_table sr depth termlist t t1 t2
 
   | BTYP_type_match (tt,pts) ->
   begin

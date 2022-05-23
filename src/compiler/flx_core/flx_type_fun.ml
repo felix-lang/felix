@@ -12,7 +12,7 @@ open Flx_kind
 
 let adjust bsym_table t = Flx_btype_rec.adjust_fixpoint t
 
-let rec type_apply br beta_reduce' calltag counter bsym_table sr termlist t f arg = 
+let rec type_apply br beta_reduce' calltag counter bsym_table sr depth (termlist: (Flx_btype.t * int) list) t f arg = 
   match f with 
   | BTYP_finst (index, ks, dom, cod) ->
     begin try
@@ -50,7 +50,7 @@ let rec type_apply br beta_reduce' calltag counter bsym_table sr termlist t f ar
             alias
           end
         in 
-        type_apply br beta_reduce' calltag counter bsym_table sr termlist t f arg
+        type_apply br beta_reduce' calltag counter bsym_table sr depth termlist t f arg
       | _ ->
         print_endline ("Expexted finst to refer to type function");
         assert false
@@ -68,7 +68,7 @@ let rec type_apply br beta_reduce' calltag counter bsym_table sr termlist t f ar
        | Flx_bbdcl.BBDCL_structural_type_alias (bvs, alias) 
        | Flx_bbdcl.BBDCL_nominal_type_alias (bvs, alias) ->
          let salias = Flx_btype_subst.tsubst sr bvs ts alias in
-         type_apply br beta_reduce' calltag counter bsym_table sr termlist t alias arg
+         type_apply br beta_reduce' calltag counter bsym_table sr depth termlist t alias arg
        | _ ->  assert false
        end
      with Not_found -> 
@@ -93,8 +93,7 @@ let rec type_apply br beta_reduce' calltag counter bsym_table sr termlist t f ar
         else List.map2 (fun (i,_) t -> i, t) ps ts
     in
     let t' = list_subst counter params' body in
-    let t' = beta_reduce' calltag counter bsym_table sr (t::termlist) t' in
-    let t' = adjust bsym_table t' in
+    let t' = beta_reduce' calltag counter bsym_table sr (depth-2) termlist t' in
     t'
 
   | _ ->

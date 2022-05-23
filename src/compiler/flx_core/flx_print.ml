@@ -2955,7 +2955,7 @@ let full_string_of_entry_kind sym_table bsym_table {base_sym=i; spec_vs=vs; sub_
       with Not_found -> failwith ("full_string_of_entry_kind: Help, can't find index " ^ string_of_int
       i ^ " in sym table")
   in
-  string_of_symdef sym.Flx_sym.symdef sym.Flx_sym.id sym.Flx_sym.vs ^
+  string_of_int i ^ ": " ^ string_of_symdef sym.Flx_sym.symdef sym.Flx_sym.id sym.Flx_sym.vs ^
   "\n  defined at " ^ Flx_srcref.short_string_of_src sym.Flx_sym.sr ^ "\n  with view" ^
   " vs=" ^ string_of_bvs vs ^
   " ts=" ^ catmap "," (sbt bsym_table) ts
