@@ -862,13 +862,13 @@ print_endline ("assign after beta-reduction: RHST = " ^ sbt bsym_table rhst);
         let bexe = bexe_assign (sr,lhs_index,bexpr_coerce (rx, lhst)) in
         [bexe]
       else
-      clierrx "[flx_bind/flx_bind_bexe.ml:867: E36] " sr
+      clierrx "[flx_bind/flx_bind_bexe.ml:865: E36] " sr
       (
         "[bind_exe: assign ] Assignment "^
           sbe bsym_table lx^"="^
           sbe bsym_table rx^";\n"^
         "LHS type: " ^ sbt bsym_table lhst^
-        "\nmust have be super type of\n"^
+        "\nmust be super type of\n"^
         "RHS type: " ^ sbt bsym_table rhst ^
         record_field_diag bsym_table lhst rhst
       )

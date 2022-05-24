@@ -245,31 +245,6 @@ print_endline ("Beta reduce failed with Failure");
 *)
   t2
 
-and type_list_index counter bsym_table (ls: (Flx_btype.t * int) list) t =
-  (*
-  print_endline ("Comparing : " ^ sbt bsym_table t ^ " with ..");
-  *)
-  let rec aux ls = match ls with
-  | [] -> None
-  | (hd, depth) :: tl ->
-    (*
-    print_endline ("Candidate : " ^ sbt bsym_table hd);
-    *)
-    if
-      begin try type_eq bsym_table counter hd t
-      with x ->
-        print_endline ("Exception: " ^ Printexc.to_string x);
-        false
-      end
-    then begin 
-(*
-      print_endline ("Type list index found term " ^ Flx_btype.st hd ^ " in trail depth " ^ string_of_int depth);
-*)
-      Some depth
-    end
-    else aux tl 
-  in aux ls 
-
 and beta_reduce' calltag counter bsym_table sr depth (termlist: (Flx_btype.t * int) list) t =
 let spc = "  *** " in
 (*
@@ -295,7 +270,7 @@ let spc = "  *** " in
   end;
   let tli = 
     try 
-      type_list_index counter bsym_table termlist t 
+      Flx_type_list_index.type_list_index counter bsym_table termlist t 
     with exc -> 
       print_endline ("type list index function failed  " ^ Printexc.to_string exc);
       assert false
@@ -323,7 +298,7 @@ print_endline "Type list index returned None";
   match t with
   (* STAND ALONE TYPEDEF *)
   | BTYP_inst (`Alias, index,ts,mt) -> 
-    let ts = List.map br ts in
+    (* let ts = List.map br ts in *)
     begin try 
       let bsym = Flx_bsym_table.find bsym_table index in
 (*
@@ -527,8 +502,11 @@ print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
   | BTYP_type_map (t1,t2) -> btyp_type_map (br t1, br t2)
 
   | BTYP_type_apply (t1,t2) -> 
-    let t1 = Flx_alpha.alpha_convert counter t1 in
-    Flx_type_fun.type_apply br beta_reduce' calltag counter bsym_table sr depth termlist t t1 t2
+    (* 
+      (* NOTE: suspect because trail comparison would be screwed up! *)
+    let t1 = Flx_alpha.alpha_convert counter t1 in 
+    *)
+    Flx_type_fun.type_apply beta_reduce' calltag counter bsym_table sr depth termlist t1 t2
 
   | BTYP_type_match (tt,pts) ->
   begin
@@ -571,9 +549,7 @@ print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
         let mgu = unification bsym_table counter [p', tt] dvars in
         (* print_endline (spc ^ "Typematch success"); *)
         let t' = list_subst counter (mgu @ eqns) t' in
-        let t' = br t' in
-        (* print_endline ("type match reduction result=" ^ sbt bsym_table t'); *)
-        adjust bsym_table t'
+        beta_reduce' calltag counter bsym_table sr depth termlist t'
       with 
        | Not_found ->
          (* print_endline ("Match failed to reduce redex, return original term"); *)
@@ -589,10 +565,7 @@ print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
     let tt = br tt in
     let new_matches = ref [] in
     List.iter (fun ({pattern=p; pattern_vars=dvars; assignments=eqns}, t') ->
-      (*
-      print_endline (spc ^"Tring to unify argument with " ^
-        sbt bsym_table p');
-      *)
+      (* print_endline (spc ^"Tring to unify argument with " ^ sbt bsym_table p'); *)
       let p =  br p in
       let x =
         {
@@ -627,11 +600,7 @@ print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
         print_endline "Typematch success";
         *)
         let t' = list_subst counter (mgu @ eqns) t' in
-        let t' = br t' in
-        (*
-        print_endline ("type match reduction result=" ^ sbt bsym_table t');
-        *)
-        adjust bsym_table t'
+        beta_reduce' calltag counter bsym_table sr depth termlist t'
       | None -> btyp_subtype_match (tt,pts)
       end
   end

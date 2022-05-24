@@ -12,7 +12,7 @@ open Flx_kind
 
 let adjust bsym_table t = Flx_btype_rec.adjust_fixpoint t
 
-let rec type_apply br beta_reduce' calltag counter bsym_table sr depth (termlist: (Flx_btype.t * int) list) t f arg = 
+let rec type_apply beta_reduce' calltag counter bsym_table sr depth (termlist: (Flx_btype.t * int) list) f arg = 
   match f with 
   | BTYP_finst (index, ks, dom, cod) ->
     begin try
@@ -50,7 +50,7 @@ let rec type_apply br beta_reduce' calltag counter bsym_table sr depth (termlist
             alias
           end
         in 
-        type_apply br beta_reduce' calltag counter bsym_table sr depth termlist t f arg
+        type_apply beta_reduce' calltag counter bsym_table sr depth termlist f arg
       | _ ->
         print_endline ("Expexted finst to refer to type function");
         assert false
@@ -68,7 +68,7 @@ let rec type_apply br beta_reduce' calltag counter bsym_table sr depth (termlist
        | Flx_bbdcl.BBDCL_structural_type_alias (bvs, alias) 
        | Flx_bbdcl.BBDCL_nominal_type_alias (bvs, alias) ->
          let salias = Flx_btype_subst.tsubst sr bvs ts alias in
-         type_apply br beta_reduce' calltag counter bsym_table sr depth termlist t alias arg
+         type_apply beta_reduce' calltag counter bsym_table sr depth termlist alias arg
        | _ ->  assert false
        end
      with Not_found -> 
@@ -77,24 +77,53 @@ let rec type_apply br beta_reduce' calltag counter bsym_table sr depth (termlist
      end
 
   | BTYP_type_function (ps,r,body) ->
-    let params' =
-      match ps with
-      | [] -> []
-      | [i,_] -> [i,arg]
-      | _ ->
-        let ts = match br arg with
-        | BTYP_type_tuple ts -> ts
-        | _ -> 
-          print_endline ("Expected Argument  to type function to be type tuple, got " ^ Flx_print.sbt bsym_table arg);
-          assert false
-        in
-        if List.length ps <> List.length ts
-        then failwith "Wrong number of arguments to typefun"
-        else List.map2 (fun (i,_) t -> i, t) ps ts
-    in
-    let t' = list_subst counter params' body in
-    let t' = beta_reduce' calltag counter bsym_table sr (depth-2) termlist t' in
-    t'
+    (* Fixpoint handling here *)
+    let appl = Flx_btype.btyp_type_apply (f, arg) in
+    begin match Flx_type_list_index.type_list_index counter bsym_table termlist appl with
+    | Some j -> 
+      let t = btyp_fix (j-depth) r in
+(*
+print_endline ("Flx_type_fun: installing fixpoint " ^ Flx_btype.st t);
+*)
+      t
+    | None -> 
+(* NOTE: the typefun term MUST be alpha converted here so the substitution does not lead to false captures in NESTED
+typefun terms. Note, there cannot be a capture of any of the current paraneters because they're all being replaced,
+and the replacement does not rescan the replacement. However the body of the type function can contain another
+type term and we are substituting "under the lambda" and the replacement may contain a free variable that is
+a parameter of THAT nested lambda.
+
+Unfortunately this means the trail comparison must use alpha equivalance, not equality of the term encoding.
+
+NOTE: alpha equiv is easy, we alph convert both terms using the SAME initial counter then 
+do normal comparison .. but I think maybe the type equality routine should do this.
+*)
+      let f = Flx_alpha.alpha_convert counter f in
+      match f with 
+      | BTYP_type_function (ps,r,body) ->
+      let params' =
+        match ps with
+        | [] -> []
+        | [i,_] -> [i,arg]
+        | _ ->
+          let ts = match (* beta_reduce' "Flx_type_fun:argment" counter bsym_table sr (depth+1) termlist *) arg with
+          | BTYP_type_tuple ts -> ts
+          | _ -> 
+            print_endline ("Expected Argument  to type function to be type tuple, got " ^ Flx_print.sbt bsym_table arg);
+            assert false
+          in
+          if List.length ps <> List.length ts
+          then failwith "Wrong number of arguments to typefun"
+          else List.map2 (fun (i,_) t -> i, t) ps ts
+      in
+      let t' = list_subst counter params' body in
+(*
+print_endline ("Flx_type_fun: calling beta trailing " ^ Flx_btype.st appl ^ " depth=" ^ string_of_int depth);
+*)
+      let t' = beta_reduce' calltag counter bsym_table sr depth ((appl,depth)::termlist) t' in
+      t'
+    | _ -> assert false
+    end
 
   | _ ->
     let t = btyp_type_apply (f,arg) in
