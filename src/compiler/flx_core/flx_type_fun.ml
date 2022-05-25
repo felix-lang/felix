@@ -14,6 +14,8 @@ let adjust bsym_table t = Flx_btype_rec.adjust_fixpoint t
 
 let rec type_apply beta_reduce' calltag counter bsym_table sr depth (termlist: (Flx_btype.t * int) list) f arg = 
   match f with 
+
+(* TYPEFUN REFERENCE *)
   | BTYP_finst (index, ks, dom, cod) ->
     begin try
       let bsym = Flx_bsym_table.find bsym_table index in
@@ -59,23 +61,24 @@ let rec type_apply beta_reduce' calltag counter bsym_table sr depth (termlist: (
       assert false
     end (* finst *)
 
-    (* Ordinary typedef *)
-    | Flx_btype.BTYP_inst (`Alias,index,ts,mt) ->
-      begin try 
-       let bsym = Flx_bsym_table.find bsym_table index in
-       let bbdcl = Flx_bsym.bbdcl bsym in
-       begin match bbdcl with
-       | Flx_bbdcl.BBDCL_structural_type_alias (bvs, alias) 
-       | Flx_bbdcl.BBDCL_nominal_type_alias (bvs, alias) ->
-         let salias = Flx_btype_subst.tsubst sr bvs ts alias in
-         type_apply beta_reduce' calltag counter bsym_table sr depth termlist alias arg
-       | _ ->  assert false
-       end
-     with Not_found -> 
-       print_endline ("Flx_type_function : Unable to find symbol " ^ string_of_int index ^ " in bound symbol table!");
-       assert false
-     end
+(* TYPEDEF REFERENCE *)
+  | Flx_btype.BTYP_inst (`Alias,index,ts,mt) ->
+    begin try 
+      let bsym = Flx_bsym_table.find bsym_table index in
+      let bbdcl = Flx_bsym.bbdcl bsym in
+      begin match bbdcl with
+      | Flx_bbdcl.BBDCL_structural_type_alias (bvs, alias) 
+      | Flx_bbdcl.BBDCL_nominal_type_alias (bvs, alias) ->
+       let salias = Flx_btype_subst.tsubst sr bvs ts alias in
+       type_apply beta_reduce' calltag counter bsym_table sr depth termlist alias arg
+      | _ ->  assert false
+      end
+    with Not_found -> 
+      print_endline ("Flx_type_function : Unable to find symbol " ^ string_of_int index ^ " in bound symbol table!");
+      assert false
+    end
 
+(* TYPE LAMBDA *)
   | BTYP_type_function (ps,r,body) ->
     (* Fixpoint handling here *)
     let appl = Flx_btype.btyp_type_apply (f, arg) in
@@ -99,33 +102,47 @@ NOTE: alpha equiv is easy, we alph convert both terms using the SAME initial cou
 do normal comparison .. but I think maybe the type equality routine should do this.
 *)
       let f = Flx_alpha.alpha_convert counter f in
-      match f with 
+      begin match f with 
       | BTYP_type_function (ps,r,body) ->
-      let params' =
-        match ps with
-        | [] -> []
-        | [i,_] -> [i,arg]
-        | _ ->
-          let ts = match (* beta_reduce' "Flx_type_fun:argment" counter bsym_table sr (depth+1) termlist *) arg with
-          | BTYP_type_tuple ts -> ts
-          | _ -> 
-            print_endline ("Expected Argument  to type function to be type tuple, got " ^ Flx_print.sbt bsym_table arg);
-            assert false
-          in
-          if List.length ps <> List.length ts
-          then failwith "Wrong number of arguments to typefun"
-          else List.map2 (fun (i,_) t -> i, t) ps ts
-      in
-      let t' = list_subst counter params' body in
-(*
-print_endline ("Flx_type_fun: calling beta trailing " ^ Flx_btype.st appl ^ " depth=" ^ string_of_int depth);
-*)
-      let t' = beta_reduce' calltag counter bsym_table sr depth ((appl,depth)::termlist) t' in
-      t'
-    | _ -> assert false
-    end
+        let params' =
+          match ps with
+          | [] -> []
+          | [i,_] -> [i,arg]
+          | _ ->
+            match  arg with
+            | BTYP_type_tuple ts ->
+              if List.length ps <> List.length ts
+              then failwith "Wrong number of arguments to typefun"
+              else List.map2 (fun (i,_) t -> i, t) ps ts
+            | _ -> 
+              print_endline ("Expected Argument to type function to be type tuple, got " ^ Flx_print.sbt bsym_table arg);
+              print_endline ("Temporarily, beta reducing prematurely");
+              let redarg = beta_reduce' calltag counter bsym_table sr (depth+1) termlist arg in
+              print_endline ("POSTREDUCTION got " ^ Flx_print.sbt bsym_table redarg);
+              match redarg with
+              | BTYP_type_tuple ts ->
+                if List.length ps <> List.length ts
+                then failwith "Wrong number of arguments to typefun"
+                else List.map2 (fun (i,_) t -> i, t) ps ts
+              | _ ->
+                print_endline ("POSTREDUCTION Expected Argument to type function to be type tuple");
+                assert false
+        in
+        let t' = list_subst counter params' body in
+        let t' = beta_reduce' calltag counter bsym_table sr depth ((appl,depth)::termlist) t' in
+        t'
+      | _ -> assert false (* alpha convert can't fail here *)
+      end
+    end (* type function *)
 
-  | _ ->
+(* HIGHER ORDER FUNCTION APPLICATION *)
+  | BTYP_type_apply (f',t') ->
+    let origappl = btyp_type_apply (f,arg) in
+    let f = type_apply beta_reduce' calltag counter bsym_table sr (depth+1) ((origappl,depth)::termlist) f' t' in
+    type_apply beta_reduce' calltag counter bsym_table sr depth termlist f arg 
+    
+(* IRREDUCIBLE *)
+  | _ -> 
     let t = btyp_type_apply (f,arg) in
     begin match f with 
     | BTYP_type_var _ -> () (* apply type variable .. delay until type variable set *)
