@@ -409,7 +409,9 @@ print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
   | BTYP_type_set ls -> btyp_type_set (List.map br ls)
 
   | BTYP_in (elt, tset) ->
-    reduce_typeset_membership bsym_table counter sr elt tset
+    let t = reduce_typeset_membership bsym_table counter sr elt tset in
+    beta_reduce' calltag counter bsym_table sr depth termlist t
+ 
  
   | BTYP_type_set_union ls ->
     let ls = List.rev_map br ls in

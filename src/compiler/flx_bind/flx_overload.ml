@@ -639,27 +639,19 @@ if name = debugid then
 *)
     let vs = List.map (fun (s,i,mt)-> s,i,Flx_btype.bmt "Flx_overload2" mt) base_vs in
     let type_constraint = tsubst sr vs base_ts type_constraint in
-(*
 if name = debugid then
     print_endline ("Substituted type constraint " ^ sbt bsym_table type_constraint);
-*)
     let reduced_constraint = beta_reduce "flx_overload: constraint" counter bsym_table sr type_constraint in
-(*
 if name = debugid then
     print_endline ("Reduced type constraint " ^ sbt bsym_table reduced_constraint);
-*)
     begin match reduced_constraint with
     | BBOOL false ->
-(*
 if name = debugid then
         print_endline "Constraint failure, rejecting candidate";
-*)
         None
     | BBOOL true ->
-(*
 if name = debugid then
         print_endline "Constraint success, accepting candidate";
-*)
         let parent_ts = List.map
           (fun (n,i,mt) -> btyp_type_var (i, bmt "Flx_overload.2" mt))
           parent_vs
