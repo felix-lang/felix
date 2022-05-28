@@ -284,7 +284,7 @@ perf-dir:
 tutopt-dir:
 	mkdir -p ${BUILDROOT}/tutopt
 	${BUILDBIN}/flx_tangle --indir=${BUILDROOT}/share/src/web/tutopt --outdir=${BUILDROOT}/test/tutopt
-	-for file in src/web/tutopt/*.fdoc; do ${BUILDBIN}/flx_iscr $$file ${BUILDROOT}/test/tutopt; done
+	for file in src/web/tutopt/*.fdoc; do [ -e "$file" ] || break; ${BUILDBIN}/flx_iscr $$file ${BUILDROOT}/test/tutopt; done
 
 tut-dir:
 	mkdir -p ${BUILDROOT}/tut
