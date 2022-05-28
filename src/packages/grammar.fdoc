@@ -119,9 +119,6 @@ syntax types {
   t[scomparison_pri]:= t[>scomparison_pri] cmp t[>scomparison_pri] =># 
    "(tbinop _2 _1 _3))";
 
-  t[ssetunion_pri] := t[ssetunion_pri] "\cup" t[>ssetunion_pri] =># "`(typ_typesetunion ,_sr ,_1 ,_3)";
-  t[ssetintersection_pri] := t[ssetintersection_pri] "\cap" t[>ssetintersection_pri] =># "`(typ_typesetintersection ,_sr ,_1 ,_3)";
-
   // right arrows: RIGHT ASSOCIATIVE!
   //$ Function type, right associative.
   t[sarrow_pri] := t[>sarrow_pri] "->" t[sarrow_pri] =># "`(typ_arrow (,_1 ,_3))";
@@ -168,8 +165,30 @@ syntax types {
   t[sapplication_pri] := t[sapplication_pri] t[>sapplication_pri] =># 
     "`(typ_apply ,_sr (,_1 ,_2))" note "apply";
 
+  // -----------------
+  // typesets
+  // -----------------
+
+  //$ Typeset 
+  stmt := "typeset" sdeclname "=" typeset ";" =>#
+    """
+    `(ast_type_alias ,_sr ,(first _2) ,(second _2) ,_4)
+    """;
+
+  typeset = tys[slambda_pri];
+
+  tys[satomic_pri] := squalified_name =># "_1"; 
+  tys[satomic_pri] := "(" tys[slambda_pri] ")"  =># "_2"; 
   t[sapplication_pri] := "typesetof" "(" list::commalist1<stypeexpr> ")" =># 
     "`(typ_typeset ,_sr ,_3)"; 
+  tys[satomic_pri] := "{" list::commalist1<stypeexpr> "}" =># 
+    "`(typ_typeset ,_sr ,_2)"; 
+
+  tys[ssetunion_pri] := tys[ssetunion_pri] "\cup" tys[>ssetunion_pri] =># "`(typ_typesetunion ,_sr ,_1 ,_3)";
+  tys[ssetintersection_pri] := tys[ssetintersection_pri] "\cap" tys[>ssetintersection_pri] =># "`(typ_typesetintersection ,_sr ,_1 ,_3)";
+
+  // -----------------
+
 
   t[sfactor_pri] := t[sfactor_pri] "." t[>sfactor_pri] =># "`(typ_apply ,_sr (,_3 ,_1))";
 
@@ -4728,7 +4747,7 @@ syntax statements {
   seqorin:= "=" stypeexpr =># "`(Eq ,_2)";
 
   //$ Individual type variable membership constraint.
-  seqorin:= "in" stypeexpr =># "`(In ,_2)";
+  seqorin:= "in" typeset =># "`(In ,_2)";
 
   //$ No constraint!
   seqorin:= sepsilon =># "'NoConstraint";

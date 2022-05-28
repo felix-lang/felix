@@ -27,7 +27,7 @@ type string = "::std::basic_string<char>"
   encoder "::flx::gc::generic::string_encoder",
   decoder "::flx::gc::generic::string_decoder"
 ;
-typedef strings = typesetof (string);
+typeset strings = {string};
 
 class Str [T] {
   virtual fun str: T -> string;

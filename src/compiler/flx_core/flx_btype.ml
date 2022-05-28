@@ -928,6 +928,7 @@ let rec bmt msg mt = match mt with
   | Flx_ast.KND_compactlinear-> kind_compactlinear
   | Flx_ast.KND_unitsum -> kind_unitsum
   | Flx_ast.KND_nat -> kind_nat
+  | Flx_ast.KND_typeset -> kind_typeset
   | Flx_ast.KND_bool -> kind_bool
   | Flx_ast.KND_function (t1,t2) -> kind_function (bmt msg t1, bmt msg t2)
   | Flx_ast.KND_tuple(ts) -> kind_tuple(List.map (bmt msg) ts)
@@ -935,7 +936,6 @@ let rec bmt msg mt = match mt with
 
   (* this is wrong, we actually need to examine the pattern to find the kind *)
   | Flx_ast.KND_tpattern t -> kind_type (*  print_endline ("BMT tpattern fail " ^ msg); assert false *)
-  | Flx_ast.KND_typeset ts -> print_endline ("BMT typeset fail " ^ msg); assert false 
   | Flx_ast.KND_generic -> kind_type (* requied at least for GADTs to work *) 
   | Flx_ast.KND_special s -> print_endline ("BMT special fail " ^ msg); assert false
 

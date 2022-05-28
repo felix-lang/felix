@@ -12,6 +12,7 @@ type kind =
   | KIND_compactlinear
   | KIND_bool
   | KIND_nat
+  | KIND_typeset
   | KIND_tuple of kind list
   | KIND_function of kind * kind (* the kind of a type function from domain to codomain kinds *)
   | KIND_var of string
@@ -25,6 +26,7 @@ let rec sk k =
   | KIND_compactlinear -> "COMPACTLINEAR"
   | KIND_bool -> "BOOL"
   | KIND_nat -> "NAT"
+  | KIND_typeset -> "TYPESET"
   | KIND_tuple ks -> "(" ^ Flx_util.catmap ", " sk ks ^")"
   | KIND_function (d,c) -> sk d ^ " -> " ^ sk c
   | KIND_var s -> s
@@ -63,6 +65,7 @@ let kind_unitsum = KIND_unitsum
 let kind_compactlinear = KIND_compactlinear
 let kind_bool = KIND_bool
 let kind_nat = KIND_nat
+let kind_typeset = KIND_nat
 let kind_function (d, c) = KIND_function (d,c)
 let kind_tuple ks = KIND_tuple ks
 let kind_var s = KIND_var s
@@ -105,6 +108,7 @@ let ksolve_subtypes add_eqn lhs rhs (mgu:kmgu_t ref) =
 
 
   | KIND_nat, KIND_nat
+  | KIND_typeset, KIND_typeset
   | KIND_bool, KIND_bool
     -> ()
 

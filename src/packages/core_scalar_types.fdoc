@@ -182,77 +182,77 @@ union of two typesets.
 
 @tangle scalar.flx
 //$ Types associated with raw address calculations.
-typedef addressing = typesetof (
+typeset addressing = { 
   byte,
   address,
   caddress
-);
+};
 
 //$ Character types.
-typedef chars = typesetof (char);
+typeset chars = {char};
 
 @h2 Integers
 @tangle scalar.flx
 //$ "natural" sized signed integer types.
 //$ These correspond to C/C++ core types.
-typedef fast_sints = typesetof (tiny, short, int, long, vlong);
+typeset fast_sints = {tiny, short, int, long, vlong};
 
 //$ Exact sized signed integer types.
 //$ In C these are typedefs.
 //$ In Felix they're distinct types.
-typedef exact_sints = typesetof(int8,int16,int32,int64);
+typeset exact_sints = {int8,int16,int32,int64};
 
 //$ "natural" sized unsigned integer types.
 //$ These correspond to C/C++ core types.
-typedef fast_uints = typesetof (utiny, ushort, uint, ulong,uvlong);
+typeset fast_uints = {utiny, ushort, uint, ulong,uvlong};
 
 //$ Exact sized unsigned integer types.
 //$ In C these are typedefs.
 //$ In Felix they're distinct types.
-typedef exact_uints = typesetof (uint8,uint16,uint32,uint64,uint128,uint256);
+typeset exact_uints = {uint8,uint16,uint32,uint64,uint128,uint256};
 
 //$ Weirdo signed integers types corresponding to
 //$ typedefs in C.
-typedef weird_sints = typesetof (ptrdiff, ssize, intmax, intptr);
+typeset weird_sints = {ptrdiff, ssize, intmax, intptr};
 
 //$ Weirdo unsigned integers types corresponding to
 //$ typedefs in C.
-typedef weird_uints = typesetof (size, uintmax, uintptr);
+typeset weird_uints = {size, uintmax, uintptr};
 
 //$ All the signed integers.
-typedef sints = fast_sints \cup exact_sints \cup weird_sints;
+typeset sints = fast_sints \cup exact_sints \cup weird_sints;
 
 //$ All the usigned integers.
-typedef uints = fast_uints \cup exact_uints \cup weird_uints;
+typeset uints = fast_uints \cup exact_uints \cup weird_uints;
 
 //$ All the fast integers.
-typedef fast_ints = fast_sints \cup fast_uints;
+typeset fast_ints = fast_sints \cup fast_uints;
 
 //$ All the exact integers.
-typedef exact_ints = exact_sints \cup exact_uints;
+typeset exact_ints = exact_sints \cup exact_uints;
 
 //$ All the integers.
-typedef ints = sints \cup uints;
+typeset ints = sints \cup uints;
 
 @h2 Floats
 @tangle scalar.flx
 //$ All the core floating point types.
-typedef floats = typesetof (float, double, ldouble);
+typeset floats = {float, double, ldouble};
 
 //$ All the core approximations to real types.
-typedef reals = ints \cup floats;
+typeset reals = ints \cup floats;
 
 //$ All the core approximations to complex types.
-typedef complexes = typesetof (fcomplex,dcomplex,lcomplex);
+typeset complexes = {fcomplex,dcomplex,lcomplex};
 
 //$ All the core approximations to numbers.
-typedef numbers = reals \cup complexes;
+typeset numbers = reals \cup complexes;
 @
 
 @h2 All Scalars.
 @tangle scalar.flx
 //$ All the basic scalar types.
-typedef basic_types = bool \cup numbers \cup chars \cup addressing;
+typeset basic_types = bool \cup numbers \cup chars \cup addressing;
 
 // we define this now, we will open it later...
 instance [t in basic_types] Eq[t] {

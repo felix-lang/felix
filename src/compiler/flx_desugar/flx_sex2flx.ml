@@ -64,6 +64,7 @@ and kind_of_sex sr x : kindcode_t =
   | Lst [Id "knd_name"; Str "UNITSUM"] ->  KND_unitsum
   | Lst [Id "knd_name"; Str "BOOL"] ->  KND_bool
   | Lst [Id "knd_name"; Str "NAT"] ->  KND_nat
+  | Lst [Id "knd_name"; Str "TYPESET"] ->  KND_typeset
   | Lst [Id "knd_name"; Str "COMPACTLINEAR"] ->  KND_compactlinear
   | Lst [Id "knd_name"; Str "GENERIC"] ->  KND_generic
   (* NOTE: this is a HACK .. will do for now *)
@@ -74,14 +75,6 @@ and kind_of_sex sr x : kindcode_t =
     print_endline ("Unexpected kind term"); 
     print_endline ( Sex_print.string_of_sex x );
     raise Not_kind
-
-
-(*
-  | KND_typeset of string (* excl mark *)
-  | KND_tpattern of typecode_t
-  | KND_special of string
-*)
-
 
 and type_of_sex sr w : typecode_t = xtype_t sr w
 

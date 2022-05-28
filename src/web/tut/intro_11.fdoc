@@ -60,10 +60,10 @@ But it's wrong. How do we fix this?
 
 Here's the answer:
 @felix
-typedef myints = typesetof (myshort, myint, mylong);
-typedef myuints = typesetof (myushort, myuint, myulong);
-typedef myfloats = typesetof (myfloat, mydouble);
-typedef mynumbers = myints \cup myuints \cup myfloats;
+typeset myints = {myshort, myint, mylong};
+typeset myuints = {myushort, myuint, myulong};
+typeset myfloats = {myfloat, mydouble};
+typeset mynumbers = myints \cup myuints \cup myfloats;
 
 fun mymake [T in mynumbers] : int -> T = "int($1)";
 fun *[T in mynumbers] : T * T -> T = "$1*$2";

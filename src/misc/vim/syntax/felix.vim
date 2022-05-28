@@ -155,6 +155,7 @@ syn keyword felixStatement then
 syn keyword felixStatement todo
 syn keyword felixStatement to
 syn keyword felixStatement typedef
+syn keyword felixStatement typeset
 syn keyword felixStatement typefun
 syn keyword felixStatement type
 syn keyword felixStatement union

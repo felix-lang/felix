@@ -148,7 +148,7 @@ print_endline ("Flx_btype_kind.metatype' case type_apply: " ^ Flx_btype.st typ);
   | BTYP_type_set _
   | BTYP_type_set_union _
   | BTYP_type_set_intersection _
-    -> kind_type (* WRONG but lets see what happens ! *)
+    -> kind_typeset  (* WRONG but lets see what happens ! *)
 
   | BTYP_ellipsis -> kind_type
 

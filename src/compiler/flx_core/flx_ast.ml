@@ -61,7 +61,7 @@ and kindcode_t =
   | KND_bool
   | KND_nat
   | KND_generic
-  | KND_typeset of string (* excl mark *)
+  | KND_typeset 
   | KND_function of kindcode_t * kindcode_t 
   | KND_tuple of kindcode_t list
   | KND_tpattern of typecode_t
