@@ -65,7 +65,7 @@ and kindcode_t =
   | KND_function of kindcode_t * kindcode_t 
   | KND_tuple of kindcode_t list
   | KND_tpattern of typecode_t
-  | KND_special of string
+  (* | KND_special of string *)
   | KND_var of string
 
 

@@ -937,7 +937,6 @@ let rec bmt msg mt = match mt with
   (* this is wrong, we actually need to examine the pattern to find the kind *)
   | Flx_ast.KND_tpattern t -> kind_type (*  print_endline ("BMT tpattern fail " ^ msg); assert false *)
   | Flx_ast.KND_generic -> kind_type (* requied at least for GADTs to work *) 
-  | Flx_ast.KND_special s -> print_endline ("BMT special fail " ^ msg); assert false
 
 (* -------------------------------------------------------------------------- *)
 

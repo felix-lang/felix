@@ -168,24 +168,37 @@ syntax types {
   // -----------------
   // typesets
   // -----------------
+  priority
+    tset_lambda_pri <
+    tset_union_pri <
+    tset_intersection_pri <
+    tset_application_pri <
+    tset_atomic_pri 
+  ;
 
   //$ Typeset 
-  stmt := "typeset" sdeclname "=" typeset ";" =>#
+  stmt := "typeset" sdeclname "=" stypeset ";" =>#
     """
     `(ast_type_alias ,_sr ,(first _2) ,(second _2) ,_4)
     """;
 
-  typeset = tys[slambda_pri];
+  t[slambda_pri] := tys[tset_lambda_pri] =># '_1';
 
-  tys[satomic_pri] := squalified_name =># "_1"; 
-  tys[satomic_pri] := "(" tys[slambda_pri] ")"  =># "_2"; 
-  t[sapplication_pri] := "typesetof" "(" list::commalist1<stypeexpr> ")" =># 
-    "`(typ_typeset ,_sr ,_3)"; 
-  tys[satomic_pri] := "{" list::commalist1<stypeexpr> "}" =># 
+  stypeset = tys[tset_lambda_pri];
+
+  tys[tset_atomic_pri] := squalified_name =># "_1"; 
+  tys[tset_atomic_pri] := "(" t[slambda_pri] ")"  =># "_2"; 
+  tys[tset_application_pri] := t[sapplication_pri] t[>sapplication_pri]  =># 
+    "`(typ_apply ,_sr (,_1 ,_2))" note "apply";
+
+  //t[sapplication_pri] := "typesetof" "(" list::commalist1<stypeexpr> ")" =># "`(typ_typeset ,_sr ,_3)"; 
+  tys[tset_atomic_pri] := "{" list::commalist1<stypeexpr> "}" =># 
     "`(typ_typeset ,_sr ,_2)"; 
 
-  tys[ssetunion_pri] := tys[ssetunion_pri] "\cup" tys[>ssetunion_pri] =># "`(typ_typesetunion ,_sr ,_1 ,_3)";
-  tys[ssetintersection_pri] := tys[ssetintersection_pri] "\cap" tys[>ssetintersection_pri] =># "`(typ_typesetintersection ,_sr ,_1 ,_3)";
+  tys[tset_union_pri] := tys[tset_union_pri] "\cup" tys[>tset_union_pri] =># 
+    "`(typ_typesetunion ,_sr ,_1 ,_3)";
+  tys[tset_intersection_pri] := tys[tset_intersection_pri] "\cap" tys[>tset_intersection_pri] =># 
+    "`(typ_typesetintersection ,_sr ,_1 ,_3)";
 
   // -----------------
 
@@ -4747,7 +4760,7 @@ syntax statements {
   seqorin:= "=" stypeexpr =># "`(Eq ,_2)";
 
   //$ Individual type variable membership constraint.
-  seqorin:= "in" typeset =># "`(In ,_2)";
+  seqorin:= "in" stypeset =># "`(In ,_2)";
 
   //$ No constraint!
   seqorin:= sepsilon =># "'NoConstraint";

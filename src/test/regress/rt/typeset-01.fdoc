@@ -1,0 +1,9 @@
+@title typeset expressions
+@felix
+typefun ty2(T:TYPE, U:TYPE):TYPESET => ({T,U});
+fun f[T in ty2(int, long) ] : T * T -> T = "$1+$2";
+fun g[T in ((fun(T:TYPE, U:TYPE):TYPESET => ({T,U})) (int, long)) ] : T * T -> T = "$1+$2";
+println$  f[int] (1,2), g[int] (1,2);
+@expect
+(3, 3)
+@

@@ -66,11 +66,17 @@ and kind_of_sex sr x : kindcode_t =
   | Lst [Id "knd_name"; Str "NAT"] ->  KND_nat
   | Lst [Id "knd_name"; Str "TYPESET"] ->  KND_typeset
   | Lst [Id "knd_name"; Str "COMPACTLINEAR"] ->  KND_compactlinear
-  | Lst [Id "knd_name"; Str "GENERIC"] ->  KND_generic
-  (* NOTE: this is a HACK .. will do for now *)
-  | Lst [Id "knd_name"; Str name] -> KND_var name 
+
+  (* Combinators *)
   | Lst [Id "knd_arrow"; Lst[dom; cod]] -> KND_function (ki dom, ki cod)
   | Lst [Id "knd_tuple"; sr; Lst ts] -> KND_tuple (List.map ki ts)
+
+  (* this is a fudge: GENERIC isn't a kind but a rewriting directive *)
+  | Lst [Id "knd_name"; Str "GENERIC"] ->  KND_generic
+
+  (* NOTE: this is a HACK .. will do for now, note it has to go LAST in the pattern match *)
+  | Lst [Id "knd_name"; Str name] -> KND_var name 
+
   | _ ->
     print_endline ("Unexpected kind term"); 
     print_endline ( Sex_print.string_of_sex x );

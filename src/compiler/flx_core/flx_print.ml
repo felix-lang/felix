@@ -378,7 +378,7 @@ and str_of_kindcode (k:kindcode_t) : string =
   | KND_typeset -> "TYPESET" 
   | KND_tuple ks -> catmap " * " str_of_kindcode ks
   | KND_function (d,c) -> str_of_kindcode d ^ " -> " ^ str_of_kindcode c
-  | KND_special s -> s
+  (* | KND_special s -> s *)
   | KND_tpattern t -> "TPATTERN(" ^ st 0 t ^ ")"
   | KND_var s -> "kvar_" ^ s
 

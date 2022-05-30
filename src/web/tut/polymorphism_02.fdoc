@@ -28,7 +28,7 @@ To solve the problem we use type constraints.
 
 First we introduce a construction to make a set of types:
 @felix
-typedef integers = typesetof(Int, Long);
+typeset integers = {Int, Long};
 @
 Now we write polymorphic functions with type constraints:
 @felix
@@ -82,7 +82,7 @@ println$ (f 1.2), f (Int 1);
 @
 Type sets also support the set union operator:
 @felix
-typedef mynumbers = integers \cup floats;
+typeset mynumbers = integers \cup floats;
 } // end class Constraints
 @
 Note that the typesets @{ints} and @{floats}, along with some other

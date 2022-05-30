@@ -12,32 +12,11 @@ open Flx_maps
 open Flx_btype_subst
 open Flx_kind
 
-let rec expand_typeset bsym_table counter sr t = 
-  let fe t = expand_typeset bsym_table counter sr t in
-  match t with
-  | BTYP_type_set ls
-  | BTYP_type_set_union ls ->
-     Flx_list.uniq_list (List.concat (List.map fe ls))
-  | BTYP_inst (`Alias,index,ts,mt) ->
-    begin try 
-       let bsym = Flx_bsym_table.find bsym_table index in
-       let bbdcl = Flx_bsym.bbdcl bsym in
-       begin match bbdcl with
-       | Flx_bbdcl.BBDCL_structural_type_alias (bvs, alias) 
-       | Flx_bbdcl.BBDCL_nominal_type_alias (bvs, alias) ->
-         let alias = Flx_btype_subst.tsubst sr bvs ts alias in
-         let alias = beta_reduce "Flx_beta:expand_typeset" counter bsym_table bsym.Flx_bsym.sr alias in
-         fe alias
-       | _ ->  assert false
-       end
-     with Not_found -> 
-       print_endline ("Flx_beta.expand_typeset: Unable to find symbol " ^ string_of_int index ^ " in bound symbol table!");
-       assert false
-    end
-  | t -> [t]
+(* This routine generates a typematch given an argument and a pattern list, any match
+   returns TRUE otherwise it returns FALSE. The patterns must be fully reduced.
+*) 
 
-and reduce_typeset_membership bsym_table counter sr elt tset =
-  let ls = expand_typeset bsym_table counter sr tset in
+let generate_typematch_predicate bsym_table counter sr elt ls =
   let e = BidSet.empty in
   let un = bbool true in
   let lss = List.rev_map (fun t -> {pattern=t; pattern_vars=e; assignments=[]},un) ls in
@@ -52,6 +31,37 @@ and reduce_typeset_membership bsym_table counter sr elt tset =
   in
   let lss = List.rev (dflt :: lss) in
   Flx_btype.btyp_type_match (elt, lss)
+
+
+(* Reduce a typeset expression to a list of types *)
+let rec reduce_typeset bsym_table counter sr t = 
+  let r t = reduce_typeset bsym_table counter sr t in
+  match t with
+  (* each term must be a TYPE *)
+  | BTYP_type_set ts ->
+     List.map (beta_reduce' "Flx_beta.reduce_typeset" counter bsym_table sr 0 []) ts
+
+  (* each term must be a TYPESET *)
+  | BTYP_type_set_union tsets ->
+     Flx_list.uniq_list (List.concat (List.map r tsets))
+
+  | BTYP_inst (`Alias,index,ts,mt) ->
+    begin try 
+       let bsym = Flx_bsym_table.find bsym_table index in
+       let bbdcl = Flx_bsym.bbdcl bsym in
+       begin match bbdcl with
+       | Flx_bbdcl.BBDCL_structural_type_alias (bvs, alias) 
+       | Flx_bbdcl.BBDCL_nominal_type_alias (bvs, alias) ->
+         let alias = Flx_btype_subst.tsubst sr bvs ts alias in
+         let alias = beta_reduce' "Flx_beta.reduce_typeset" counter bsym_table sr 0 [] alias in
+         r alias
+       | _ -> assert false
+       end
+     with Not_found -> 
+       print_endline ("Flx_beta.expand_typeset: Unable to find symbol " ^ string_of_int index ^ " in bound symbol table!");
+       assert false
+    end
+  | t -> [t]
 
 
 (* fixpoint reduction: reduce
@@ -409,9 +419,10 @@ print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
   | BTYP_type_set ls -> btyp_type_set (List.map br ls)
 
   | BTYP_in (elt, tset) ->
-    let t = reduce_typeset_membership bsym_table counter sr elt tset in
+    let tset = beta_reduce' calltag counter bsym_table sr depth termlist tset in
+    let tsetelts = reduce_typeset bsym_table counter sr tset in 
+    let t = generate_typematch_predicate bsym_table counter sr elt tsetelts in
     beta_reduce' calltag counter bsym_table sr depth termlist t
- 
  
   | BTYP_type_set_union ls ->
     let ls = List.rev_map br ls in
