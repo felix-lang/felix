@@ -102,6 +102,10 @@ NOTE: alpha equiv is easy, we alph convert both terms using the SAME initial cou
 do normal comparison .. but I think maybe the type equality routine should do this.
 *)
       let f = Flx_alpha.alpha_convert counter f in
+      (* I think this is wrong but it is essential in some case if the argument
+         must be a type tuple, and is actually an application that produces one.
+      *)
+      let arg = beta_reduce' calltag counter bsym_table sr (depth+1) termlist arg in
       begin match f with 
       | BTYP_type_function (ps,r,body) ->
         let params' =
@@ -112,21 +116,15 @@ do normal comparison .. but I think maybe the type equality routine should do th
             match  arg with
             | BTYP_type_tuple ts ->
               if List.length ps <> List.length ts
-              then failwith "Wrong number of arguments to typefun"
-              else List.map2 (fun (i,_) t -> i, t) ps ts
+              then  begin
+                print_endline ("Flx_beta:"^calltag ^": Expected "^ string_of_int (List.length ps) ^
+                   " arguments to type function got " ^ Flx_print.sbt bsym_table arg);
+                Flx_exceptions.clierr sr ("Flx_beta:"^calltag ^": Expected "^ string_of_int (List.length ps) ^
+                   " arguments to type function got " ^ Flx_print.sbt bsym_table arg);
+              end else List.map2 (fun (i,_) t -> i, t) ps ts
             | _ -> 
-              print_endline ("Expected Argument to type function to be type tuple, got " ^ Flx_print.sbt bsym_table arg);
-              print_endline ("Temporarily, beta reducing prematurely");
-              let redarg = beta_reduce' calltag counter bsym_table sr (depth+1) termlist arg in
-              print_endline ("POSTREDUCTION got " ^ Flx_print.sbt bsym_table redarg);
-              match redarg with
-              | BTYP_type_tuple ts ->
-                if List.length ps <> List.length ts
-                then failwith "Wrong number of arguments to typefun"
-                else List.map2 (fun (i,_) t -> i, t) ps ts
-              | _ ->
-                print_endline ("POSTREDUCTION Expected Argument to type function to be type tuple");
-                assert false
+              print_endline ("Flx_beta:"^calltag ^": Expected Argument to type function to be type tuple, got " ^ Flx_print.sbt bsym_table arg);
+              Flx_exceptions.clierr sr ("Flx_beta:"^calltag ^": Expected Argument to type function to be type tuple, got " ^ Flx_print.sbt bsym_table arg)
         in
         let t' = list_subst counter params' body in
         let t' = beta_reduce' calltag counter bsym_table sr depth ((appl,depth)::termlist) t' in
