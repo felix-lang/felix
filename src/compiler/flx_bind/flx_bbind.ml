@@ -35,9 +35,7 @@ let hfind msg h k =
 let rec fix_typeofs state bsym_table t = 
   match t with
   | BTYP_typeof (symbol_index,expr) ->
-(*
-print_endline ("Found typeof to fix: " ^ Flx_btype.st t);
-*)
+print_endline ("fix_typeofs: Found typeof to fix: " ^ Flx_btype.st t ^ "=" ^ Flx_print.sbt bsym_table t);
     let env = Flx_lookup.build_env
       state.lookup_state bsym_table (Some symbol_index)
     in
@@ -45,9 +43,7 @@ print_endline ("Found typeof to fix: " ^ Flx_btype.st t);
       state.lookup_state bsym_table env expr
     in
     let typ = snd be in
-(*
-print_endline ("Fixed typeof : " ^ Flx_btype.st t ^ ", set to " ^ Flx_btype.st typ);
-*)
+print_endline ("fix_typeofs: Fixed typeof : " ^ Flx_btype.st t ^ ", set to " ^ Flx_btype.st typ);
     typ
   | _ -> Flx_btype.map ~f_btype:(fix_typeofs state bsym_table) t
 
@@ -69,7 +65,6 @@ print_endline ("\n====================\nPASS 1 PLAIN BINDING: Setting type alias
   let saved_env_cache = Hashtbl.copy state.lookup_state.Flx_lookup_state.env_cache in
   let saved_visited = Hashtbl.copy state.visited in
 
-  set_nominal_typedefs state;
   let counter = ref start_counter in
   while !counter < !ref_counter do
     let i = !counter in
@@ -170,7 +165,6 @@ if showpasses then
   print_endline ("\n===================\nSetting type aliases to structural\n=======================\n");
 
   (* PASS 1, TYPE ONLY *)
-  set_structural_typedefs state;
 
 if showpasses then
   print_endline ("\n===================\nFixing typeofs \n=======================\n");
@@ -180,16 +174,10 @@ if showpasses then
     let bbdcl = Flx_bsym.bbdcl bsym in
     let sr = Flx_bsym.sr bsym in
     match bbdcl with
-    | BBDCL_structural_type_alias (bvs,t) -> 
+    | BBDCL_type_alias (bvs,t) -> 
       let r = fix_typeofs state bsym_table t in 
-      let b = bbdcl_structural_type_alias (bvs, r) in 
+      let b = bbdcl_type_alias (bvs, r) in 
       Flx_bsym_table.update_bbdcl bsym_table bid b
-
-    | BBDCL_nominal_type_alias (bvs,t) -> 
-      let r = fix_typeofs state bsym_table t in 
-      let b = bbdcl_structural_type_alias (bvs, r) in 
-      Flx_bsym_table.update_bbdcl bsym_table bid b
-
 
     | BBDCL_type_function (bks,t) -> 
       let r = fix_typeofs state bsym_table t in 

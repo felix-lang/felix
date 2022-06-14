@@ -826,18 +826,6 @@ print_endline (" &&&&&& SYMDEF_instance calling BBIND_SYMBOL");
     add_bsym None (bbdcl_newtype (bvs, t))
 
   | SYMDEF_type_function (ks,t) -> 
-(*
-print_endline ("Binding type function .. " ^ sym.Flx_sym.id);
-*)
-    if get_structural_typedefs state then begin 
-(*
-print_endline ("NOT **** Adding typefun " ^ sym.Flx_sym.id ^"<"^ si symbol_index ^ "> = " ^ Flx_print.string_of_typecode t ^ " to bsym_table");
-*)
-       () 
-    end else begin
-(*
-print_endline ("TRYING TO BIND typefun " ^ sym.Flx_sym.id ^"<"^ si symbol_index ^ "> = " ^ Flx_print.string_of_typecode t );
-*)
     let t = 
       try bt t 
       with exn ->
@@ -845,27 +833,11 @@ print_endline ("TRYING TO BIND typefun " ^ sym.Flx_sym.id ^"<"^ si symbol_index 
           Flx_print.string_of_typecode t ^ "  FAILED with " ^ Printexc.to_string exn);
         raise exn
     in
-(*
-print_endline ("Adding typefun " ^ sym.Flx_sym.id ^"<"^ si symbol_index ^ "> = " ^ Flx_btype.st t ^ " to bsym_table");
-*)
     let bks = List.map (fun (name, index, srt) -> name, index, Flx_kind.bind_sortcode srt) ks in
     add_bsym None (bbdcl_type_function (bks, t))
-   end
 
 
   | SYMDEF_type_alias t ->
-(*
-print_endline ("Binding type alias .. ");
-*)
-    if get_structural_typedefs state then begin 
-(*
-print_endline ("NOT **** Adding typedef " ^ sym.Flx_sym.id ^"<"^ si symbol_index ^ "> = " ^ Flx_print.string_of_typecode t ^ " to bsym_table");
-*)
-       () 
-    end else begin
-(*
-print_endline ("TRYING TO BIND typedef " ^ sym.Flx_sym.id ^"<"^ si symbol_index ^ "> = " ^ Flx_print.string_of_typecode t );
-*)
     let t = 
       try bt t 
       with exn ->
@@ -873,11 +845,7 @@ print_endline ("TRYING TO BIND typedef " ^ sym.Flx_sym.id ^"<"^ si symbol_index 
           Flx_print.string_of_typecode t ^ "  FAILED with " ^ Printexc.to_string exn);
         raise exn
     in
-(*
-print_endline ("Adding typedef " ^ sym.Flx_sym.id ^"<"^ si symbol_index ^ "> = " ^ Flx_btype.st t ^ " to bsym_table");
-*)
-    add_bsym None (bbdcl_nominal_type_alias (bvs, t))
-   end
+    add_bsym None (bbdcl_type_alias (bvs, t))
 
   | SYMDEF_instance_type t ->
     let t = bt t in

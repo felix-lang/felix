@@ -534,6 +534,7 @@ print_endline ("Bound tuple head " ^ sbe bsym_table x ^ " has type " ^ sbt bsym_
 print_endline ("Find field name " ^ name ^ " of " ^ string_of_expr e');
 *)
     let e'',t'' as x2 = be e' in
+    let t'' = Flx_beta.beta_reduce "Flx_bind_expression: get named variable" state.counter bsym_table sr t'' in
     begin match t'' with
     | BTYP_polyrecord (es,s,v) ->
       begin try 
@@ -2004,13 +2005,14 @@ print_endline ("AST_name(BTYP_inst): "^name^"=T<"^string_of_int i^">");
               bind_type' state bsym_table env' rsground sr vt bvs mkenv,
               bind_type' state bsym_table env' rsground sr vct bvs mkenv
             in
+            let vt = rt vt in
+            let vct = rt vct in 
 (*
           print_endline ("-----+++>>");
           print_endline ("Bound polymorphic ctor arg type = " ^ sbt bsym_table vt); 
           print_endline ("Bound polymorphic ctor result type = " ^ sbt bsym_table vct); 
           print_endline ("Bound polymorphic union value type = " ^ sbt bsym_table ut);
           print_endline ("-----+++>>");
-
 *)
 (*
 print_endline ("Unification of result type with union value type\n");

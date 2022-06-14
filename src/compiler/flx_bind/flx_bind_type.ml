@@ -81,8 +81,6 @@ print_endline ("Bind type " ^ string_of_typecode t ^ " params = " ^
   in
   let bt t = btp t params in
   let bi i ts = bind_type_index state bsym_table rs sr i ts mkenv in
-  let bisub i ts = bind_type_index state bsym_table {rs with depth= rs.depth+1} sr i ts mkenv in
-  (* let br t = Flx_beta.beta_reduce "flx_lookup: bind_type'" state.counter bsym_table sr t in *)
 
   let t =
   match t with
@@ -190,8 +188,7 @@ print_endline ("Bound variant = " ^ Flx_btype.st t);
             let bsym = Flx_bsym_table.find bsym_table i in
             let bbdcl = Flx_bsym.bbdcl bsym in
             match bbdcl with
-            | BBDCL_nominal_type_alias (bvs,t)
-            | BBDCL_structural_type_alias (bvs,t) -> 
+            | BBDCL_type_alias (bvs,t) -> 
               let t = Flx_btype_subst.tsubst sr bvs ts t in
               begin match t with
               | BTYP_record (fields) -> 
@@ -333,9 +330,6 @@ print_endline ("\n+++++++++Bound recursive type is " ^ Flx_btype.st t^"\n\n");
     t
 
   | `TYP_typeof e ->
-    if get_structural_typedefs state then begin
-      if debug then
-      print_endline ("Flx_bind_type.`TYP_typeof(" ^ string_of_expr e ^ ")");
       if List.mem_assq e rs.expr_fixlist
       then begin
         (* Typeof is recursive *)
@@ -343,27 +337,12 @@ print_endline ("\n+++++++++Bound recursive type is " ^ Flx_btype.st t^"\n\n");
         let fixdepth = outer_depth -rs.depth in
 (* HACK metatype guess : expressions generally ARE of kind TYPE, it just might be
 an over-generalisation *)
-(*
-print_endline ("Flx_bind_type.TYP_typeof fixpoint metatype hack! Expression " ^ string_of_expr e);
-*)
+print_endline ("Flx_bind_type. structural mode: TYP_typeof fixpoint metatype hack! Expression " ^ string_of_expr e);
         btyp_fix fixdepth (Flx_kind.KIND_type)
       end else begin
-        if debug then 
-        print_endline ("Flx_bind_type.`TYP_typeof.Start tentative binding of typeof (" ^ string_of_expr e ^ ")");
         let t = snd (bind_expression' state bsym_table env rs e []) in
-        if debug then 
-        print_endline ("Flx_bind_type.`TYP_typeof.end tentative binding of typeof (" ^string_of_expr e^ ")");
         t
       end
-    end else begin
-      if debug then 
-      print_endline ("Flx_bind_type.DEFER `TYP_typeof(" ^ string_of_expr e ^ ")");
-      match env with
-      | (parent,_,_,_,_)::_ ->
-        btyp_typeof (parent, e)
-      | [] -> 
-        btyp_typeof (0,e)
-    end
 
   | `TYP_array (t1,t2)->
       let t1 = bt t1 in
@@ -510,7 +489,7 @@ print_endline ("  ***** Bound `TYP_apply: " ^ Flx_btype.st x );
 
   | `TYP_name (sr,s,[]) when List.mem_assoc s rs.as_fixlist ->
 (* HACK metatype guess *)
-print_endline ("Flx_bind_type: TYP_name metatype hack!");
+print_endline ("Flx_bind_type: as_fixlistL TYP_name metatype hack!");
     btyp_fix ((List.assoc s rs.as_fixlist) - rs.depth) (Flx_kind.KIND_type)
 
   | `TYP_name (sr,s,[]) when List.mem_assoc s params ->
@@ -550,17 +529,13 @@ print_endline ("Binding `TYP_name " ^s^ " via params to " ^ sbt bsym_table t);
      btyp_instancetype sr
 
   | `TYP_fname (sr, name, ks) ->
-(*
-print_endline ("Lookup type function name " ^ name);
-*)
+print_endline ("Lookup type function name " ^ name ^ " unbound ks=" ^ Flx_util.catmap ", " Flx_print.str_of_kindcode ks);
     let hackname : qualified_name_t  = (`AST_name (sr, name, []) :> qualified_name_t) in
 (*
 print_endline ("Munged qualified name " ^ Flx_print.string_of_qualified_name hackname);
 *)
     let {base_sym=index; spec_vs=spec_vs; sub_ts=sub_ts} , ts = lookup_qn_in_env' state bsym_table env rs hackname in
-(*
 print_endline ("Found it " ^ name ^ "="^ string_of_int index);
-*)
     (* we have a problem now: we've found a view of the typefunction, this can happen
     if the type function is inside a polymorphic class which is opened. The substitution
     of ts in the view with the vs of the environment must be done, but it cannot be done
@@ -570,6 +545,9 @@ print_endline ("Found it " ^ name ^ "="^ string_of_int index);
     itself does not support type variable indices, only kind indices.
     *)
     let ks = List.map (Flx_btype.bmt "[Flx_bind_type:TYP_fname]") ks in
+(*
+print_endline ("Bound ks = " ^ Flx_util.catmap ", " Flx_kind.sk ks);
+*)
     let sym = Flx_sym_table.find state.sym_table index in
     let dom, cod = match sym.symdef with
       | SYMDEF_type_function (iks, t) ->
@@ -585,18 +563,24 @@ print_endline ("Found it " ^ name ^ "="^ string_of_int index);
         assert (List.length iks = List.length ks); 
         begin match t with
         | `TYP_typefun (kps, cod, body) -> 
-           let dom = match kps with
-           | [] -> KND_tuple [] (* kind unit .. *)
-           | [_,k] -> k
-           | kps -> KND_tuple (List.map snd kps)
-           in dom,cod
+          let dom = match kps with
+          | [] -> KND_tuple [] (* kind unit .. *)
+          | [_,k] -> k
+          | kps -> KND_tuple (List.map snd kps)
+          in
+          let bks = List.map (fun (s,i,srt) -> s,i, Flx_kind.bind_sortcode srt) iks in
+          let dom = Flx_btype.bmt "Flx_bind_type:bind_type TYP_fname(dom)" dom in 
+          let cod = Flx_btype.bmt "Flx_bind_type:bind_type TYP_fname(cod)" cod in
+          let dom = Flx_kind.ksubst sr bks ks dom in
+          let cod = Flx_kind.ksubst sr bks ks cod in
+          dom,cod
         | _ -> assert false
         end
       | _ -> assert false
     in 
-    let dom = Flx_btype.bmt "Flx_bind_type:bind_type TYP_fname(dom)" dom in 
-    let cod = Flx_btype.bmt "Flx_bind_type:bind_type TYP_fname(cod)" cod in
-    btyp_finst (index, ks, dom, cod)    
+    let t = btyp_finst (index, ks, dom, cod) in
+    print_endline ("Bound reference " ^ Flx_btype.st t);
+    t
 
   | `TYP_flookup _ ->
 print_endline ("Lookup type function name here");
@@ -613,11 +597,18 @@ print_endline ("Lookup type function name here");
       in
 (*
 if string_of_qualified_name x = "digraph_t" then begin
+*)
+(*
 print_endline ("Bind type', name = " ^ string_of_qualified_name x);
+*)
+(*
 end;
 *)
       let sr2 = src_of_qualified_name x in
       let entry_kind, ts = lookup_qn_in_env' state bsym_table env rs x in
+(*
+print_endline ("Lookup qn done");
+*)
 (*
 if string_of_qualified_name x = "td[int]" then begin
         print_endline ("bind_type': Type "^string_of_typecode t^"=Qualified name "^string_of_qualified_name x^" lookup finds index " ^
@@ -633,6 +624,9 @@ end;
 *)
       let ts = List.map bt ts in
 (*
+print_endline ("ts bound");
+*)
+(*
 if string_of_qualified_name x = "digraph_t" then begin
         print_endline ("input_ts=" ^ catmap "," (sbt bsym_table) ts);
 end;
@@ -643,7 +637,11 @@ end;
       in
 (*
 if string_of_qualified_name x = "digraph_t" then begin
+*)
+(*
       print_endline ("Base type bound with sub_ts replacing type variables " ^ sbt bsym_table baset);
+*)
+(*
 end;
 *)
       (* SHOULD BE CLIENT ERROR not assertion *)
@@ -691,7 +689,11 @@ end;
       let t = tsubst sr entry_kind.spec_vs ts baset in
 (*
 if string_of_qualified_name x = "digraph_t" then begin
+*)
+(*
       print_endline ("Base type bound with input ts replacing spec type variables " ^ sbt bsym_table t);
+*)
+(*
 end;
 *)
       t
@@ -720,50 +722,4 @@ end;
   print_endline ("Bound type is " ^ sbt bsym_table t);
   *)
   t
-(*
-and cal_assoc_type state (bsym_table:Flx_bsym_table.t) sr t =
-  let ct t = cal_assoc_type state bsym_table sr t in
-  let chk ls =
-    match ls with
-    | [] -> btyp_void ()
-    | h::t ->
-      List.fold_left (fun acc t ->
-        if acc <> t then
-          clierrx "[flx_bind/flx_lookup.ml:1249: E100] " sr ("[cal_assoc_type] typeset elements should all be assoc type " ^ sbt bsym_table acc)
-        ;
-        acc
-     ) h t
-  in
-  match t with
-  | BTYP_type i -> t
-  | BTYP_function (a,b) -> btyp_function (ct a, ct b)
-
-  | BTYP_intersect ls
-  | BTYP_type_set_union ls
-  | BTYP_type_set ls -> let ls = List.map ct ls in chk ls
-
-  | BTYP_tuple _
-  | BTYP_record _
-  | BTYP_variant _
-  | BTYP_unitsum _
-  | BTYP_sum _
-  | BTYP_cfunction _
-  | BTYP_pointer _
-  | BTYP_array _
-  | BTYP_void -> btyp_type 0
-
-  | BTYP_inst (i,ts) ->
-    (*
-    print_endline ("Assuming named type "^si i^" is a TYPE");
-    *)
-    btyp_type 0
-
-
-  | BTYP_type_match (_,ls) ->
-    let ls = List.map snd ls in
-    let ls = List.map ct ls in chk ls
-
-  | _ -> clierrx "[flx_bind/flx_lookup.ml:1283: E101] " sr ("Don't know what to make of " ^ sbt bsym_table t)
-*)
-
 

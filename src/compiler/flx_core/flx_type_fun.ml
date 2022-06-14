@@ -67,8 +67,7 @@ let rec type_apply beta_reduce' calltag counter bsym_table sr depth (termlist: (
       let bsym = Flx_bsym_table.find bsym_table index in
       let bbdcl = Flx_bsym.bbdcl bsym in
       begin match bbdcl with
-      | Flx_bbdcl.BBDCL_structural_type_alias (bvs, alias) 
-      | Flx_bbdcl.BBDCL_nominal_type_alias (bvs, alias) ->
+      | Flx_bbdcl.BBDCL_type_alias (bvs, alias) ->
        let salias = Flx_btype_subst.tsubst sr bvs ts alias in
        type_apply beta_reduce' calltag counter bsym_table sr depth termlist alias arg
       | _ ->  assert false

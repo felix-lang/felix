@@ -552,17 +552,10 @@ print_endline "Abnormal exit inner_type_of_index in type_of_index'";
         with Not_found -> dummy_sr
       in
       let t = beta_reduce "flx_lookup: type_of_index'" state.counter bsym_table sr t in
-
-      (* Finally, cache the type. *)
-      if get_structural_typedefs state then begin
-if debug then
-print_endline ("Flx_lookup: Adding type of index " ^ si bid ^ " to cache, type=" ^ Flx_btype.st t);
       Hashtbl.add state.ticache bid t;
-      end;
       t
     end 
     else
-
     t
 
 (** Wrapper around inner_type_of_index that tries to cache the calculated type

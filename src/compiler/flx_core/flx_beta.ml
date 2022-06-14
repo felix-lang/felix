@@ -50,8 +50,7 @@ let rec reduce_typeset bsym_table counter sr t =
        let bsym = Flx_bsym_table.find bsym_table index in
        let bbdcl = Flx_bsym.bbdcl bsym in
        begin match bbdcl with
-       | Flx_bbdcl.BBDCL_structural_type_alias (bvs, alias) 
-       | Flx_bbdcl.BBDCL_nominal_type_alias (bvs, alias) ->
+       | Flx_bbdcl.BBDCL_type_alias (bvs, alias) ->
          let alias = Flx_btype_subst.tsubst sr bvs ts alias in
          let alias = beta_reduce' "Flx_beta.reduce_typeset" counter bsym_table sr 0 [] alias in
          r alias
@@ -316,8 +315,7 @@ print_endline "Type list index returned None";
 *)
       let bbdcl = Flx_bsym.bbdcl bsym in
       begin match bbdcl with
-      | Flx_bbdcl.BBDCL_structural_type_alias (bvs, alias) 
-      | Flx_bbdcl.BBDCL_nominal_type_alias (bvs, alias) ->
+      | Flx_bbdcl.BBDCL_type_alias (bvs, alias) ->
        let alias = Flx_btype_subst.tsubst sr bvs ts alias in
        let alias = beta_reduce' calltag counter bsym_table sr  depth ((t,depth)::termlist) alias in
        alias 

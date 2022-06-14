@@ -36,8 +36,7 @@ type t = private
 
   (* binding structures [prolog] *)
   | BBDCL_newtype of    bvs_t * Flx_btype.t
-  | BBDCL_nominal_type_alias of bvs_t * Flx_btype.t
-  | BBDCL_structural_type_alias of bvs_t * Flx_btype.t
+  | BBDCL_type_alias of bvs_t * Flx_btype.t
   | BBDCL_instance_type of    bvs_t * Flx_btype.t
   | BBDCL_external_type of
                         bvs_t * btype_qual_t list * Flx_code_spec.t * Flx_btype.breqs_t
@@ -80,8 +79,7 @@ val bbdcl_fun :
 
 val bbdcl_val : bvs_t * Flx_btype.t * value_kind_t -> t
 val bbdcl_newtype : bvs_t * Flx_btype.t -> t
-val bbdcl_nominal_type_alias : bvs_t * Flx_btype.t -> t
-val bbdcl_structural_type_alias : bvs_t * Flx_btype.t -> t
+val bbdcl_type_alias : bvs_t * Flx_btype.t -> t
 val bbdcl_instance_type : bvs_t * Flx_btype.t -> t
 val bbdcl_external_type : bvs_t * btype_qual_t list * Flx_code_spec.t * Flx_btype.breqs_t -> t
 val bbdcl_external_const :

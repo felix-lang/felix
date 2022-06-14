@@ -22,6 +22,11 @@ open Flx_btype_occurs
 open Flx_btype_subst
 open Flx_bid
 
+
+(* This routine calculates the type of a variable, function, or other typed 
+   entity. It doesn't bind types, typedefs, or whatever
+*)
+
 let debug = false 
 
 let rec inner_type_of_index' 

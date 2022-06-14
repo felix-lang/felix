@@ -71,7 +71,7 @@ let rec istriv t = match Flx_btype.trivorder t with
 let rec uses_btype add bsym_table count_inits t =
   let f_btype t = uses_btype add bsym_table count_inits t in
  
-  (* We only care about insts. *)
+  (* We only care about insts: NOTE: both nominal and alias instance count since aliases are only expanded by beta reduction now *)
   match t with
   | BTYP_inst (`Nominal, i,ts,_) ->
       add i;

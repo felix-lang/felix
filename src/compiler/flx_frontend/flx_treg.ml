@@ -381,6 +381,9 @@ print_endline ("External primitive instance, registering whole type " ^ sbt bsym
 
 let register_type_r ui syms bsym_table (weak:WeakSet.t ref) exclude sr t =
 (* print_endline ("TOP LEVEL &&&&&&& Register type r " ^ sbt bsym_table t); *)
+(*
+  let t = Flx_beta.beta_reduce "Flx_treg" syms.counter bsym_table sr t in 
+*)
   try 
     register_type_r' ui syms bsym_table weak exclude sr t
   with 

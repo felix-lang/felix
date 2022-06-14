@@ -287,8 +287,7 @@ end;
   let bbdcl = Flx_bsym.bbdcl bsym in
   match bbdcl with
   | BBDCL_type_function _ -> assert false
-  | BBDCL_nominal_type_alias _ -> assert false
-  | BBDCL_structural_type_alias _ -> assert false
+  | BBDCL_type_alias _ -> assert false
   | BBDCL_label s -> Some (bbdcl_label s)
 
   | BBDCL_fun (props,vs,(ps,traint),ret,effects,exes) -> 

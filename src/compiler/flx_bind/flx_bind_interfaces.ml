@@ -84,6 +84,7 @@ let bind_interface (state:bbind_state_t) bsym_table = function
         sbt bsym_table t
       )
       else
+        let t = Flx_beta.beta_reduce "Bind Interfaces" state.counter bsym_table sr t in
         BIFACE_export_type (sr, t, cpp_name)
 
   | sr, IFACE_export_struct (name), parent ->
@@ -123,7 +124,11 @@ let bind_interface (state:bbind_state_t) bsym_table = function
       let env = Flx_lookup.build_env state.lookup_state bsym_table parent in
       let bt t = Flx_lookup.bind_type state.lookup_state bsym_table env sr t in
       let breqs = bind_reqs bt state bsym_table env sr reqs in
+      let breqs = List.rev (
+        List.map (fun (idx, ts) -> 
+           idx, List.map (Flx_beta.beta_reduce "Global beta reduction" state.counter bsym_table  sr) ts
+        ) breqs (* breqs *)
+      ) (* rev *)
+      in
       BIFACE_export_requirement (sr,breqs)
-
-
 

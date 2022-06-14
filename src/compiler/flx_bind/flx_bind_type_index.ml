@@ -79,8 +79,14 @@ let rec bind_type_index
   bind_type'
   state (bsym_table:Flx_bsym_table.t) (rs:recstop) sr index ts mkenv
 =
+(*
+print_endline ("Bind type index " ^ string_of_int index);
+*)
   (* fixup the fixpoints *)
   let ts = adjust_ts state.sym_table bsym_table sr index ts in
+(*
+print_endline ("Bind type index ts adjusted");
+*)
   let bt t =
     (* get hold of the type variable parameters *)
     let vs,_ = find_vs state.sym_table bsym_table index in
@@ -116,9 +122,15 @@ let rec bind_type_index
 
   (* no recursion *)
   else begin
+(*
+print_endline ("No recursion ..");
+*)
   let parent = Flx_sym_table.find_parent state.sym_table index in
   match get_data state.sym_table index with
   | { Flx_sym.id=id; sr=sr; vs=vs; dirs=dirs; symdef=entry } ->
+(*
+print_endline ("Found " ^ id ^ "<"^string_of_int index ^">");
+*)
     match entry with
     | SYMDEF_kindvar _ -> assert false
     | SYMDEF_typevar mt ->
@@ -135,7 +147,8 @@ let rec bind_type_index
 
     | SYMDEF_type_function (iks,t) ->
 (*
-print_endline ("Bind type index, trying to bind type function " ^id ^ "<" ^string_of_int index ^ "> = " ^ string_of_typecode t);
+print_endline ("Bind type index, trying to bind type reference to function " ^id ^ "<" ^string_of_int index ^ "> = " ^ string_of_typecode t);
+print_endline ("NOTE BUG: the ks indices are set to [] because bind_type_index doesn't accept ks args");
 *)
     begin try
       let t = bt t in
@@ -154,31 +167,49 @@ print_endline ("Bind type index, trying to bind type function " ^id ^ "<" ^strin
 
     | SYMDEF_type_alias t ->
 (*
-print_endline ("Bind type index, trying to bind " ^id ^ "<" ^string_of_int index ^ "> = " ^ string_of_typecode t);
+print_endline ("Bind type index, trying to bind typedef " ^id ^ "<" ^string_of_int index ^ "> = " ^ string_of_typecode t);
 *)
     begin try
       let bsym = Flx_bsym_table.find bsym_table index in
       let bbdcl = Flx_bsym.bbdcl bsym in
       begin match bbdcl with
-      | BBDCL_structural_type_alias (bvs, alias) ->
-        let salias = Flx_btype_subst.tsubst sr bvs ts alias in
-(*
-        print_endline ("Bind type index: STRUCTURAL Unravelling type alias " ^ id ^ " index=" ^ si index ^ " to " ^
-          Flx_btype.st salias);
-*)
-        salias
-
-      (* This case would not normally happen, HOWEVER it MAY be the case a nominal
-         type record is generated for a type alias sometimes. We should
-         check this CANNOT occur. At the moment it definitely DOES occur and that
-         needs to be fixed.
-      *)
-      | BBDCL_nominal_type_alias (bvs, alias) ->
+      | BBDCL_type_alias (bvs, alias) ->
 (*
         print_endline ("ERROR! [Bind type index]: NOMINAL symbol table entry found for type alias " ^ id ^ " index=" ^ si index ^ " to " ^
           Flx_btype.st alias);
 *)
+(*
+print_endline ("Found type alias" ^ Flx_btype.st alias);
+*)
+(* NOTE: bind_type_index is NOT ALLOWED to return a beta-reduced term. However
+this beta-reduction is essential to correctly calculate the kind of an application
+of a type function in which the kinds are not fully specified, and must be deduced.
+Beta-does the deduction allowing the kinds to be discovered, the reduction is forgotten,
+and only the application kind retained .. the term will be beta-reduced again later
+
+
+NOTE: this beta reduction FAILS many times because it tries to lookup indices which
+may not yet be in the bound symbol table. The kind deduction done in beta has to be
+done here directly instead to avoid this. I think, actually, we need a kind calculator
+that can do the deduction. What we have requires all the kinds of a type function to
+be correctly specified. The problem is, we just have an arbitrary bound formula,
+which may or may not have an application of a type function without all the kinds specified
+in it.
+*)
+(* NOTE: THIS IS STILL A HACK. REPLACE THE BETA with unification to fix the kinds *)
+        let alias = 
+          match alias with
+          | BTYP_type_apply (BTYP_finst (index, ks, dom, cod), arg) ->
+            Flx_beta.beta_reduce "Flx_bind_type_index:alias" state.counter bsym_table sr alias 
+          | _ -> alias
+        in
+(*
+print_endline ("Reduced alias" ^ Flx_btype.st alias);
+*)
         let k = Flx_btype_kind.metatype sr alias in
+(*
+print_endline ("Calculated kind as " ^ Flx_kind.sk k);
+*)
         let t = btyp_inst (`Alias, index,ts,k) in
         t
 

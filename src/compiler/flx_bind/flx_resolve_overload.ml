@@ -23,7 +23,10 @@ open Flx_btype_occurs
 open Flx_btype_subst
 open Flx_bid
 
-let debugid = ""
+let debugid = 
+  try Sys.getenv "FLX_COMPILER_OVERLOAD_DEBUG_ID"   
+  with Not_found -> ""
+
 
 let clone state bsym_table fi ft fbt fe fx (new_vs:plain_ivs_list_t) generic_alias index =
       begin 
@@ -66,7 +69,8 @@ print_endline ("New private name map = " ^ string_of_name_map nuprivmap);
       print_endline ("New exes =\n");
       List.iter (fun (sr,x) -> print_endline (Flx_print.string_of_exe 2 x)) nusexes;
 *)
-          SYMDEF_function (nuparams, nurett, nueffects,nuprops, nusexes)
+          let sdef = SYMDEF_function (nuparams, nurett, nueffects,nuprops, nusexes) in
+          sdef
         | SYMDEF_insert (cs,ik,rqs) -> symdef (* HACK, FIXME! *)
         | SYMDEF_var t -> 
           let t = ft t in
@@ -118,6 +122,8 @@ print_endline ("New private name map = " ^ string_of_name_map nuprivmap);
       Flx_sym_table.add state.sym_table nuindex nuparent nusym;
 (*
 print_endline ("++++ Cloned " ^ si index ^ " -> " ^ si nuindex);
+print_endline (string_of_symdef nusymdef id nuvs);
+print_endline "";
 *)
       end
 
@@ -169,17 +175,11 @@ if name = debugid then
     None 
   | Some (index,sign,ret,mgu,ts) ->
 if name = debugid then begin
-    print_endline ("RESOLVED OVERLOAD OF " ^ name);
+    print_endline ("RESOLVED OVERLOAD OF " ^ name ^ "-->" ^ string_of_int index);
     print_endline (" .. mgu = " ^ string_of_varlist bsym_table mgu);
     print_endline ("Resolve ts = " ^ catmap "," (sbt bsym_table) ts);
 end;
     let parent_vs,vs,{raw_typeclass_reqs=rtcr} = find_split_vs state.sym_table bsym_table index in
-(*
-if name = "accumulate" then begin
-    print_endline ("Function vs=" ^ catmap "," svs vs);
-    print_endline ("Parent vs=" ^ catmap "," svs parent_vs);
-end;
-*)
     let is_generic vs = List.fold_left (fun acc (s,i,mt) -> 
       acc || match mt with | KND_generic -> true | _ -> false) 
       false 
@@ -189,6 +189,7 @@ end;
     if not (is_generic vs) then result else let () = () in
 if name = debugid then begin
     print_endline ("Found generic function " ^ name);
+    Flx_print.print_sym state.sym_table index;
     print_endline ("REBINDING");
 end;
     let new_vs = ref [] in
@@ -225,15 +226,6 @@ end;
     (* vmap is list that says replace type variable index i with given bound type *)
     let vmap = List.rev (!vmap) in
     let nufunts = List.rev (!nufunts) in
-(*
-    print_endline ("Polymorphic vs = " ^ catmap "," svs new_vs);
-    print_endline ("Generic vs = " ^ catmap "," (fun (v,n) -> "POS " ^ si n ^" " ^ 
-      svs v^ " --> " ^ sbt bsym_table (List.nth ts n)
-      ) gen_vs
-    );
-    List.iter (fun (ix,bt) -> print_endline ("Rebind " ^ si ix ^ " -> " ^ sbt bsym_table bt)) vmap;
-    List.iter (fun (s,ubt) -> print_endline ("Rebind " ^ s ^ " -> " ^ string_of_typecode ubt)) smap;
-*)
     let previous_rebinding =
        try Some (Hashtbl.find state.generic_cache (index, vmap))
        with Not_found -> None

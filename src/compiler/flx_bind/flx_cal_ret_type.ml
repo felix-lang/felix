@@ -43,8 +43,10 @@ let cal_ret_type'
 (*
 print_endline ("+++++++++++++++++++++++++++++");
 print_endline ("Cal ret type of " ^ id ^ "<" ^ string_of_int index ^ "> at " ^ Flx_srcref.short_string_of_src sr);
-print_endline ("+++++ UNBOUND return type is " ^ string_of_typecode rt);
-    begin match rt with | `TYP_var j when j = index -> print_endline ("RETURN TYPE UNSPECIFIED") | _ -> () end;
+print_endline ("+++++ UNBOUND return type is " ^ string_of_typecode rt');
+    begin match rt' with | `TYP_var j when j = index -> print_endline ("RETURN TYPE UNSPECIFIED") | _ -> () end;
+*)
+(*
 print_endline ("Trying to bind type .. if function index variable, we get a recurse?");
 *)
     let declared_ret = not (index = (match rt' with `TYP_var k -> k | _ -> 0)) in
@@ -61,9 +63,12 @@ print_endline ("Trying to bind type .. if function index variable, we get a recu
        btyp_type_var (index, kv) 
     in
 (*
-print_endline ("Type bound; " ^ sbt bsym_table rt);
+print_endline ("Cal ret type of " ^ id ^ "<" ^ string_of_int index ^ ">: return type bound: " ^ sbt bsym_table rt);
 *)
     let rt = beta_reduce "flx_lookup: cal_ret_type" state.counter bsym_table sr rt in
+(*
+print_endline ("Cal ret type of " ^ id ^ "<" ^ string_of_int index ^ ">: return type reduced: " ^ sbt bsym_table rt);
+*)
     let pvtype = match rt with BTYP_variant _ -> true | _ -> false in
 (*
     if pvtype then print_endline (id ^ " has pv type " ^ sbt bsym_table rt);
@@ -98,7 +103,8 @@ print_endline ("+++++ return type is " ^ sbt bsym_table rt);
 *)
     let match_skip_level = ref 0 in
     List.iter
-    (fun exe -> match exe with
+    (fun exe -> (* print_endline ("LEVEL " ^ string_of_int !match_skip_level ^ ": " ^ string_of_exe 2 (snd exe)); *)
+    match exe with
     | (sr,EXE_begin_match_case) -> 
 (*
        print_endline "BEGIN MATCH CASE";
@@ -115,13 +121,13 @@ print_endline ("+++++ return type is " ^ sbt bsym_table rt);
 
     | (_,exe) when !match_skip_level > 0 -> 
 (*
-      print_endline ("---- Skipping branch containing " ^ string_of_exe 2 exe);
+      print_endline ("Cal ret type of " ^ id ^"<"^string_of_int index ^"> ---- Skipping branch containing " ^ string_of_exe 2 exe);
 *)
      ()
 
     | (sr,EXE_fun_return e) ->
 (*
-print_endline ("Cal ret type of " ^ id ^ " got return: " ^ string_of_expr e);
+print_endline ("Cal ret type of " ^ id ^"<"^string_of_int index ^">" ^ " got return: " ^ string_of_expr e);
 *)
       incr return_counter;
       begin try
@@ -145,17 +151,18 @@ print_endline ("Calling bind_epression'");
         in
         let t = beta_reduce "flx_lookup: cal_ret_type, return expr type" state.counter bsym_table sr t in
 (*
-print_endline ("Return expression type = " ^ Flx_btype.st t);
-*)
-(*
-print_endline "Flx_lookup: about to check calculated and registered return type";
-print_endline ("Return type = " ^ Flx_btype.st !ret_type);
-print_endline ("Return expression type = " ^ Flx_btype.st t);
+print_endline ("Cal ret type of " ^ id ^"<"^string_of_int index ^">" ^ " return type: " ^ Flx_btype.st t);
+print_endline "$$$$$Flx_cal_ret: about to unify calculated and registered return type";
+print_endline ("$$$$Return type = " ^ Flx_btype.st !ret_type);
+print_endline ("$$$$Return expression type = " ^ Flx_btype.st t);
 *)
         if pvtype then
           () (* use the declared return type, let the coercion be inserted later *) 
         else 
         begin 
+(*
+print_endline ("Cal ret type of " ^ id ^"<"^string_of_int index ^">" ^ "  %%%% Unifying");
+*)
           let result = Flx_do_unify.do_unify
              state.counter
              state.varmap
@@ -168,7 +175,7 @@ print_endline ("Return expression type = " ^ Flx_btype.st t);
           if result then
             let t' = varmap_subst state.varmap !ret_type in
 (*
-  print_endline (" %%%%% Setting return type to " ^ sbt bsym_table t');
+  print_endline (" %%%%% Setting return type "^string_of_int index^" to " ^ sbt bsym_table t');
 *)
             ret_type := t'
           else begin
@@ -210,9 +217,7 @@ print_endline ("Return expression type = " ^ Flx_btype.st t);
           print_endline ("ClientError2 Whilst calculating return type:\n"^s);
           raise e
         | GadtUnificationFailure ->
-(*
          print_endline "GADT UNIFICATION ERROR BINDING RETURN STATEMENT";
-*)
          match_skip_level := 1;
          ()
         | x ->
@@ -224,27 +229,27 @@ print_endline ("Return expression type = " ^ Flx_btype.st t);
       end
     | (sr,exe) -> 
 (*
-      print_endline ("Cal ret type handling " ^ string_of_exe 2 exe);
+print_endline ("Cal ret type of " ^ id ^"<"^string_of_int index ^">" ^ "  bind exe " ^ string_of_exe 2 exe);
 *)
       begin try
         let be e =
           bind_expression' state bsym_table env
           { rs with idx_fixlist = index::rs.idx_fixlist }
           e []
-       in
-       (* FIXME: we need to get even MORE precise, we ONLY want to
+        in
+        (* FIXME: we need to get even MORE precise, we ONLY want to
           bind EXPR_ctor_arg expressions!
-       *)
-       let be' e = let _ = be e in () in
-       let ign x = () in
-       Flx_maps.iter_exe ign ign be' exe;
+        *)
+        let be' e = let _ = be e in () in
+        let ign x = () in
+        Flx_maps.iter_exe ign ign be' exe;
 (*
        print_endline "EXE BOUND";
 *)
       with 
       | GadtUnificationFailure -> 
 (*
-        print_endline ("******* Binding failed with GadtUnificationError");
+        print_endline ("Cal ret type of " ^ id ^ "<" ^ string_of_int index ^ ">******* Binding failed with GadtUnificationError");
 *)
         match_skip_level := 1
 
@@ -261,6 +266,7 @@ print_endline ("Return expression type = " ^ Flx_btype.st t);
     if !return_counter = 0 then (* it's a procedure .. *)
     begin
 (*
+print_endline ("Cal ret type of " ^ id ^"<"^string_of_int index ^">" ^ " NO RETURNS! VOID!");
 print_endline ("Flx_lookup about to do unify[2]");
 *)
       let mgu = Flx_do_unify.do_unify
@@ -280,14 +286,14 @@ print_endline ("Flx_lookup about to do unify[2]");
     ret_type := varmap_subst state.varmap !ret_type
     ;
     *)
-    (*
+(*
     let ss = ref "" in
     Hashtbl.iter
     (fun i t -> ss:=!ss ^si i^ " --> " ^sbt bsym_table t^ "\n")
     state.varmap;
     print_endline ("state.varmap=" ^ !ss);
     print_endline ("  .. ret type index " ^ si index ^ " = " ^ sbt bsym_table !ret_type);
-    *)
+*)
     !ret_type
 
   | _ -> assert false

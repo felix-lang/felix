@@ -51,9 +51,3 @@ let make_bind_state syms sym_table =
     bbind_state = bbind_state;
   }
 
-
-let set_nominal_typedefs (state:bind_state_t) = state.lookup_state.Flx_lookup_state.treat_typedefs_as_structural <- false
-let set_structural_typedefs (state:bind_state_t) = state.lookup_state.Flx_lookup_state.treat_typedefs_as_structural <-true 
-let get_structural_typedefs (state:bind_state_t) = state.lookup_state.Flx_lookup_state.treat_typedefs_as_structural
-
-

@@ -172,12 +172,7 @@ let lookup_type_name_in_table_dirs_with_sig
       print_endline ("flx_lookup_type_name_itdws BUG");
       assert false
 
-    (* the effect of the binding depends on the mode for aliases, nominal or structural *)
     | SYMDEF_type_alias t -> 
-(*
-      let modes = if get_structural_typedefs state then "structural" else "nominal" in
-print_endline ("lookup_type_name_in_table_dirs_with_sig: Binding reference to type alias " ^ name ^ " mode=" ^ modes);
-*)
       Some (bt sr t)
 
     | SYMDEF_label _
