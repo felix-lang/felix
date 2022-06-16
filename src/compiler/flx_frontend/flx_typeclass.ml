@@ -60,8 +60,9 @@ let tcinst_chk syms bsym_table id sr i (ts: Flx_btype.t list)
   ((inst_vs:Flx_kind.bvs_t), inst_constraint, inst_ts, j) 
  =
 (*
-print_endline ("TYPECLASS: " ^ id ^ 
-   ", vs = " ^ catmap "," (fun (s,j,k) -> s ^ "<" ^ string_of_int j ^ ">:" ^ Flx_kind.sk k) inst_vs ^ 
+if  id = "str" then 
+print_endline ("Inst " ^ string_of_int j ^" function: " ^ id ^ 
+   ", vs = " ^ catmap "," (fun (s,j',k) -> s ^ "<" ^ string_of_int j' ^ ">:" ^ Flx_kind.sk k) inst_vs ^ 
    ": inst_constraint = " ^ sbt bsym_table inst_constraint);
 *)
      if length inst_ts > length ts then
@@ -215,7 +216,7 @@ print_endline ("TYPECLASS(mgu found), constraint = " ^ sbt bsym_table con);
 let fixup_typeclass_instance' syms bsym_table sr i ts =
   let id = Flx_bsym.id (Flx_bsym_table.find bsym_table i) in
 (*
-if id="unsafe_get" then
+if id = "str" then
 print_endline ("Trying to instantiate virtual " ^ id ^ "<" ^ si i ^ ">[" ^ 
 catmap "," (sbt bsym_table) ts ^ "]");
 *)
@@ -243,7 +244,7 @@ if id="unsafe_get" then
 
   | Some entries ->
 (*
-if id="unsafe_get" then
+if id="str" then
 print_endline ("Found " ^ si (List.length entries) ^ " functions for virtual " ^ id ^"<"^si i^">");
 *)
   let parent,bsym = try Flx_bsym_table.find_with_parent bsym_table i with Not_found -> assert false in
@@ -267,7 +268,7 @@ print_endline ("Found " ^ si (List.length entries) ^ " functions for virtual " ^
      [] entries
   in
 (*
-if id="g" then
+if id="str" then
 print_endline ("Number of matches left is " ^ string_of_int (List.length entries));
 *)
   match entries with
@@ -424,14 +425,18 @@ let id x = x
 
 let tcsubst syms bsym_table sr i ts =
 (*
-if i = 14871 then
+if i = 17759 then
   print_endline ("tcsubst trying to instantiate " ^ si i ^ " with ts = " ^ catmap "," (sbt bsym_table) ts);
 *)
   let ts = List.map (Flx_remap_vtypes.remap_virtual_types syms bsym_table) ts in
   match fixup_typeclass_instance' syms bsym_table sr i ts with
   | `NonVirtual,i,ts->i,ts
-  | `MatchesNow,i,ts->
-     i,ts
+  | `MatchesNow,j,ts->
+(*
+if i = 17759 then
+print_endline ("Matches " ^ string_of_int j);
+*)
+     j,ts
   | `CannotMatch, i,ts ->
      let bsym = Flx_bsym_table.find bsym_table i in
      let id = Flx_bsym.id bsym in

@@ -337,7 +337,9 @@ print_endline ("\n+++++++++Bound recursive type is " ^ Flx_btype.st t^"\n\n");
         let fixdepth = outer_depth -rs.depth in
 (* HACK metatype guess : expressions generally ARE of kind TYPE, it just might be
 an over-generalisation *)
+(*
 print_endline ("Flx_bind_type. structural mode: TYP_typeof fixpoint metatype hack! Expression " ^ string_of_expr e);
+*)
         btyp_fix fixdepth (Flx_kind.KIND_type)
       end else begin
         let t = snd (bind_expression' state bsym_table env rs e []) in
@@ -529,13 +531,17 @@ print_endline ("Binding `TYP_name " ^s^ " via params to " ^ sbt bsym_table t);
      btyp_instancetype sr
 
   | `TYP_fname (sr, name, ks) ->
+(*
 print_endline ("Lookup type function name " ^ name ^ " unbound ks=" ^ Flx_util.catmap ", " Flx_print.str_of_kindcode ks);
+*)
     let hackname : qualified_name_t  = (`AST_name (sr, name, []) :> qualified_name_t) in
 (*
 print_endline ("Munged qualified name " ^ Flx_print.string_of_qualified_name hackname);
 *)
     let {base_sym=index; spec_vs=spec_vs; sub_ts=sub_ts} , ts = lookup_qn_in_env' state bsym_table env rs hackname in
+(*
 print_endline ("Found it " ^ name ^ "="^ string_of_int index);
+*)
     (* we have a problem now: we've found a view of the typefunction, this can happen
     if the type function is inside a polymorphic class which is opened. The substitution
     of ts in the view with the vs of the environment must be done, but it cannot be done
@@ -579,7 +585,9 @@ print_endline ("Bound ks = " ^ Flx_util.catmap ", " Flx_kind.sk ks);
       | _ -> assert false
     in 
     let t = btyp_finst (index, ks, dom, cod) in
+(*
     print_endline ("Bound reference " ^ Flx_btype.st t);
+*)
     t
 
   | `TYP_flookup _ ->

@@ -100,8 +100,10 @@ in
       | SYMDEF_cstruct _
       | SYMDEF_struct _ ->
         let sign = try List.hd signs with _ -> assert false in
+(*
         print_endline ("Lookup qn with sig' found a struct "^ id ^
         ", looking for constructor"); 
+*)
         (* this doesn't work, we need to do overload resolution to
            fix type variables
         let t = type_of_index_with_ts' state bsym_table rs sra index ts in

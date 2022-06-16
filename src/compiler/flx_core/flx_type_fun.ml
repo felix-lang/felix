@@ -100,6 +100,7 @@ Unfortunately this means the trail comparison must use alpha equivalance, not eq
 NOTE: alpha equiv is easy, we alph convert both terms using the SAME initial counter then 
 do normal comparison .. but I think maybe the type equality routine should do this.
 *)
+if not (Flx_btype.complete_type arg) then print_endline ("Type lambda argument is not complete! \n" ^ Flx_btype.st arg);
       let f = Flx_alpha.alpha_convert counter f in
       (* I think this is wrong but it is essential in some case if the argument
          must be a type tuple, and is actually an application that produces one.
@@ -125,6 +126,7 @@ do normal comparison .. but I think maybe the type equality routine should do th
               print_endline ("Flx_beta:"^calltag ^": Expected Argument to type function to be type tuple, got " ^ Flx_print.sbt bsym_table arg);
               Flx_exceptions.clierr sr ("Flx_beta:"^calltag ^": Expected Argument to type function to be type tuple, got " ^ Flx_print.sbt bsym_table arg)
         in
+if not (Flx_btype.complete_type body) then print_endline ("Type lambda body is not complete! \n" ^ Flx_btype.st body);
         let t' = list_subst counter params' body in
         let t' = beta_reduce' calltag counter bsym_table sr depth ((appl,depth)::termlist) t' in
         t'

@@ -570,7 +570,8 @@ end;
   (* Ignore non-function *)
   | _ -> ()
 
-let shareinit_bsym_table phase bsym_table counter = 
+let shareinit_bsym_table phase bsym_table counter = ()
+(*
   try
 (*
 print_endline "Doing share init";
@@ -583,4 +584,4 @@ print_endline "Doing share init";
   | exn ->
     print_endline ("ERROR in init share variable before use verification phase " ^ phase);
     raise exn
-
+*)

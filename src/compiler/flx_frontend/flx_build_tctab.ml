@@ -297,8 +297,8 @@ let check_instance
   inst_ts
 =
 (*
-if debug && inst_id = "X" then
-  print_endline ("Check instance " ^ inst_id ^ 
+if inst_id = "Str" && inst == 79372 then
+  print_endline ("Check instance " ^ inst_id ^ "<" ^ string_of_int inst ^ ">" ^ 
    ", vs = " ^ catmap "," (fun (s,j,k) -> s ^ "<" ^ string_of_int j ^ ">:" ^ Flx_kind.sk k) inst_vs ^ 
    ", inst_constraint=" ^ sbt bsym_table inst_constraint);
 *)
@@ -308,14 +308,14 @@ if debug && inst_id = "X" then
   match Flx_bsym.bbdcl tc_bsym with
   | BBDCL_typeclass (tc_props, tc_bvs) ->
 (*
-if debug && inst_id = "X" then
+if inst_id = "Str" && inst == 79372 then
 begin
     print_endline ("Found " ^ inst_id ^ "<"^si inst ^ ">" ^
     "[" ^ catmap "," (sbt bsym_table) inst_ts ^ "]" ^
     " to be instance of typeclass " ^ tc_id ^ "<"^si tc^">")
     ;
     print_endline ("Typeclass vs = " ^
-      catmap "," (fun (s,j) -> s^"<"^si j^">") tc_bvs
+      catmap "," (fun (s,j,knd) -> s^"<"^si j^">") tc_bvs
     );
 end;
 *)
@@ -338,7 +338,7 @@ end;
       with Not_found -> BidSet.empty
     in
 (*
-if debug && inst_id = "X" then 
+if inst_id = "Str" && inst == 79372 then
 begin
   print_string ("Typeclass has children " );
   BidSet.iter (fun i-> print_string (si i ^ ",")) tc_kids;
@@ -351,19 +351,20 @@ end;
       with Not_found -> BidSet.empty
     in
 (*
-if debug && inst_id = "X" then
+if inst_id = "Str" && inst == 79372 then
 begin
   print_string ("Instance has children ");
   BidSet.iter (fun i-> print_string (si i ^ ",")) inst_kids;
   print_endline "";
 end;
 *)
-(* transform the instance kid list into an associatiion list
+(* transform the instance kid list into an association list
   mapping the function name to the index and function type
 *)
     let inst_map = build_inst_map bsym_table inst_kids in
+
 (*
-if debug && inst_id = "X" then
+if inst_id = "Str" && inst == 79372 then
 begin
   print_endline ("Instance map for " ^ inst_id ^ "[" ^ catmap "," (sbt bsym_table) inst_ts ^ "]");
   List.iter (fun (name,(index,(bvs,typ))) ->
@@ -387,11 +388,12 @@ end;
 (* PASS 1, map virtual types to instance types *)
     BidSet.iter begin fun tck ->
       let tck_bsym = Flx_bsym_table.find bsym_table tck in
+(*
 if debug && inst_id = "X" then
 begin
   print_endline ("   type class child " ^ Flx_bsym.id tck_bsym);
 end;
-
+*)
       match Flx_bsym.bbdcl tck_bsym with
       | BBDCL_virtual_type bvs -> 
 (*
@@ -502,7 +504,7 @@ print_endline "BUILD TYPECLASS TO INSTANCE MAPPING";
   
     let inst_id = Flx_bsym.id bsym in
 (*
-    if debug && inst_id = "X" then
+    if inst_id = "Str" && i == 79372 then
     print_endline ("Typeclass: " ^ Flx_bsym.id bsym ^"<"^ si tc ^ "> instance " ^ si i );
 *)
       check_instance

@@ -252,6 +252,7 @@ print_endline ("Beta reduce failed with Failure");
 (*
   print_endline ("============" ^ calltag^ "   reduced= " ^ sbt bsym_table t2 ^ "=" ^ Flx_btype.st t2);
 *)
+  let t2 = Flx_fold.minimise bsym_table counter t2 in
   t2
 
 and beta_reduce' calltag counter bsym_table sr depth (termlist: (Flx_btype.t * int) list) t =
