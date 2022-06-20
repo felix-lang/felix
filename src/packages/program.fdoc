@@ -766,10 +766,8 @@ class Shell_class[OS, process_status_t]
   //------------------------------------------------------------
   // system() function
 
-  //$ System command is ISO C and C++ standard.
-  gen raw_system: string -> int = "::std::system($1.c_str())"
-    requires Cxx_headers::cstdlib
-  ;
+  virtual gen raw_system: string -> int;
+
   //$ basic command with line quoting.
   gen basic_system (cmd: string) :int => 
     cmd.quote_line_for_system.raw_system
@@ -927,17 +925,35 @@ class Bash {
     fun quote_line_for_system (s:string) => s;
     fun quote_line_for_popen (s:string) => s + " ";
 
-    gen raw_get_stdout(x:string) = {
-        var fout = PosixProcess::popen_in(x+" ");
-        if valid fout do
-          var output = load fout;
+    //$ System command is ISO C and C++ standard.
+    gen c_system: string -> int = "::std::system($1.c_str())"
+      requires Cxx_headers::cstdlib
+    ;
+    gen raw_system (cmd:string) : int = {
+      var result = c_system cmd;
+      var posix_result = C_hack::cast[PosixProcess::process_status_t] result;
+      if PosixProcess::WIFSIGNALED posix_result do 
+        eprintln "[system] Child process terminated by signal, aborting parent";
+        System::exit 1;
+      done
+      return result;
+    }
 
-          var result = PosixProcess::pclose fout; 
-          return PosixProcess::WEXITSTATUS result, output;
-        else
-          println$ "Unable to run command '" + x "'";
-          return -1,"";
+    gen raw_get_stdout(x:string) = {
+      var fout = PosixProcess::popen_in(x+" ");
+      if valid fout do
+        var output = load fout;
+
+        var result = PosixProcess::pclose fout; 
+        if PosixProcess::WIFSIGNALED result do
+          eprintln "[get_stdout] Child process terminated by signal, aborting parent";
+          System::exit 1;
         done
+        return PosixProcess::WEXITSTATUS result, output;
+      else
+        println$ "Unable to run command '" + x "'";
+        return -1,"";
+      done
     }
 
     //$ Parse a bash command line into words.
@@ -1060,6 +1076,12 @@ class CmdExe
     fun quote_arg(s:string):string => '"' + s + '"';
     fun quote_line_for_system(s:string) => '"' + s + '"';
     fun quote_line_for_popen(s:string) => '"' + s + '"';
+
+    //$ System command is ISO C and C++ standard.
+    gen c_system: string -> int = "::std::system($1.c_str())"
+      requires Cxx_headers::cstdlib
+    ;
+    gen raw_system (cmd:string) => c_system cmd;
 
     gen raw_get_stdout(x:string) = {
       //eprintln("CMD.EXE: raw_get_stout of " + x);
