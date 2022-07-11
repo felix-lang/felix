@@ -133,3 +133,5 @@ val validate : string -> t -> unit
 val validate_types: (Flx_btype.t -> unit) -> t -> unit
 val is_prim: t -> bid_t -> bool
 
+val least_supertype: t -> int list -> int option
+

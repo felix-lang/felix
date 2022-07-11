@@ -120,7 +120,47 @@ let is_indirect_supertype bsym_table param arg : bool =
 ignore(find_coercion_chains bsym_table param arg));
 *)
   result
- 
+
+let supertypes_of bsym_table a : BidSet.t =
+  List.fold_left (fun acc ((p',a'),j) -> if a = a' then BidSet.add p' acc else acc) (BidSet.singleton a) bsym_table.subtype_map
+
+
+(* NOTE: this may not be unique! We should really return all of them. 
+  Example: X >  A, X > B, Y > A, Y > B then both X and Y are supertypes
+  of both A and B. In addition if W > X and W > Y, then still both
+  are less than W so W is a common supertype of A and B but not least.
+
+  This could happen in C++ with multiple inheritance.
+              W 
+            /   \
+          X     Y
+           \\ //
+            A B  
+
+NOTE: due to this issue, we cannot calculate the least supertype of a set pairwise, unless we retain
+duplicates. This is because some type C might be a subtype of Y but not X, which would eliminate X
+as a supertype of all three of A B C. Instead we have to find the intersection of ALL the supertypes
+of each input type first before trying to find a least one. The pairwise routine couldn't work even
+if BOTH X and Y were returned and then D came along which was a subtype of only W, unless we 
+regenerated all the supertypes of the set of pairwise results. So might as well just intersect
+the whole set first.
+*)
+let least_supertype bsym_table ls : int option =
+  match ls with
+  | [] -> None
+  | [x] -> Some x
+  | h :: tail ->
+    let cands =  List.fold_left 
+      (fun acc elt -> BidSet.inter acc (supertypes_of bsym_table elt)) 
+      (supertypes_of bsym_table h) 
+      tail
+    in 
+    if BidSet.is_empty cands then None else 
+    let chosen = BidSet.choose cands in
+    let cands = BidSet.remove chosen cands in
+    Some (BidSet.fold (fun cand current -> 
+      if is_indirect_supertype bsym_table current cand then cand else current
+    ) cands chosen)
 
 
 let fold_coercions bsym_table f init =

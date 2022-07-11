@@ -391,11 +391,11 @@ print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
 
 
   | BTYP_tuple ls -> btyp_tuple (List.map br ls)
-  | BTYP_intersect ls -> btyp_intersect (List.map br ls)
   | BTYP_array (i,t) -> btyp_array (br i, br t)
   | BTYP_rptsum (i,t) -> btyp_rptsum (br i, br t)
   | BTYP_sum ls -> btyp_sum (List.map br ls)
 
+  | BTYP_intersect ls -> Flx_intersect.intersect bsym_table counter br ls 
   | BTYP_record (ts) ->
      let ss,ls = List.split ts in
      btyp_record (List.combine ss (List.map br ls))
@@ -616,4 +616,4 @@ print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
       | None -> btyp_subtype_match (tt,pts)
       end
   end
-
+        

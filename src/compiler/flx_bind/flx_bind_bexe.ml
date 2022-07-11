@@ -814,7 +814,7 @@ print_endline ("Beta reduced LHS is not actually reduced: " ^ sbt bsym_table lhs
               sbe bsym_table (e',rhst) ^
               "\nof type\n" ^
               sbt bsym_table rhst ^
-              "\nis not a supertype of the declared variable type:\n" ^ 
+              "\nis not a subtype of the declared variable type:\n" ^ 
               sbt bsym_table lhst 
             )
     end
