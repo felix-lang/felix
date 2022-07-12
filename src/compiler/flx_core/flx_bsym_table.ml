@@ -98,11 +98,6 @@ let find_coercion_chains bsym_table param arg : int list list =
   !chains
 
 let is_indirect_supertype bsym_table param arg : bool =
-(*
-   print_endline ("??? Supertype " ^ string_of_int param ^ " > subtype " ^ string_of_int arg);
-   print_endline ("*** coercion table");
-  iter_coercions bsym_table (fun ((p,a),_) -> print_endline ("   ++  Supertype " ^ string_of_int p ^ " > subtype " ^ string_of_int a));
-*)
   let limit = 10 in
   let rec iis counter a = 
     if counter > limit then failwith ("circular subtype definition, chain limit " ^ string_of_int limit ^ ", exceeded");
@@ -115,14 +110,17 @@ let is_indirect_supertype bsym_table param arg : bool =
         List.fold_left (fun acc p' -> acc || iis (counter + 1) p') false cands
   in 
   let result = iis 0 arg in
-(*
-(if result then
-ignore(find_coercion_chains bsym_table param arg));
-*)
   result
 
+let is_indirect_subtype bsym_table arg param : bool = is_indirect_supertype bsym_table param arg
+
+(* These sets are inclusive *)
 let supertypes_of bsym_table a : BidSet.t =
   List.fold_left (fun acc ((p',a'),j) -> if a = a' then BidSet.add p' acc else acc) (BidSet.singleton a) bsym_table.subtype_map
+
+let subtypes_of bsym_table p : BidSet.t =
+  List.fold_left (fun acc ((p',a'),j) -> if p = p' then BidSet.add a' acc else acc) (BidSet.singleton p) bsym_table.subtype_map
+
 
 
 (* NOTE: this may not be unique! We should really return all of them. 
@@ -160,6 +158,23 @@ let least_supertype bsym_table ls : int option =
     let cands = BidSet.remove chosen cands in
     Some (BidSet.fold (fun cand current -> 
       if is_indirect_supertype bsym_table current cand then cand else current
+    ) cands chosen)
+
+let greatest_subtype bsym_table ls : int option =
+  match ls with
+  | [] -> None
+  | [x] -> Some x
+  | h :: tail ->
+    let cands =  List.fold_left 
+      (fun acc elt -> BidSet.inter acc (subtypes_of bsym_table elt)) 
+      (subtypes_of bsym_table h) 
+      tail
+    in 
+    if BidSet.is_empty cands then None else 
+    let chosen = BidSet.choose cands in
+    let cands = BidSet.remove chosen cands in
+    Some (BidSet.fold (fun cand current -> 
+      if is_indirect_subtype bsym_table current cand then cand else current
     ) cands chosen)
 
 

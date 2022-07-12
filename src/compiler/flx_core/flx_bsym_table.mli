@@ -23,6 +23,7 @@ type coercion_t = (bid_t * bid_t) * bid_t
 val add_supertype: t -> coercion_t -> unit
 val is_direct_supertype: t -> bid_t -> bid_t -> bool
 val is_indirect_supertype: t -> bid_t -> bid_t -> bool
+val is_indirect_subtype: t -> bid_t -> bid_t -> bool
 val find_coercion_chains : t -> bid_t -> bid_t -> bid_t list list
 val maybe_coercion: t -> bid_t -> bid_t -> bid_t option
 val iter_coercions: t -> (coercion_t -> unit) -> unit
@@ -134,4 +135,5 @@ val validate_types: (Flx_btype.t -> unit) -> t -> unit
 val is_prim: t -> bid_t -> bool
 
 val least_supertype: t -> int list -> int option
+val greatest_subtype: t -> int list -> int option
 
