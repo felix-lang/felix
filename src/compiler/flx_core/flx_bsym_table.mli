@@ -136,4 +136,6 @@ val is_prim: t -> bid_t -> bool
 
 val least_supertype: t -> int list -> int option
 val greatest_subtype: t -> int list -> int option
+val subtypes_of: t -> bid_t -> BidSet.t
+val supertypes_of: t -> bid_t -> BidSet.t
 

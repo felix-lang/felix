@@ -65,6 +65,7 @@ and t =
   | BTYP_compactrptsum of t * t
   | BTYP_record of (string * t) list
   | BTYP_polyrecord of (string * t) list * string * t
+
   | BTYP_variant of (string * t) list
   | BTYP_polyvariant of pvpiece_t list
 
@@ -141,7 +142,7 @@ let flat_iter
   | BTYP_array (t1,t2)->  f_btype t1; f_btype t2
   | BTYP_compactarray (t1,t2)->  f_btype t1; f_btype t2
   | BTYP_record (ts) -> List.iter (fun (s,t) -> f_btype t) ts
-  | BTYP_polyrecord (ts,s,v) -> List.iter (fun (s,t) -> f_btype t) ts; f_btype v
+  | BTYP_polyrecord (ts,s,v) -> List.iter (fun (s,t) -> f_btype t) ts; f_btype v 
   | BTYP_variant ts -> List.iter (fun (s,t) -> f_btype t) ts
   | BTYP_polyvariant ts -> List.iter (fun k -> 
       match k with 
@@ -298,7 +299,8 @@ and str_of_btype typ =
   | BTYP_rptsum (b,x) -> "BTYP_rptsum(" ^ s b ^"," ^s x^")"
   | BTYP_compactrptsum (b,x) -> "BTYP_compactrptsum(" ^ s b ^"," ^s x^")"
   | BTYP_record (ls) -> "BTYP_record("^String.concat "," (List.map (fun (name,t)->name^":"^s t) ls)^")"
-  | BTYP_polyrecord (ls,name,t) -> "BTYP_polyrecord("^String.concat "," (List.map (fun (name,t)->name^":"^s t) ls)^" | "^name^ ":" ^ s t^")"
+  | BTYP_polyrecord (ls,name,t) -> "BTYP_polyrecord("^String.concat "," (List.map (fun (name,t)->name^":"^s t) ls)^" | "^name^ ":" ^ s t^")" 
+  
   | BTYP_variant (ls) -> "BTYP_variant(" ^String.concat " | " (List.map (fun (name,t)->name^" of "^s t) ls)^")"
   | BTYP_polyvariant ls -> "BTYP_polyvariant(" ^ String.concat " | " (List.map str_of_pvpiece ls) ^ ")"
 
