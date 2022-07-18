@@ -43,6 +43,7 @@ let fix i t =
     | BTYP_vinst (k,ts,mt) -> btyp_vinst (k, List.map aux ts,mt)
     | BTYP_tuple ts -> btyp_tuple (List.map aux ts)
     | BTYP_intersect ts -> btyp_intersect (List.map aux ts)
+    | BTYP_union ts -> btyp_union (List.map aux ts)
     | BTYP_compacttuple ts -> btyp_compacttuple (List.map aux ts)
     | BTYP_sum ts -> btyp_sum (List.map aux ts)
     | BTYP_compactsum ts -> btyp_compactsum (List.map aux ts)

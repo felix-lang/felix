@@ -189,6 +189,10 @@ let rec get_offsets' syms bsym_table typ : offset_kind_t list =
     print_endline ("Flx_cal_type_offsets: HOT intersection type"); 
     [`Ptr "0"]
 
+  | BTYP_union _ -> 
+    print_endline ("Flx_cal_type_offsets: HOT union type"); 
+    [`Ptr "0"]
+
   | BTYP_tuple args ->
     let n = ref 0 in
     let lst = ref [] in

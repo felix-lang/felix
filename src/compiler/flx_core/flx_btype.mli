@@ -35,6 +35,7 @@ and t = private
   | BTYP_finst of bid_t * kind list * kind * kind (* type function instance with kind args, domain, codomain kinds  *)
   | BTYP_vinst of bid_t * t list * Flx_kind.kind
   | BTYP_intersect of t list
+  | BTYP_union of t list
   | BTYP_tuple of t list
   | BTYP_compacttuple of t list
   | BTYP_array of t * t
@@ -139,6 +140,7 @@ val btyp_inst : instkind_t * bid_t * t list * kind -> t
 val btyp_finst : bid_t * kind list * kind * kind -> t
 val btyp_vinst : bid_t * t list * kind -> t
 val btyp_intersect : t list -> t
+val btyp_union : t list -> t
 val btyp_tuple : t list -> t
 val btyp_compacttuple : t list -> t
 val btyp_rev : t -> t

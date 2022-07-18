@@ -365,6 +365,7 @@ print_endline ("Flx_bind_type. structural mode: TYP_typeof fixpoint metatype hac
   | `TYP_compacttuple ts -> btyp_compacttuple (List.map bt ts)
   | `TYP_tuple ts -> btyp_tuple (List.map bt ts)
   | `TYP_intersect ts -> btyp_intersect (List.map bt ts)
+  | `TYP_union ts -> btyp_union (List.map bt ts)
   | `TYP_tuple_cons (_,t1,t2) -> btyp_tuple_cons (bt t1) (bt t2)
   | `TYP_tuple_snoc (_,t1,t2) -> btyp_tuple_snoc (bt t1) (bt t2)
   | `TYP_unitsum k ->

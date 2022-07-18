@@ -476,11 +476,15 @@ and st prec tc : string =
 
     | `TYP_intersect ls ->
       begin match ls with
-      | [] -> 0,"unit"
+      | [] -> 0,"any"
       | _ -> 4, cat " & " (map (st 4) ls)
       end
 
-
+    | `TYP_union ls ->
+      begin match ls with
+      | [] -> 0,"void"
+      | _ -> 4, cat " | " (map (st 4) ls)
+      end
 
     | `TYP_compacttuple ls ->
       begin match ls with
@@ -766,9 +770,16 @@ and sb bsym_table depth fixlist counter prec tc =
 
     | BTYP_intersect ls ->
       begin match ls with
-      | [] -> 0,"unit"
+      | [] -> 0,"any"
       | [x] -> failwith ("UNEXPECTED INTERSECTION OF ONE ARGUMENT " ^ sbt 9 x)
       | _ -> 4,cat " & " (map (sbt 4) ls)
+      end
+
+    | BTYP_union ls ->
+      begin match ls with
+      | [] -> 0,"void"
+      | [x] -> failwith ("UNEXPECTED UNION OF ONE ARGUMENT " ^ sbt 9 x)
+      | _ -> 4,cat " | " (map (sbt 4) ls)
       end
 
 

@@ -86,6 +86,7 @@ let string_of_type_name (t:typecode_t) = match t with
   | `TYP_patany _ -> " `TYP_patany"
   | `TYP_tuple _ -> "`TYP_tuple"
   | `TYP_intersect _ -> "`TYP_intersect"
+  | `TYP_union _ -> "`TYP_union"
   | `TYP_compacttuple _ -> "`TYP_compacttuple"
   | `TYP_unitsum _ -> "`TYP_unitsum"
   | `TYP_sum _ -> "`TYP_sum"

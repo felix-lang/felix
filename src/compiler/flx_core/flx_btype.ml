@@ -57,6 +57,7 @@ and t =
   | BTYP_finst of bid_t * kind list * kind * kind (* type function instance with kind args, domain, codomain kinds  *)
   | BTYP_vinst of bid_t * t list * Flx_kind.kind
   | BTYP_intersect of t list
+  | BTYP_union of t list
   | BTYP_tuple of t list
   | BTYP_compacttuple of t list
   | BTYP_array of t * t
@@ -132,6 +133,7 @@ let flat_iter
       let unitrep = BTYP_tuple [] in
       for i = 1 to k do f_btype unitrep done
   | BTYP_intersect ts -> List.iter f_btype ts
+  | BTYP_union ts -> List.iter f_btype ts
   | BTYP_inst (it, i,ts,mt) -> f_bid i; List.iter f_btype ts
   | BTYP_finst (i,ks,dom, cod) -> f_bid i (* no iteration of kinds yet *)
   | BTYP_vinst (i,ts,mt) -> f_bid i; List.iter f_btype ts
@@ -293,6 +295,7 @@ and str_of_btype typ =
   | BTYP_vinst (i,ts,mt) -> "BTYP_vinst("^string_of_int i^"["^ss ts^"]:"^Flx_kind.sk mt^")"
   | BTYP_tuple ts -> "BTYP_tuple(" ^ ss ts ^ ")"
   | BTYP_intersect ts -> "BTYP_intersect(" ^ ss ts ^ ")"
+  | BTYP_union ts -> "BTYP_union(" ^ ss ts ^ ")"
   | BTYP_compacttuple ts -> "BTYP_compacttuple(" ^ ss ts ^ ")"
   | BTYP_array (b,x) -> "BTYP_array(" ^ s b ^"," ^s x^")"
   | BTYP_compactarray (b,x) -> "BTYP_compactarray(" ^ s b ^"," ^s x^")"
@@ -513,14 +516,35 @@ let rec flatten_intersections (ts:t list): t list =
   []
   ts
 
+let rec flatten_unions (ts:t list): t list =
+  List.fold_left (fun acc t -> 
+   match t with 
+   | BTYP_union ts -> acc @ flatten_unions ts
+   | x -> acc @ [x]
+  )
+  []
+  ts
+
+let btyp_any () =
+  BTYP_fix (0, kind_type)
+
 let contains_void ts = List.fold_left (fun acc t -> match t with | BTYP_void -> true | _ -> acc) false ts
+let contains_any ts = List.fold_left (fun acc t -> match t with | BTYP_fix (0,_) -> true | _ -> acc) false ts
+
+let btyp_union ts = 
+  let ts = flatten_unions ts in
+  if contains_any ts then btyp_any () else
+  match ts with
+  | [] -> BTYP_void (* bottom  type *)
+  | [x] -> x
+  | _ -> BTYP_union ts
+
 
 (* pre-condition: no term contains a nested intersect
    post-condition: an intersect of at least two non-unit non-intersect non-void terms 
    or a single non-intersect term 
    or void
 *)
-
 let btyp_intersect ts = 
   let ts = flatten_intersections ts in
   if contains_void ts then BTYP_void else
@@ -546,9 +570,6 @@ let btyp_unit () =
 
 let btyp_bool () = 
   BTYP_unitsum 2
-
-let btyp_any () =
-  BTYP_fix (0, kind_type)
 
 (** Construct a BTYP_unitsum type. *)
 let btyp_unitsum n =
@@ -673,12 +694,6 @@ let btyp_tuple ts =
         btyp_array (head, (BTYP_unitsum (List.length ts)))
       with Not_found ->
         BTYP_tuple ts
-
-(*
-let btyp_tuple ts =
-  let tss = expand_list_with_intersections ts in
-  btyp_intersect (List.map btyp_tuple' tss)
-*)
 
 let btyp_compacttuple ts =
   match ts with
@@ -1054,6 +1069,7 @@ let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) ?(f_kind=fun k->k) = funct
   | BTYP_finst (i,ks,dom,cod) -> btyp_finst (f_bid i, List.map f_kind ks, f_kind dom, f_kind cod)
   | BTYP_vinst (i,ts,mt) -> btyp_vinst (f_bid i, List.map f_btype ts,f_kind mt)
   | BTYP_intersect ts -> btyp_intersect (List.map f_btype ts)
+  | BTYP_union ts -> btyp_union (List.map f_btype ts)
   | BTYP_tuple ts -> btyp_tuple (List.map f_btype ts)
   | BTYP_compacttuple ts -> btyp_compacttuple (List.map f_btype ts)
   | BTYP_array (t1,t2) -> btyp_array (f_btype t1, f_btype t2)

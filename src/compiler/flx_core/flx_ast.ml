@@ -94,11 +94,12 @@ and typecode_t = [
   | `TYP_patvar of Flx_srcref.t * Flx_id.t
   | `TYP_patany of Flx_srcref.t
   | `TYP_tuple of typecode_t list               (** product type *)
-  | `TYP_intersect of typecode_t list               (** intersection  type *)
-  | `TYP_compacttuple of typecode_t list               (** product type *)
+  | `TYP_intersect of typecode_t list           (** intersection  type *)
+  | `TYP_union of typecode_t list               (** union type *)
+  | `TYP_compacttuple of typecode_t list        (** product type *)
   | `TYP_unitsum of int                         (** sum of units  *)
   | `TYP_sum of typecode_t list                 (** numbered sum type *)
-  | `TYP_compactsum of typecode_t list                 (** numbered sum type *)
+  | `TYP_compactsum of typecode_t list          (** numbered sum type *)
   | `TYP_record of (Flx_id.t * typecode_t) list
   | `TYP_polyrecord of (Flx_id.t * typecode_t) list * Flx_id.t * typecode_t
   | `TYP_variant of variant_item_t list (** anon sum *)
