@@ -4766,12 +4766,17 @@ syntax statements {
   //$ No constraint!
   seqorin:= sepsilon =># "'NoConstraint";
 
+  // variance spec: + covariant, - contravariant, nothing: invariant
+  svariance := "+" =># "'covariant";
+  svariance := "-" =># "'contravariant";
+  svariance := sepsilon =># "'invariant";
+
   //$ A type variable, possibly with an individual constraint.
-  stvar := sname seqorin =># """`(,_1 (knd_name "TYPE") ,_2)"""; 
+  stvar := svariance sname seqorin =># """`(,_2 (knd_name "TYPE") ,_3 ,_1)"""; 
 
   //$ A type variable with an individual constraint.
   //$ This is usually the same as a predicate.
-  stvar := sname ":" skindexpr seqorin =># "`(,_1 ,_3 ,_4)";
+  stvar := svariance sname ":" skindexpr seqorin =># "`(,_2 ,_4 ,_5 ,_1)";
 
   //$ A list of type variables with optional individual constraints.
   stvar_comma_list := stvar ("," stvar)* =># "(cons _1 (map second _2))";
