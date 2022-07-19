@@ -11,6 +11,13 @@ module CS = Flx_code_spec
 type index_t = int
 type index_map_t = (int,int) Hashtbl.t
 
+type variance_t = [
+  | `covariant
+  | `invariant
+  | `contravariant
+]
+type variance_list_t = variance_t list
+
 type base_type_qual_t = [
   | `Incomplete
   | `Uncopyable
@@ -654,7 +661,8 @@ and statement_t =
       vs_list_t *
       type_qual_t list *
       Flx_code_spec.t *
-      raw_req_expr_t
+      raw_req_expr_t *
+      variance_list_t (* corresponding to vs_list *)
 
   | STMT_ctypes of
       Flx_srcref.t *
@@ -962,7 +970,7 @@ let src_of_stmt (e : statement_t) = match e with
   | STMT_whilst (s,_,_)
   | STMT_until (s,_,_)
   *)
-  | STMT_abs_decl (s,_,_,_,_,_)
+  | STMT_abs_decl (s,_,_,_,_,_,_)
   | STMT_newtype (s,_,_,_)
   | STMT_instance_type (s,_,_,_)
   | STMT_ctypes (s,_,_,_)

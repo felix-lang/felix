@@ -2881,11 +2881,12 @@ SCHEME """
   (begin ;;(display "\n*********\ntvfixup_folder vsct=")(display vsct)(display ", vtc=")(display vtc)(display "\n")
   (let*
     (
-      (vs (first vsct))
-      (ct (second vsct))
-      (v (first vtc))
+      (vs (first vsct))  ;; variable name
+      (ct (second vsct)) ;; individual constraint
+      (v (first vtc))    ;; 
       (t (second vtc))
       (c (caddr vtc))
+      (variance (cadddr vtc))
       (ct2
         (cond
           ((eq? 'NoConstraint c) ct )
@@ -2914,7 +2915,7 @@ SCHEME """
     ;; (display "\nc=")(display c)
     ;; (display "\nct2=")(display ct2)
     ;; (display "\n")
-    (list (cons `(,v ,t) vs) ct2))
+    (list (cons `(,v ,t ,variance) vs) ct2))
 ))))
 """;
 
@@ -2936,7 +2937,7 @@ SCHEME """
       (ct `((typ_andchain (,rtc ,cs)) ,rtr))
     )
     (begin
-    ;;  (display "vs=")(display vs)
+    ;;  (display "\nvs=")(display vs)
     ;;  (display "\\ncs=")(display cs)
     ;;  (display "\\nrtc=")(display rtc)
     ;;  (display "\\nrtr=")(display rtr)
@@ -4702,7 +4703,7 @@ syntax statements {
   //$ A declarative name consists of an identifier and
   //$ an (optional) type variable specification.
   // note: list is reversed, eg X::Y::name goes to list name, Y, Z
-  sdeclname := sname stvarlist =># "`(,_1 ,_2)";
+  sdeclname := sname stvarlist =># """`(,_1 ,_2)""";
 
   //$ A way to contruct a new abstract type out of an existing type.
   //$ Only two operations are available on this new type:

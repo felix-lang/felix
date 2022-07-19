@@ -733,14 +733,29 @@ and xsimple_parameter_list sr x : simple_parameter_t list =
 
 
 and xplain_vs_list_t sr x : plain_vs_list_t =
-  let ex x = xexpr_t sr x in
   let ki x = kind_of_sex sr x in
   match x with
   | Lst its -> map (function
-    | Lst [id; t] -> xid id, ki t
+    | Lst [id; t; variance] -> xid id, ki t
     | x -> err x "xplain_vs_list"
     ) its
   | x -> err x "xplain_vs_list"
+
+and xvariance x : variance_t = 
+  match x with
+  | Id "covariant" -> `covariant
+  | Id "invariant" -> `invariant
+  | Id "contravariant" -> `contravariant
+  | x -> err x "xvariance"
+
+and xvariance_list_t sr x : variance_list_t =
+  match x with
+  | Lst [Lst its; _] -> map (function
+    | Lst [id; t; variance] -> xvariance variance 
+    | x -> err x "xvariance_list_t<component>"
+    ) its
+  | x -> err x "xvariance_list_t<notlist>"
+
 
 and xvs_list_t sr x : vs_list_t =
 (*
@@ -1303,7 +1318,7 @@ print_endline ("Type alias " ^ xid id ^ " flx   = " ^ Flx_print. string_of_typec
       STMT_virtual_type (sr, xid id)
 
   | Lst [Id "ast_abs_decl"; sr; id; vs; tqs; ct; req] -> let sr = xsr sr in 
-      STMT_abs_decl (sr, xid id, xvs sr vs, xtqs sr tqs, xc sr ct, xrr sr req)
+      STMT_abs_decl (sr, xid id, xvs sr vs, xtqs sr tqs, xc sr ct, xrr sr req, xvariance_list_t sr vs)
 
   | Lst [Id "ast_ctypes"; sr; Lst ids; tqs; req] -> let sr = xsr sr in 
       let ids = map (fun id -> sr, xid id) ids in
@@ -1632,10 +1647,10 @@ and bind_objc_class_interface sr stuff reqs :Flx_ast.statement_t =
 
     (* BIND CLASS TYPE *)
     let proxy_name = "_derefproxy_" ^ classname in
-    let class_type = STMT_abs_decl (sr, classname, Flx_ast.dfltvs, [], Str (classname^ "*"), reqs) in 
+    let class_type = STMT_abs_decl (sr, classname, Flx_ast.dfltvs, [], Str (classname^ "*"), reqs,[]) in 
 
     (* because stupid Felix gives a typedef .. even though the type is never used .. we give it a real type name *)
-    let derefproxy_type = STMT_abs_decl (sr, proxy_name, Flx_ast.dfltvs, [], Str ("void"), reqs) in 
+    let derefproxy_type = STMT_abs_decl (sr, proxy_name, Flx_ast.dfltvs, [], Str ("void"), reqs,[]) in 
 
     (* OVERLOAD DEREF OPERATOR *)
     let deref_operator = STMT_fun_decl (sr,"deref",dfltvs,[`TYP_name (sr, classname, []) ],`TYP_name (sr, proxy_name,[]),CS.Str_template "$1",reqs,"") in
@@ -1730,7 +1745,7 @@ and bind_objc_protocol_interface sr stuff reqs :Flx_ast.statement_t =
     print_endline ("Objc Protocol " ^ classname);
 
     (* A protocol is an incomplete type, so we just use C struct tag for the binding *)
-    let class_type = STMT_abs_decl (sr, classname, Flx_ast.dfltvs, [], Str ("struct " ^ classname^ "*"), reqs) in  
+    let class_type = STMT_abs_decl (sr, classname, Flx_ast.dfltvs, [], Str ("struct " ^ classname^ "*"), reqs,[]) in  
     let protocols = 
       match protocol_reference_list with
       | Lst [Lst names] ->

@@ -881,14 +881,15 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
         dfltvs,
         qs,
         Flx_code_spec.Str ("::"^id),
-        rqmap sr reqs)
+        rqmap sr reqs,
+        [])
       in
       tack st
     )
     ids
 
-  | STMT_abs_decl (sr,id,vs,typs,v,rqs) ->
-    tack (STMT_abs_decl (sr,mi sr id,vs,typs,v, rqmap sr rqs))
+  | STMT_abs_decl (sr,id,vs,typs,v,rqs,variance) ->
+    tack (STMT_abs_decl (sr,mi sr id,vs,typs,v, rqmap sr rqs, variance))
 
   | STMT_newtype (sr,id,vs,t) ->
     tack (STMT_newtype (sr,mi sr id,vs,mt sr t))

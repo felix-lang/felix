@@ -1603,7 +1603,7 @@ and string_of_statement level s =
     string_of_raw_reqs reqs ^
     ";"
 
-  | STMT_abs_decl (_,t,vs, quals, ct, reqs) -> spaces level ^
+  | STMT_abs_decl (_,t,vs, quals, ct, reqs, variance) -> spaces level ^
     (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
     "type " ^ string_of_id t ^ string_of_vs vs ^
     " = " ^ string_of_code_spec ct ^

@@ -297,7 +297,12 @@ print_endline ("Translating Lazy Declaration " ^ name);
     :: dcls
 
   (* types *)
-  | STMT_abs_decl (sr,name,vs,quals,s, reqs) ->
+  | STMT_abs_decl (sr,name,vs,quals,s, reqs,variance) ->
+    let allinvariant = List.fold_left (fun acc v -> match v with `invariant -> acc | _ -> false) true variance in
+    if not allinvariant then
+      print_endline ("Variance " ^ name ^ " = " ^ String.concat "," (List.map 
+       (function | `invariant -> "!" | `covariant -> "+" | `contravariant -> "-") variance));
+
     let index,quals',props,dcls, reqs = Flx_reqs.mkreqs state access parent_ts sr reqs in
     Dcl (sr,name,index,access,vs,DCL_abs (quals' @ quals,s,Flx_reqs.map_reqs rqname' sr reqs))
     :: dcls
