@@ -98,8 +98,8 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
       begin match get_data state.sym_table index with
       { Flx_sym.id=id; symdef=entry } ->
         begin match entry with
-        | SYMDEF_cstruct (cs,_) -> t1, `None
-        | SYMDEF_struct (cs) -> t1, `None
+        | SYMDEF_cstruct (cs,_,_) -> t1, `None
+        | SYMDEF_struct (cs,_) -> t1, `None
         | _ ->
           clierrx "[flx_bind/flx_lookup.ml:2193: E112] " sr
           (

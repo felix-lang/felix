@@ -535,18 +535,24 @@ and statement_t =
       Flx_srcref.t *
       Flx_id.t *
       vs_list_t *
-      (Flx_id.t * int option * vs_list_t * typecode_t * typecode_t option) list
+      (Flx_id.t * int option * vs_list_t * typecode_t * typecode_t option) list *
+      variance_list_t (* corresponding to vs_list *)
+       
   | STMT_struct of
       Flx_srcref.t *
       Flx_id.t *
       vs_list_t *
-      (Flx_id.t * typecode_t) list
+      (Flx_id.t * typecode_t) list *
+      variance_list_t (* corresponding to vs_list *)
+
   | STMT_cstruct of
       Flx_srcref.t *
       Flx_id.t *
       vs_list_t *
       (Flx_id.t * typecode_t) list *
-      raw_req_expr_t
+      raw_req_expr_t *
+      variance_list_t (* corresponding to vs_list *)
+
   | STMT_type_alias of Flx_srcref.t * Flx_id.t * vs_list_t * typecode_t
   | STMT_type_function of Flx_srcref.t * Flx_id.t * ks_list_t * typecode_t
   | STMT_inherit of Flx_srcref.t * Flx_id.t * vs_list_t * qualified_name_t
@@ -980,9 +986,9 @@ let src_of_stmt (e : statement_t) = match e with
   | STMT_insert (s,_,_,_,_,_)
   | STMT_code (s,_,_)
   | STMT_noreturn_code (s,_,_)
-  | STMT_union (s, _,_,_)
-  | STMT_struct (s,_,_,_)
-  | STMT_cstruct (s,_,_,_,_)
+  | STMT_union (s, _,_,_,_)
+  | STMT_struct (s,_,_,_,_)
+  | STMT_cstruct (s,_,_,_,_,_)
   | STMT_typeclass (s,_,_,_)
   | STMT_begin_typeclass (s,_,_)
   | STMT_instance (s,_,_,_)

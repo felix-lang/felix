@@ -37,11 +37,11 @@ let rec get_encoder' syms bsym_table p typ : string list =
         ("get_encoder'] can't find index " ^ string_of_bid i)
     in
     begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_union (vs,idts) ->
+    | BBDCL_union (vs,idts,_) ->
       ["b+=::flx::gc::generic::blit("^p^",sizeof("^tname^")); // union"]
 
-    | BBDCL_cstruct (vs, idts,_) (* this is NOT really correct ... *)
-    | BBDCL_struct (vs,idts) ->
+    | BBDCL_cstruct (vs, idts,_,_) (* this is NOT really correct ... *)
+    | BBDCL_struct (vs,idts,_) ->
       let varmap = mk_varmap (Flx_bsym.sr bsym) vs ts in
       let idts = map (fun (s,t) -> s,varmap_subst varmap t) idts in
       let n = ref 0 in
@@ -54,7 +54,7 @@ let rec get_encoder' syms bsym_table p typ : string list =
       idts
       )
 
-    | BBDCL_external_type (_,quals,_,_) ->
+    | BBDCL_external_type (_,quals,_,_,_) ->
       let encoder = 
          try 
           List.iter (fun q-> match q with | `Encoder cs -> raise (Scanner cs) | _ -> () ) quals; 
@@ -129,11 +129,11 @@ let rec get_decoder' syms bsym_table p typ : string list =
         ("get_decoder'] can't find index " ^ string_of_bid i)
     in
     begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_union (vs,idts) ->
+    | BBDCL_union (vs,idts,_) ->
       ["i=::flx::gc::generic::blit("^p^",sizeof("^tname^"),s,i); // union"]
 
-    | BBDCL_cstruct (vs, idts,_) (* this is NOT really correct ... *)
-    | BBDCL_struct (vs,idts) ->
+    | BBDCL_cstruct (vs, idts,_,_) (* this is NOT really correct ... *)
+    | BBDCL_struct (vs,idts,_) ->
       let varmap = mk_varmap (Flx_bsym.sr bsym) vs ts in
       let idts = map (fun (s,t) -> s,varmap_subst varmap t) idts in
       let n = ref 0 in
@@ -146,7 +146,7 @@ let rec get_decoder' syms bsym_table p typ : string list =
       idts
       )
 
-    | BBDCL_external_type (_,quals,_,_) ->
+    | BBDCL_external_type (_,quals,_,_,_) ->
       let decoder = 
          try 
           List.iter (fun q-> match q with | `Decoder cs -> raise (Scanner cs) | _ -> () ) quals; 

@@ -59,9 +59,9 @@ let strip_reqs bsym_table rs = strip_reqs' bsym_table [] rs
 let strip_bbdcl bsym_table bbdcl =
   let f_breqs rs = strip_reqs bsym_table rs in
   match bbdcl with
-  | BBDCL_external_type (a,b,c,breqs) ->
+  | BBDCL_external_type (a,b,c,breqs,variance) ->
       let breqs = f_breqs breqs in
-      bbdcl_external_type (a,b,c,breqs)
+      bbdcl_external_type (a,b,c,breqs,variance)
 
   | BBDCL_external_const (a,b,c,d,breqs) ->
       let breqs = f_breqs breqs in
@@ -75,9 +75,9 @@ let strip_bbdcl bsym_table bbdcl =
       let breqs = f_breqs breqs in
       bbdcl_external_code (a,b,c,breqs)
 
-  | BBDCL_cstruct (a,b,breqs) ->
+  | BBDCL_cstruct (a,b,breqs,variance) ->
       let breqs = f_breqs breqs in
-       bbdcl_cstruct (a,b,breqs)
+       bbdcl_cstruct (a,b,breqs,variance)
 
   | _ -> bbdcl
 
@@ -89,3 +89,4 @@ print_endline ("Flx_breqs: simplify");
      Flx_bsym_table.update_bbdcl bsym_table bid bbdcl
   ) 
   bsym_table 
+

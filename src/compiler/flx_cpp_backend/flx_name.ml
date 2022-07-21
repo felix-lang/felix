@@ -378,8 +378,8 @@ print_endline ("[flx_name] One component union should have been removed");
        * here in some cases, instead of the name the generator makes, but
        * we have no way to propagate a flag saying "use this name".
        *)
-      | BBDCL_external_type (_,_,CS.Str cname,_)
-      | BBDCL_external_type (_,_,CS.Str_template cname,_)
+      | BBDCL_external_type (_,_,CS.Str cname,_,_)
+      | BBDCL_external_type (_,_,CS.Str_template cname,_,_)
          when cname = fname -> cname
 
       | bbdcl ->
@@ -507,7 +507,7 @@ and cpp_structure_name syms bsym_table t =
     in
     begin match bbdcl with 
     (* should have been removed by strabs *)
-    | BBDCL_union (vs, [id,n,[],t',_,false]) -> assert false
+    | BBDCL_union (vs, [id,n,[],t',_,false],_) -> assert false
 (*
       let t'' = tsubst sr vs ts t' in
       cpp_type_classname syms bsym_table t''
@@ -526,8 +526,8 @@ and cpp_structure_name syms bsym_table t =
     if ts = [] then
       match bbdcl with
       | BBDCL_cstruct _ -> fname
-      | BBDCL_external_type (_,_,CS.Str cname,_)
-      | BBDCL_external_type (_,_,CS.Str_template cname,_)
+      | BBDCL_external_type (_,_,CS.Str cname,_,_)
+      | BBDCL_external_type (_,_,CS.Str_template cname,_,_)
          when cname = fname -> cname
 
       | bbdcl ->

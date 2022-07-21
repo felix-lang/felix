@@ -26,12 +26,12 @@ let rec shape_of' use_assoc_type syms bsym_table tn t =
   | BTYP_inst (`Nominal, i,ts,_) ->
     let bsym = Flx_bsym_table.find bsym_table i in
     begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_union (vs,[id,n,[],t',_,false]) -> 
+    | BBDCL_union (vs,[id,n,[],t',_,false],_) -> 
 print_endline ("[flx_pgen] One component union should have been removed");
       let t'' = tsubst (Flx_bsym.sr bsym) vs ts t' in
       shape_of' use_assoc_type syms bsym_table tn t''
 
-    | BBDCL_union (vs,idts) ->
+    | BBDCL_union (vs,idts,_) ->
       begin match Flx_vrep.cal_variant_rep bsym_table t with
       | Flx_vrep.VR_self -> assert false
       | Flx_vrep.VR_clt -> "::flx::rtl::_int_ptr_map"
@@ -53,7 +53,7 @@ print_endline ("[flx_pgen] One component union should have been removed");
      * be used to generate such an expression (the shape use by the compiler will
      * be the pointer's shape in this case).
      *)
-    | BBDCL_external_type (bvs,bquals,ct,breqs) ->
+    | BBDCL_external_type (bvs,bquals,ct,breqs,_) ->
       if use_assoc_type then
         let get_assoc_type bqual = 
            match bqual with 

@@ -7,8 +7,8 @@ let cal_struct_apply_to_record
   rs sr f (ea, ta as a) i ts' 
 =
   let id,vs,fls = match Flx_lookup_state.hfind "lookup" state.Flx_lookup_state.sym_table i with
-    | { Flx_sym.id=id; vs=vs; symdef=Flx_types.SYMDEF_struct ls }
-    | { Flx_sym.id=id; vs=vs; symdef=Flx_types.SYMDEF_cstruct (ls,_) } -> id,vs,ls
+    | { Flx_sym.id=id; vs=vs; symdef=Flx_types.SYMDEF_struct (ls,_) }
+    | { Flx_sym.id=id; vs=vs; symdef=Flx_types.SYMDEF_cstruct (ls,_,_) } -> id,vs,ls
     | _ -> assert false
   in
   let cmp (s1,t1) (s2, t2) = compare s1 s2 in

@@ -44,7 +44,7 @@ type t =
   | BBDCL_type_alias of bvs_t * Flx_btype.t
   | BBDCL_instance_type of    bvs_t * Flx_btype.t
   | BBDCL_external_type of
-                        bvs_t * btype_qual_t list * CS.t * Flx_btype.breqs_t
+                        bvs_t * btype_qual_t list * CS.t * Flx_btype.breqs_t * variance_list_t
   | BBDCL_external_const of
                         property_t list * bvs_t * Flx_btype.t * CS.t *
                         Flx_btype.breqs_t
@@ -54,9 +54,9 @@ type t =
   | BBDCL_external_code of
                         bvs_t * CS.t * ikind_t * Flx_btype.breqs_t
 
-  | BBDCL_union of      bvs_t * (Flx_id.t * int * bvs_t * Flx_btype.t * Flx_btype.t * bool) list 
-  | BBDCL_struct of     bvs_t * (Flx_id.t * Flx_btype.t) list
-  | BBDCL_cstruct of    bvs_t * (Flx_id.t * Flx_btype.t) list * Flx_btype.breqs_t
+  | BBDCL_union of      bvs_t * (Flx_id.t * int * bvs_t * Flx_btype.t * Flx_btype.t * bool) list * variance_list_t
+  | BBDCL_struct of     bvs_t * (Flx_id.t * Flx_btype.t) list * variance_list_t
+  | BBDCL_cstruct of    bvs_t * (Flx_id.t * Flx_btype.t) list * Flx_btype.breqs_t * variance_list_t
   | BBDCL_typeclass of  property_t list * bvs_t
   | BBDCL_instance of   property_t list *
                         bvs_t *
@@ -108,8 +108,8 @@ let bbdcl_instance_type (bvs, t) =
 let bbdcl_type_function (bks, t) =
   BBDCL_type_function (bks, t)
 
-let bbdcl_external_type (bvs, quals, code, breqs) =
-  BBDCL_external_type (bvs, quals, code, breqs)
+let bbdcl_external_type (bvs, quals, code, breqs, variance) =
+  BBDCL_external_type (bvs, quals, code, breqs, variance)
 
 let bbdcl_external_const (prop, bvs, t, code, breqs) =
   BBDCL_external_const (prop, bvs, t, code, breqs)
@@ -120,14 +120,14 @@ let bbdcl_external_fun (prop, bvs, ps, rt, breqs, prec, kind) =
 let bbdcl_external_code (bvs, code, ikind, breqs) =
   BBDCL_external_code (bvs, code, ikind, breqs)
 
-let bbdcl_union (bvs, cs) =
-  BBDCL_union (bvs, cs)
+let bbdcl_union (bvs, cs, variance) =
+  BBDCL_union (bvs, cs, variance)
 
-let bbdcl_struct (bvs, cs) =
-  BBDCL_struct (bvs, cs)
+let bbdcl_struct (bvs, cs, variance) =
+  BBDCL_struct (bvs, cs, variance)
 
-let bbdcl_cstruct (bvs, cs, breqs) =
-  BBDCL_cstruct (bvs, cs, breqs)
+let bbdcl_cstruct (bvs, cs, breqs, variance) =
+  BBDCL_cstruct (bvs, cs, breqs, variance)
 
 let bbdcl_typeclass (prop, bvs) =
   BBDCL_typeclass (prop, bvs)
@@ -177,13 +177,13 @@ let get_bvs = function
   | BBDCL_newtype (bvs, _) -> bvs
   | BBDCL_type_alias (bvs, _) -> bvs
   | BBDCL_instance_type (bvs, _) -> bvs
-  | BBDCL_external_type (bvs, _, _, _) -> bvs
+  | BBDCL_external_type (bvs, _, _, _, _) -> bvs
   | BBDCL_external_const (_, bvs, _, _, _) -> bvs
   | BBDCL_external_fun (_, bvs, _, _, _, _, _) -> bvs
   | BBDCL_external_code (bvs, _, _, _) -> bvs
-  | BBDCL_union (bvs, _) -> bvs
-  | BBDCL_struct (bvs, _) -> bvs
-  | BBDCL_cstruct (bvs, _,_) -> bvs
+  | BBDCL_union (bvs, _,_) -> bvs
+  | BBDCL_struct (bvs, _,_) -> bvs
+  | BBDCL_cstruct (bvs, _,_,_) -> bvs
   | BBDCL_typeclass (_, bvs) -> bvs
   | BBDCL_instance (_, bvs, _, _, _) -> bvs
   | BBDCL_const_ctor (bvs, _, _, _, _, _) -> bvs
@@ -247,7 +247,7 @@ let iter
   | BBDCL_type_alias (_,t) -> f_btype t
   | BBDCL_type_function (_,t) -> f_btype t
   | BBDCL_instance_type (_,t) -> f_btype t
-  | BBDCL_external_type (_,quals,_,breqs) ->
+  | BBDCL_external_type (_,quals,_,breqs,_) ->
       List.iter f_btype_qual quals;
       f_breqs breqs
   | BBDCL_external_const (_,_,t,_,breqs) ->
@@ -263,11 +263,11 @@ let iter
       f_breqs breqs
   | BBDCL_external_code (_,_,_,breqs) ->
       f_breqs breqs
-  | BBDCL_union (_,cs) ->
+  | BBDCL_union (_,cs,_) ->
       List.iter (fun (_,_,evs,d,c,_) -> f_btype d; f_btype c) cs
-  | BBDCL_struct (_,cs) ->
+  | BBDCL_struct (_,cs,_) ->
       List.iter (fun (n,t) -> f_btype t) cs
-  | BBDCL_cstruct (_,cs,breqs) ->
+  | BBDCL_cstruct (_,cs,breqs,_) ->
       List.iter (fun (n,t) -> f_btype t) cs;
       f_breqs breqs
   | BBDCL_typeclass (_,_) -> ()
@@ -326,8 +326,8 @@ let map
   | BBDCL_instance_type (bvs,t) -> BBDCL_instance_type (bvs,f_btype t)
   | BBDCL_virtual_type bvs -> BBDCL_virtual_type bvs
 
-  | BBDCL_external_type (bvs,quals,code,breqs) ->
-      BBDCL_external_type (bvs,List.map f_btype_qual quals,code,f_breqs breqs)
+  | BBDCL_external_type (bvs,quals,code,breqs,variance) ->
+      BBDCL_external_type (bvs,List.map f_btype_qual quals,code,f_breqs breqs,variance)
   | BBDCL_external_const (props,bvs,t,code,breqs) ->
       BBDCL_external_const (props,bvs,f_btype t,code,f_breqs breqs)
   | BBDCL_external_fun (props,bvs,ps,rt,breqs,prec,kind) ->
@@ -344,12 +344,12 @@ let map
         end)
   | BBDCL_external_code (bvs,code,ikind,breqs) ->
       BBDCL_external_code (bvs,code,ikind,f_breqs breqs)
-  | BBDCL_union (bvs,cs) ->
-      BBDCL_union (bvs,List.map (fun (n,i,evs,d,c,gadt) -> n,i,evs,f_btype d,f_btype c,gadt) cs)
-  | BBDCL_struct (bvs,cs) ->
-      BBDCL_struct (bvs,List.map (fun (n,t) -> n,f_btype t) cs)
-  | BBDCL_cstruct (bvs,cs, breqs) ->
-      BBDCL_cstruct (bvs,List.map (fun (n,t) -> n,f_btype t) cs, f_breqs breqs)
+  | BBDCL_union (bvs,cs,variance) ->
+      BBDCL_union (bvs,List.map (fun (n,i,evs,d,c,gadt) -> n,i,evs,f_btype d,f_btype c,gadt) cs,variance)
+  | BBDCL_struct (bvs,cs,variance) ->
+      BBDCL_struct (bvs,List.map (fun (n,t) -> n,f_btype t) cs,variance)
+  | BBDCL_cstruct (bvs,cs, breqs,variance) ->
+      BBDCL_cstruct (bvs,List.map (fun (n,t) -> n,f_btype t) cs, f_breqs breqs,variance)
   | BBDCL_typeclass (props,bvs) -> bbdcl
   | BBDCL_instance (props,bvs,cons,bid,ts) ->
       BBDCL_instance (
@@ -407,7 +407,7 @@ let iter_uses f bbdcl =
       f_btype res;
       f_btype effects
 
-  | BBDCL_external_type (_,quals,_,breqs) ->
+  | BBDCL_external_type (_,quals,_,breqs, variance) ->
       List.iter f_btype_qual quals;
       f_breqs breqs
   | BBDCL_external_const (_,_,t,_,breqs) ->
@@ -423,7 +423,7 @@ let iter_uses f bbdcl =
       end
   | BBDCL_external_code (_,_,_,breqs) ->
       f_breqs breqs
-  | BBDCL_cstruct (_,_,breqs) ->
+  | BBDCL_cstruct (_,_,breqs,variance) ->
       f_breqs breqs
 
   | _ ->

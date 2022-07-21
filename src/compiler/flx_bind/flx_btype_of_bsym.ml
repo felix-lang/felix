@@ -57,10 +57,10 @@ let btype_of_bsym state bsym_table sr bt bid bsym =
   | BBDCL_external_fun (_,_,params,return_type,_,_,_) ->
       btyp_function (btyp_tuple params, return_type)
   | BBDCL_external_code _ -> assert false
-  | BBDCL_union (_,ls) ->
+  | BBDCL_union (_,ls,variance) ->
       btyp_variant (List.map (fun (n,_,evs,d,c,gadt) -> n,d) ls)
-  | BBDCL_struct (_,ls)
-  | BBDCL_cstruct (_,ls,_) ->
+  | BBDCL_struct (_,ls,variance)
+  | BBDCL_cstruct (_,ls,_,variance) ->
 (*
 print_endline "Type of struct, considered as constructor function";
 *)

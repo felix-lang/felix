@@ -268,11 +268,11 @@ print_endline "Type has fun reached recursion limit, polymorphic recursion?";
         begin match Flx_bsym.bbdcl bsym with
         | BBDCL_newtype _ -> () (* FIXME *)
         | BBDCL_external_type _ -> ()
-        | BBDCL_union (vs,cs)->
+        | BBDCL_union (vs,cs,variant)->
           check_components (Flx_bsym.sr bsym) vs ts (map (fun (_,_,evs,d,c,gadt)->d) cs)
 
-        | BBDCL_cstruct (vs,cs,_)
-        | BBDCL_struct (vs,cs) ->
+        | BBDCL_cstruct (vs,cs,_,variant)
+        | BBDCL_struct (vs,cs,variant) ->
           check_components (Flx_bsym.sr bsym) vs ts (map snd cs)
 
         | _ -> assert false
@@ -327,11 +327,11 @@ print_endline "Type has ptr reached recursion limit, polymorphic recursion?";
         begin match Flx_bsym.bbdcl bsym with
         | BBDCL_newtype _ -> () (* FIXME *)
         | BBDCL_external_type _ -> ()
-        | BBDCL_union (vs,cs)->
+        | BBDCL_union (vs,cs,variant)->
           check_components (Flx_bsym.sr bsym) vs ts (map (fun (_,_,evs,d,c,gadt)->d) cs)
 
-        | BBDCL_cstruct (vs,cs,_)
-        | BBDCL_struct (vs,cs) ->
+        | BBDCL_cstruct (vs,cs,_,variant)
+        | BBDCL_struct (vs,cs,variant) ->
           check_components (Flx_bsym.sr bsym) vs ts (map snd cs)
 
         | _ -> assert false

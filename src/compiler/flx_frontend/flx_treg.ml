@@ -301,7 +301,7 @@ print_endline ("Instance type, registering argument ts=" ^ catmap "," (sbt bsym_
       rr r';
       rnr t
 
-    | BBDCL_union (vs,cs) ->
+    | BBDCL_union (vs,cs,variance) ->
 (*
 print_endline ("Register type r: union -----------" ^ Flx_bsym.id bsym);
 print_endline ("vs len = " ^ si (List.length vs));
@@ -312,15 +312,15 @@ print_endline ("ts len = " ^ si (List.length ts));
       iter (add_weak weak) cts;
       rnr t
 
-    | BBDCL_cstruct (vs,cs,_)
-    | BBDCL_struct (vs,cs) ->
+    | BBDCL_cstruct (vs,cs,_,variance)
+    | BBDCL_struct (vs,cs,variance) ->
       ui i ts;
       let cts = map snd cs in
       let cts = map (tsubst (Flx_bsym.sr bsym) vs ts) cts in
       iter rr cts;
       rnr t
 
-    | BBDCL_external_type (vs,bquals,_,_)  -> 
+    | BBDCL_external_type (vs,bquals,_,_,variance)  -> 
      (* instantiate the type too *)
 (*
 print_endline ("External primitive instance, registering base " ^ si i);

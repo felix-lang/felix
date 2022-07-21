@@ -229,7 +229,7 @@ end;
         Flx_bsym_table.update_bbdcl nutab closure_bid bbdcl;
         bexpr_closure t (closure_bid, [])
 
-      | BBDCL_struct (vs,ps) ->
+      | BBDCL_struct (vs,ps,variance) ->
 (*
         print_endline ("in exe=" ^ sbx exe ^ "\nStruct passed as argument " ^ sbe bsym_table e);
 *)
@@ -257,7 +257,7 @@ print_endline ("Struct wrapper: struct type = " ^ sbt bsym_table ret);
 *)
         bexpr_closure t (closure_bid, [])
 
-      | BBDCL_cstruct (vs,ps,_) ->
+      | BBDCL_cstruct (vs,ps,_,variance) ->
 (*
         print_endline ("in exe=" ^ sbx exe ^ "\nCstruct passed as argument " ^ sbe bsym_table e);
 *)

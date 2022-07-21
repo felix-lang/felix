@@ -228,8 +228,8 @@ print_endline ("_strr Variant type " ^ Flx_print.sbt bsym_table t);
 print_endline ("Strr on nominal type");
 *)
       begin match Flx_lookup_state.hfind "lookup:_strr" sym_table i with
-      | { Flx_sym.id=name; Flx_sym.vs=(vs,_); Flx_sym.symdef=Flx_types.SYMDEF_struct ls } 
-      | { Flx_sym.id=name; Flx_sym.vs=(vs,_); Flx_sym.symdef=Flx_types.SYMDEF_cstruct (ls,_) } -> 
+      | { Flx_sym.id=name; Flx_sym.vs=(vs,_); Flx_sym.symdef=Flx_types.SYMDEF_struct (ls,_) } 
+      | { Flx_sym.id=name; Flx_sym.vs=(vs,_); Flx_sym.symdef=Flx_types.SYMDEF_cstruct (ls,_,_) } -> 
         let first = ref true in
         let e = cats (
           List.fold_left (fun acc (s,_) -> 
@@ -242,7 +242,7 @@ print_endline ("Strr on nominal type");
           ) (mks "}") 
         in 
         be rs e
-      | { Flx_sym.id=name; Flx_sym.vs=(vs,_); Flx_sym.symdef=Flx_types.SYMDEF_union ls } -> 
+      | { Flx_sym.id=name; Flx_sym.vs=(vs,_); Flx_sym.symdef=Flx_types.SYMDEF_union (ls,_) } -> 
 (*
 print_endline ("Strr on union " ^ name);
 *)

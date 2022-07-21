@@ -754,7 +754,7 @@ print_endline ("Flx_bbind: Adding type of index " ^ si symbol_index ^ " to cache
       prec,
       `Callback (ts_c,client_data_pos)))
 
-  | SYMDEF_union (cs) ->
+  | SYMDEF_union (cs,variance) ->
     if state.print_flag then
       print_endline ("//Binding union " ^ si symbol_index ^ " --> " ^ sym.Flx_sym.id);
     let ut = btyp_inst ( `Nominal,
@@ -767,20 +767,20 @@ print_endline ("Flx_bbind: Adding type of index " ^ si symbol_index ^ " to cache
       n, v, evs, bt d, bt c, gadt
     ) cs 
     in
-    add_bsym None (bbdcl_union (bvs, cs'))
+    add_bsym None (bbdcl_union (bvs, cs',variance))
 
-  | SYMDEF_struct cs ->
+  | SYMDEF_struct (cs,variance) ->
     if state.print_flag then 
       print_endline ("//Binding struct " ^ si symbol_index ^ " --> " ^ sym.Flx_sym.id);
     let cs' = List.map (fun (n,t) -> n, bt t) cs in
-    add_bsym None (bbdcl_struct (bvs, cs'))
+    add_bsym None (bbdcl_struct (bvs, cs',variance))
 
-  | SYMDEF_cstruct (cs,reqs) ->
+  | SYMDEF_cstruct (cs,reqs,variance) ->
     if state.print_flag then 
       print_endline ("//Binding cstruct " ^ si symbol_index ^ " --> " ^ sym.Flx_sym.id);
     let cs' = List.map (fun (n,t) -> n, bt t) cs in
     let breqs = bind_reqs reqs in 
-    add_bsym None (bbdcl_cstruct (bvs, cs', breqs))
+    add_bsym None (bbdcl_cstruct (bvs, cs', breqs,variance))
 
   | SYMDEF_instance qn ->
     (*
@@ -814,12 +814,12 @@ print_endline (" &&&&&& SYMDEF_instance calling BBIND_SYMBOL");
   | SYMDEF_inherit _ -> ()
   | SYMDEF_inherit_fun _ -> ()
 
-  | SYMDEF_abs (quals,ct,reqs)->
+  | SYMDEF_abs (quals,ct,reqs,variance)->
     if state.print_flag then
       print_endline ("//Binding abstract primitive type " ^ si symbol_index ^ " ->  " ^ sym.Flx_sym.id);
     let reqs = bind_reqs reqs in
     let bquals = bind_quals quals in
-    add_bsym None (bbdcl_external_type (bvs, bquals, ct, reqs))
+    add_bsym None (bbdcl_external_type (bvs, bquals, ct, reqs,variance))
 
   | SYMDEF_newtype t ->
     let t = bt t in

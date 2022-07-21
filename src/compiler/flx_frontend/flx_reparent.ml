@@ -246,16 +246,16 @@ let reparent1
   | BBDCL_val (vs,t,kind) ->
     update_bsym (bbdcl_val (vs,t,kind))
 
-  | BBDCL_external_type (vs,quals,ct,breqs) ->
+  | BBDCL_external_type (vs,quals,ct,breqs,variance) ->
     let breqs = rreqs breqs in
-    update_bsym (bbdcl_external_type (vs,quals,ct,breqs));
+    update_bsym (bbdcl_external_type (vs,quals,ct,breqs,variance));
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
     Hashtbl.add uses k calls
 
-  | BBDCL_cstruct (vs,ps,breqs) ->
+  | BBDCL_cstruct (vs,ps,breqs,variance) ->
     let breqs = rreqs breqs in
-    update_bsym (bbdcl_cstruct (vs,ps,breqs));
+    update_bsym (bbdcl_cstruct (vs,ps,breqs,variance));
     let calls = try Hashtbl.find uses index with Not_found -> [] in
     let calls = map (fun (j,sr) -> revar j,sr) calls in
     Hashtbl.add uses k calls

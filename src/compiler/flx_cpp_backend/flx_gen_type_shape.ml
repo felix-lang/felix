@@ -141,7 +141,7 @@ print_endline ("NOMINAL TYPE " ^ sbt bsym_table btyp);
             string_of_bid i)
       in
       begin match Flx_bsym.bbdcl bsym with
-      | BBDCL_external_type (_,quals,_,_) ->
+      | BBDCL_external_type (_,quals,_,_,_) ->
         let is_functor = mem (`TypeTag "functor") quals && List.length ts > 0 in 
         let complete = not (mem `Incomplete quals) in
         let copyable = not (mem `Uncopyable quals) && complete in
@@ -249,7 +249,7 @@ print_endline ("NOMINAL TYPE " ^ sbt bsym_table btyp);
           clierrx "[flx_cpp_backend/flx_ogen.ml:285: E311] " (Flx_bsym.sr bsym)
           ("[ogen] attempt to allocate an incomplete type: '" ^ Flx_bsym.id bsym ^"'")
 
-      | BBDCL_union (vs,[id,n,[],t',_,_]) -> 
+      | BBDCL_union (vs,[id,n,[],t',_,_],_) -> 
 print_endline ("[flx_ogen] One component union should have been removed");
 print_endline ("\n//One component union TYPE " ^ name ^" ctor name = "^id^
 " index=" ^ si n^ 
@@ -264,7 +264,7 @@ bcat s ("\n//UNION TYPE " ^ name ^"\n");
         
       | BBDCL_union _ -> () (* handled by universal uctor, int, etc *) 
 
-      | BBDCL_cstruct (vs,cps, reqs) ->
+      | BBDCL_cstruct (vs,cps, reqs,_) ->
         (* cstruct shouldn't have allocable stuff in it *)
 
         let this_ptr_map = name ^ "_ptr_map" in
@@ -296,7 +296,7 @@ bcat s ("\n//UNION TYPE " ^ name ^"\n");
         ;
         bcat s "};\n"
 
-      | BBDCL_struct (vs,cps) ->
+      | BBDCL_struct (vs,cps,_) ->
         let encoder_name = gen_encoder () in
         let decoder_name = gen_decoder () in
         let oname = "&" ^ ( gen_first_class ()) in

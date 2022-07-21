@@ -39,7 +39,7 @@ type t = private
   | BBDCL_type_alias of bvs_t * Flx_btype.t
   | BBDCL_instance_type of    bvs_t * Flx_btype.t
   | BBDCL_external_type of
-                        bvs_t * btype_qual_t list * Flx_code_spec.t * Flx_btype.breqs_t
+                        bvs_t * btype_qual_t list * Flx_code_spec.t * Flx_btype.breqs_t * variance_list_t
   | BBDCL_external_const of
                         property_t list * bvs_t * Flx_btype.t * Flx_code_spec.t *
                         Flx_btype.breqs_t
@@ -49,9 +49,9 @@ type t = private
   | BBDCL_external_code of
                         bvs_t * Flx_code_spec.t * ikind_t * Flx_btype.breqs_t
 
-  | BBDCL_union of      bvs_t * (Flx_id.t * int * bvs_t * Flx_btype.t * Flx_btype.t * bool) list
-  | BBDCL_struct of     bvs_t * (Flx_id.t * Flx_btype.t) list
-  | BBDCL_cstruct of    bvs_t * (Flx_id.t * Flx_btype.t) list * Flx_btype.breqs_t
+  | BBDCL_union of      bvs_t * (Flx_id.t * int * bvs_t * Flx_btype.t * Flx_btype.t * bool) list * variance_list_t
+  | BBDCL_struct of     bvs_t * (Flx_id.t * Flx_btype.t) list * variance_list_t
+  | BBDCL_cstruct of    bvs_t * (Flx_id.t * Flx_btype.t) list * Flx_btype.breqs_t * variance_list_t
   | BBDCL_typeclass of  property_t list * bvs_t
   | BBDCL_instance of   property_t list *
                         bvs_t *
@@ -81,7 +81,7 @@ val bbdcl_val : bvs_t * Flx_btype.t * value_kind_t -> t
 val bbdcl_newtype : bvs_t * Flx_btype.t -> t
 val bbdcl_type_alias : bvs_t * Flx_btype.t -> t
 val bbdcl_instance_type : bvs_t * Flx_btype.t -> t
-val bbdcl_external_type : bvs_t * btype_qual_t list * Flx_code_spec.t * Flx_btype.breqs_t -> t
+val bbdcl_external_type : bvs_t * btype_qual_t list * Flx_code_spec.t * Flx_btype.breqs_t * variance_list_t -> t
 val bbdcl_external_const :
   property_t list * bvs_t * Flx_btype.t * Flx_code_spec.t * Flx_btype.breqs_t ->
   t
@@ -90,9 +90,9 @@ val bbdcl_external_fun :
     external_fun_kind_t ->
   t
 val bbdcl_external_code : bvs_t * Flx_code_spec.t * ikind_t * Flx_btype.breqs_t -> t
-val bbdcl_union : bvs_t * (Flx_id.t * int * bvs_t * Flx_btype.t * Flx_btype.t * bool) list -> t
-val bbdcl_struct : bvs_t * (Flx_id.t * Flx_btype.t) list -> t
-val bbdcl_cstruct : bvs_t * (Flx_id.t * Flx_btype.t) list * Flx_btype.breqs_t -> t
+val bbdcl_union : bvs_t * (Flx_id.t * int * bvs_t * Flx_btype.t * Flx_btype.t * bool) list * variance_list_t -> t
+val bbdcl_struct : bvs_t * (Flx_id.t * Flx_btype.t) list * variance_list_t -> t
+val bbdcl_cstruct : bvs_t * (Flx_id.t * Flx_btype.t) list * Flx_btype.breqs_t * variance_list_t -> t
 val bbdcl_typeclass : property_t list * bvs_t -> t
 val bbdcl_instance : property_t list * bvs_t * Flx_btype.t * bid_t * Flx_btype.t list -> t
 val bbdcl_const_ctor : bvs_t * bid_t * Flx_btype.t * int * bvs_t * Flx_btype.t -> t

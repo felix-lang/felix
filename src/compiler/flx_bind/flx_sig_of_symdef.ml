@@ -61,11 +61,11 @@ let sig_of_symdef symdef sr name i : typecode_t * typecode_t * ((string * expr_t
     in
     typeof_paramspec_t p,r,paramlist
 
-  | SYMDEF_cstruct (ls, _) ->
+  | SYMDEF_cstruct (ls, _,_) ->
     type_of_list (List.map snd ls), `TYP_index (sr,name,i),
      Some (List.map (fun (p,_) -> p,None) ls)
 
-  | SYMDEF_struct ls ->
+  | SYMDEF_struct (ls,_) ->
     type_of_list (List.map snd ls), `TYP_index (sr,name,i),
      Some (List.map (fun (p,_) -> p,None) ls)
 

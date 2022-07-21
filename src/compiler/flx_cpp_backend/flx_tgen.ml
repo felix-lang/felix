@@ -231,7 +231,7 @@ let rec gen_type_name syms bsym_table (index,typ) =
     in
     let sr = Flx_bsym.sr bsym in
     begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_external_type (vs,quals,ct,_) ->
+    | BBDCL_external_type (vs,quals,ct,_,_) ->
       let complete = not (mem `Incomplete quals) in
       let descr =
         "\n//"^(if complete then "" else "INCOMPLETE ")^
@@ -299,7 +299,7 @@ print_endline ("[flx_tgen] One component union should have been removed");
       let t'' = tsubst sr vs ts t' in
       gen_type_name syms bsym_table (index,t'')
 *)
-    | BBDCL_union (vs,ls) -> ""
+    | BBDCL_union (vs,ls,_) -> ""
 (*
       let descr =
         "\n//UNION " ^ string_of_bid i ^ " INSTANCE " ^
@@ -521,7 +521,7 @@ let rec gen_type syms bsym_table (index,typ) =
     | BBDCL_external_type _ -> ""
     | BBDCL_cstruct _ -> ""
 
-    | BBDCL_struct (vs,cts) ->
+    | BBDCL_struct (vs,cts,_) ->
       let cts = map (fun (name,typ) -> name, tsubst sr vs ts typ) cts in
       let ctss = map (fun (name,typ) -> name, tn typ) cts in
       let name = cn typ in

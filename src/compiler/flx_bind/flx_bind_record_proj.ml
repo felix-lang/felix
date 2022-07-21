@@ -22,8 +22,8 @@ let handle_field_name state bsym_table build_env env rs be bt cal_apply bind_typ
   match Flx_lookup_state.hfind "Flx_bind_record_proj:handle_field_name" state.sym_table i with
 
   (* STRUCT *)
-  | { Flx_sym.id=id; sr=sra; symdef=SYMDEF_struct ls }
-  | { Flx_sym.id=id; sr=sra; symdef=SYMDEF_cstruct (ls,_) } ->
+  | { Flx_sym.id=id; sr=sra; symdef=SYMDEF_struct (ls,_) }
+  | { Flx_sym.id=id; sr=sra; symdef=SYMDEF_cstruct (ls,_,_) } ->
     let _,vs,_ = Flx_generic.find_split_vs state.sym_table bsym_table i in
     let cidx,ct =
       let rec scan i = function

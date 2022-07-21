@@ -152,7 +152,7 @@ print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index
             string_of_bid i)
       in
       begin match Flx_bsym.bbdcl bsym with
-      | BBDCL_external_type (vs,bquals,_,breqs) ->
+      | BBDCL_external_type (vs,bquals,_,breqs,_) ->
         if List.length vs > 0 && List.mem (`TypeTag "functor") bquals then
         print_endline ("functor primitive: abstract type "^Flx_bsym.id bsym ^ "["^catmap "," (sbt bsym_table) ts^"]");
         (*
@@ -194,7 +194,7 @@ print_debug syms ("Handle type " ^ sbt bsym_table btyp ^ " instance " ^ si index
          we didn't construct it, perhaps a foreigner did,
          in which case THEY needed to create the shape object
       *)
-      | BBDCL_union (vs,args) ->
+      | BBDCL_union (vs,args,_) ->
         let varmap = mk_varmap (Flx_bsym.sr bsym) vs ts in
         let args = map (fun (_,_,evs,t,_,_)->t) args in
         let args = map (varmap_subst varmap) args in

@@ -108,7 +108,7 @@ Flx_print.sbt bsym_table t);
     in
     let sr = Flx_bsym.sr bsym in
     begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_union (bvs,cts) -> 
+    | BBDCL_union (bvs,cts,_) -> 
       let ct = 
         try 
           List.iter (fun (s,i,evs,ct,_,_)-> if i = n then raise (Found_type ct)) cts; 

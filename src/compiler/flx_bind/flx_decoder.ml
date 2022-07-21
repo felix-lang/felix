@@ -27,7 +27,7 @@ print_endline("Bound type " ^ Flx_print.sbt bsym_table but);
 *)
         let bbdcl = Flx_bsym.bbdcl bsym in
         begin (* 8*)match bbdcl with
-        | Flx_bbdcl.BBDCL_union (ubvs, flds)  -> 
+        | Flx_bbdcl.BBDCL_union (ubvs, flds,variance)  -> 
           let uname = Flx_bsym.id bsym in
 (*
 print_endline ("Generating union decoder chip _decoder_" ^ uname); 

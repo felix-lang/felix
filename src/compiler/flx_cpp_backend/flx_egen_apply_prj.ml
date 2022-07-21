@@ -104,8 +104,8 @@ print_endline ("Divisor = " ^ string_of_int divisor);
   (* pointer to struct or cstruct projection *)
   | (BTYP_inst (`Nominal, i,_,_)) ->
     begin match Flx_bsym_table.find_bbdcl bsym_table i with
-    | BBDCL_cstruct (_,ls,_)
-    | BBDCL_struct (_,ls) ->
+    | BBDCL_cstruct (_,ls,_,_)
+    | BBDCL_struct (_,ls,_) ->
       let name,_ =
         try List.nth ls n
         with Not_found ->
@@ -249,8 +249,8 @@ let apply_value_prj syms bsym_table ge ge' sr (e,t) (ix:int) domain codomain (_,
   (* struct or cstruct projection *)
   | BTYP_inst (`Nominal, i,_,_) ->
     begin match Flx_bsym_table.find_bbdcl bsym_table i with
-    | BBDCL_cstruct (_,ls,_)
-    | BBDCL_struct (_,ls) ->
+    | BBDCL_cstruct (_,ls,_,_)
+    | BBDCL_struct (_,ls,_) ->
       let name,_ =
         try List.nth ls n
         with Not_found ->

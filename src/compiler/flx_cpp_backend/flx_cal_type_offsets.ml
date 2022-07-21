@@ -105,13 +105,13 @@ let rec get_offsets' syms bsym_table typ : offset_kind_t list =
         ("get_offsets'] can't find index " ^ string_of_bid i)
     in
     begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_union (vs, [id,n,[],t',_,false]) ->  assert false
+    | BBDCL_union (vs, [id,n,[],t',_,false],_) ->  assert false
 (*    
       ;
       let t'' = tsubst (Flx_bsym.sr bsym) vs ts t' in
       get_offsets' syms bsym_table t''
 *)
-    | BBDCL_union (vs,idts) ->
+    | BBDCL_union (vs,idts,_) ->
 (*
       let varmap = mk_varmap vs ts in
       let cpts = map (fun (_,_,t) -> varmap_subst varmap t) idts in
@@ -127,7 +127,7 @@ let rec get_offsets' syms bsym_table typ : offset_kind_t list =
       | Flx_vrep.VR_uctor -> [`Ptr (offsetof tname "data")]
       end
 
-    | BBDCL_struct (vs,idts) ->
+    | BBDCL_struct (vs,idts,_) ->
       let varmap = mk_varmap (Flx_bsym.sr bsym) vs ts in
       let idts = map (fun (s,t) -> s,varmap_subst varmap t) idts in
       let n = ref 0 in
@@ -143,7 +143,7 @@ let rec get_offsets' syms bsym_table typ : offset_kind_t list =
       ;
       !lst
 
-    | BBDCL_external_type (_,type_quals,_,_) ->
+    | BBDCL_external_type (_,type_quals,_,_,_) ->
        if mem `GC_pointer type_quals then [`Ptr "0"]
        else if has_scanner type_quals then [`Prim ("0",t')]
        else []

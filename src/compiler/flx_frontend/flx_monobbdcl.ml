@@ -179,7 +179,7 @@ print_endline ("Dependent variables:");
 (*
 print_endline ("Finished union by GADT **");
 *)
-    Some (bbdcl_union ([], cps))
+    Some (bbdcl_union ([], cps, []))
 end else begin
   if (List.length vs <> List.length ts) then
     print_endline ("Union "^sbt bsym_table ut ^ " vs length " ^ string_of_int (List.length vs) ^ 
@@ -248,7 +248,7 @@ end;
 (*
 print_endline ("Finished union by non GADT **");
 *)
-  Some (bbdcl_union ([], cps))
+  Some (bbdcl_union ([], cps,[]))
 end
 
 
@@ -339,7 +339,7 @@ print_endline ("Monomorphising variable "^Flx_bsym.id bsym ^" polytype " ^ sbt b
     let reqs = Flx_monofixup_base.fixup_reqs syms bsym_table vars polyinst sr reqs in
     Some (bbdcl_external_const (props,vs, t, cs, reqs))
  
-  | BBDCL_external_type (vs,quals,cs,reqs)  -> 
+  | BBDCL_external_type (vs,quals,cs,reqs,variance)  -> 
     if List.length vs <> List.length ts then begin
       print_endline ("Ts/vs mismatch in external type " ^ Flx_bsym.id bsym);
       assert (List.length vs = List.length ts);
@@ -347,7 +347,7 @@ print_endline ("Monomorphising variable "^Flx_bsym.id bsym ^" polytype " ^ sbt b
     let vars = List.map2 (fun (s,i,_) t -> i,t) vs ts in
     let reqs = Flx_monofixup_base.fixup_reqs syms bsym_table vars polyinst sr reqs in
     let quals = List.map (Flx_monofixup_base.fixup_qual vars mt) quals in
-    Some (bbdcl_external_type (vs,quals,cs, reqs))
+    Some (bbdcl_external_type (vs,quals,cs, reqs,variance))
 
   | BBDCL_external_code (vs,cs,ikind,reqs)   -> 
     assert (List.length vs = List.length ts);
@@ -355,21 +355,21 @@ print_endline ("Monomorphising variable "^Flx_bsym.id bsym ^" polytype " ^ sbt b
     let reqs = Flx_monofixup_base.fixup_reqs syms bsym_table vars polyinst sr reqs in
     Some (bbdcl_external_code (vs,cs,ikind,reqs))
 
-  | BBDCL_union (vs,cps) ->
+  | BBDCL_union (vs,cps,variance) ->
     mono_union syms bsym_table virtualinst polyinst  mt bsym sr i ts (vs,cps)  
 
-  | BBDCL_cstruct (vs,cps, reqs) -> 
+  | BBDCL_cstruct (vs,cps, reqs,variance) -> 
     assert (List.length vs = List.length ts);
     let vars = List.map2 (fun (s,i,_) t -> i,t) vs ts in
     let cps = List.map (fun (name,argt) -> name,mt vars argt) cps in
     let reqs = Flx_monofixup_base.fixup_reqs syms bsym_table vars polyinst sr reqs in
-    Some (bbdcl_cstruct ([], cps, reqs))
+    Some (bbdcl_cstruct ([], cps, reqs,[]))
 
-  | BBDCL_struct (vs,cps)  -> 
+  | BBDCL_struct (vs,cps,variance)  -> 
     assert (List.length vs = List.length ts);
     let vars = List.map2 (fun (s,i,_) t -> i,t) vs ts in
     let cps = List.map (fun (name,argt) -> name,mt vars argt) cps in
-    Some (bbdcl_struct ([], cps))
+    Some (bbdcl_struct ([], cps,[]))
 
 
   | BBDCL_const_ctor (vs,uidx,ut,ctor_idx,evs,etraint) ->

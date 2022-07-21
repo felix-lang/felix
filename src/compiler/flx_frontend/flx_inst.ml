@@ -446,7 +446,7 @@ and process_inst syms bsym_table weak instps ref_insts1 i ts inst =
       exes
       ts
 
-  | BBDCL_union (vs,ps) ->
+  | BBDCL_union (vs,ps,variance) ->
     let argtypes = map (fun (_,_,evs,argt,rest,_)->argt) ps in
     assert (length vs = length ts);
     let vars = map2 (fun (s,i,k) t -> i,t) vs ts in
@@ -456,7 +456,7 @@ and process_inst syms bsym_table weak instps ref_insts1 i ts inst =
     rtnr (btyp_inst (`Nominal, i,ts,Flx_kind.KIND_type))
 
 
-  | BBDCL_cstruct (vs,ps, reqs) ->
+  | BBDCL_cstruct (vs,ps, reqs, variance) ->
     let argtypes = map snd ps in
     assert (length vs = length ts);
     let vars = map2 (fun (s,i,k) t -> i,t) vs ts in
@@ -467,7 +467,7 @@ and process_inst syms bsym_table weak instps ref_insts1 i ts inst =
     do_reqs vs reqs;
     rtnr (btyp_inst (`Nominal, i,ts,Flx_kind.KIND_type))
 
-  | BBDCL_struct (vs,ps) ->
+  | BBDCL_struct (vs,ps, variance) ->
     let argtypes = map snd ps in
     assert (length vs = length ts);
     let vars = map2 (fun (s,i,k) t -> i,t) vs ts in
@@ -593,7 +593,7 @@ print_endline ("arg types c " ^ catmap "," (sbt bsym_table) tss);
           ts
     end
 
-  | BBDCL_external_type (vs,_,_,reqs) ->
+  | BBDCL_external_type (vs,_,_,reqs,variance) ->
     assert (length vs = length ts);
     let vars = map2 (fun (s,i,k) t -> i,t) vs ts in
     let hvarmap = hashtable_of_list vars in

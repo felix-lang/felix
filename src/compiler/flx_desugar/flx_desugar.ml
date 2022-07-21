@@ -102,6 +102,13 @@ print_endline ("Flx_desugar: desugar " ^ Flx_print.string_of_statement 0 st);
   let rex x = rex_with_ret x `TYP_none in
 
   let seq () = state.Flx_desugar_expr.fresh_bid () in
+  let showvariance (name,variance) =
+    let allinvariant = List.fold_left (fun acc v -> match v with `invariant -> acc | _ -> false) true variance in
+    if not allinvariant then
+      print_endline ("Variance " ^ name ^ " = " ^ String.concat "," (List.map 
+       (function | `invariant -> "!" | `covariant -> "+" | `contravariant -> "-") variance));
+  in
+
 
   (* add _root headers and bodies as requirements for all
     bindings defined in this entity
@@ -298,13 +305,9 @@ print_endline ("Translating Lazy Declaration " ^ name);
 
   (* types *)
   | STMT_abs_decl (sr,name,vs,quals,s, reqs,variance) ->
-    let allinvariant = List.fold_left (fun acc v -> match v with `invariant -> acc | _ -> false) true variance in
-    if not allinvariant then
-      print_endline ("Variance " ^ name ^ " = " ^ String.concat "," (List.map 
-       (function | `invariant -> "!" | `covariant -> "+" | `contravariant -> "-") variance));
-
+    showvariance (name,variance);
     let index,quals',props,dcls, reqs = Flx_reqs.mkreqs state access parent_ts sr reqs in
-    Dcl (sr,name,index,access,vs,DCL_abs (quals' @ quals,s,Flx_reqs.map_reqs rqname' sr reqs))
+    Dcl (sr,name,index,access,vs,DCL_abs (quals' @ quals,s,Flx_reqs.map_reqs rqname' sr reqs, variance))
     :: dcls
    
   | STMT_virtual_type (sr,name) ->
@@ -317,11 +320,11 @@ print_endline ("Translating Lazy Declaration " ^ name);
     [Dcl (sr,name,None,access,vs,DCL_instance_type t)]
 
 
-  | STMT_union (sr,name, vs, components) -> [Dcl (sr,name,None,access,vs,DCL_union (components))]
-  | STMT_struct (sr,name, vs, components) ->  [Dcl (sr,name,None,access,vs,DCL_struct (components))]
-  | STMT_cstruct (sr,name, vs, components, reqs) ->  
+  | STMT_union (sr,name, vs, components, variance) -> [Dcl (sr,name,None,access,vs,DCL_union (components, variance))]
+  | STMT_struct (sr,name, vs, components, variance) ->  [Dcl (sr,name,None,access,vs,DCL_struct (components, variance))]
+  | STMT_cstruct (sr,name, vs, components, reqs,variance) ->  
     let index,_,props,dcls, reqs = Flx_reqs.mkreqs state access parent_ts sr reqs in
-    Dcl (sr,name,index,access,vs,DCL_cstruct (components, Flx_reqs.map_reqs rqname' sr reqs)) :: dcls
+    Dcl (sr,name,index,access,vs,DCL_cstruct (components, Flx_reqs.map_reqs rqname' sr reqs, variance)) :: dcls
 
   | STMT_typeclass (sr,name, vs, sts) ->
     let asms = rsts name (Flx_merge_vs.merge_vs parent_vs vs) `Public sts in

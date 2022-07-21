@@ -148,7 +148,7 @@ print_endline ("Trying to coerce value of type " ^ si i ^ " to linear type " ^ F
 *)
       begin match hfind "lookup" state.sym_table i with
       | { Flx_sym.id="int";
-          symdef=SYMDEF_abs (_, Flx_code_spec.Str_template "int", _) }  ->
+          symdef=SYMDEF_abs (_, Flx_code_spec.Str_template "int", _,_) }  ->
         begin match e' with
         | BEXPR_literal {Flx_literal.felix_type="int"; internal_value=big} ->
 (*
@@ -189,7 +189,7 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
       let n = Flx_btype.sizeof_linear_type bsym_table  t in
       begin match hfind "lookup" state.sym_table i with
       | { Flx_sym.id="int";
-          symdef=SYMDEF_abs (_, Flx_code_spec.Str_template "int", _) }  ->
+          symdef=SYMDEF_abs (_, Flx_code_spec.Str_template "int", _,_) }  ->
         Flx_bexpr.bexpr_coerce (x',inttype)
 
       | _ ->

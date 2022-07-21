@@ -412,7 +412,7 @@ let gen_felix_struct_export syms bsym_table idx modulename =
   let sname = Flx_bsym.id bsym in
   let bbdcl = Flx_bsym.bbdcl bsym in
   let fields = match bbdcl with 
-    | BBDCL_struct ([],fields) -> fields
+    | BBDCL_struct ([],fields,_) -> fields
     | _ -> assert false
   in
   let mkmem (id,t) = "      " ^ id ^ ": "^ sbt bsym_table t ^ ";\n" in
@@ -426,7 +426,7 @@ let gen_felix_union_export syms bsym_table idx modulename =
   let sname = Flx_bsym.id bsym in
   let bbdcl = Flx_bsym.bbdcl bsym in
   let fields = match bbdcl with 
-    | BBDCL_union ([],fields) -> fields
+    | BBDCL_union ([],fields,_) -> fields
     | _ -> assert false
   in
   let mkmem (id,seq,evs,t,_,_) = "     | " ^ id ^ " = " ^ string_of_int seq ^ " " ^ 

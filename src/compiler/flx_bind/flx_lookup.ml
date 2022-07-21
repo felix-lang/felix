@@ -849,8 +849,8 @@ and lookup_name_with_sig
        print_endline ("Found nominal type "^si j ^" in bound symbol table");
 *)
        begin match Flx_bsym.bbdcl bsym with
-       | BBDCL_struct (vs,fields) 
-       | BBDCL_cstruct (vs, fields,_) ->
+       | BBDCL_struct (vs,fields,variance) 
+       | BBDCL_cstruct (vs, fields,_,variance) ->
          begin match
             Flx_list.list_assoc_index_with_assoc fields name
          with
@@ -873,8 +873,8 @@ and lookup_name_with_sig
 *)
        begin try
          match hfind "lookup" state.sym_table j with
-         | { Flx_sym.symdef=SYMDEF_struct fields; vs=vs } 
-         | { Flx_sym.symdef=SYMDEF_cstruct (fields,_); vs=vs } ->
+         | { Flx_sym.symdef=SYMDEF_struct (fields,variance); vs=vs } 
+         | { Flx_sym.symdef=SYMDEF_cstruct (fields,_,variance); vs=vs } ->
            begin match
               Flx_list.list_assoc_index_with_assoc fields name
            with
@@ -899,8 +899,8 @@ and lookup_name_with_sig
        print_endline ("Found nominal type "^si j ^" in bound symbol table");
 *)
        begin match Flx_bsym.bbdcl bsym with
-       | BBDCL_struct (vs,fields) 
-       | BBDCL_cstruct (vs, fields,_) ->
+       | BBDCL_struct (vs,fields,variance) 
+       | BBDCL_cstruct (vs, fields,_,variance) ->
          begin match
             Flx_list.list_assoc_index_with_assoc fields name
          with
@@ -923,8 +923,8 @@ and lookup_name_with_sig
 *)
        begin try
          match hfind "lookup" state.sym_table j with
-         | { Flx_sym.symdef=SYMDEF_struct fields; vs=vs } 
-         | { Flx_sym.symdef=SYMDEF_cstruct (fields,_); vs=vs } ->
+         | { Flx_sym.symdef=SYMDEF_struct (fields,variance); vs=vs } 
+         | { Flx_sym.symdef=SYMDEF_cstruct (fields,_,variance); vs=vs } ->
            begin match
               Flx_list.list_assoc_index_with_assoc fields name
            with

@@ -1349,9 +1349,9 @@ print_endline (string_of_int symbol_index ^ " Adding instance type " ^ id ^ "=" 
       (* Add the type variables to the private symbol table. *)
       add_tvars privtab
 
-  | DCL_abs (quals, c, reqs) ->
+  | DCL_abs (quals, c, reqs, variance) ->
       (* Add the abs to the sym_table. *)
-      add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_abs (quals, c, reqs));
+      add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_abs (quals, c, reqs, variance));
 
       (* Possibly add the abs to the private symbol table. *)
       if access = `Public then add_unique pub_name_map id symbol_index;
@@ -1479,7 +1479,7 @@ print_endline ("Adding callback " ^ id ^ "<"^string_of_int symbol_index^"> type=
         add_symbol ~pubtab ~privtab ftdef_index ftdef_id sr ft_symdef
       end
 
-  | DCL_union (its) ->
+  | DCL_union (its,variance) ->
       let tvars = List.map (fun (s,_,_)-> `TYP_name (sr,s,[])) (fst ivs) in
       let utype = `TYP_name (sr, id, tvars) in
       let its' =
@@ -1503,7 +1503,7 @@ print_endline ("Adding callback " ^ id ^ "<"^string_of_int symbol_index^"> type=
       in
 
       (* Add union to sym_table. *)
-      add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_union its');
+      add_symbol ~pubtab ~privtab symbol_index id sr (SYMDEF_union (its',variance));
 
       (* Add type variables to symbol table and the private name lookup table of union. *)
       add_tvars privtab;
@@ -1600,12 +1600,12 @@ print_endline ("Adding callback " ^ id ^ "<"^string_of_int symbol_index^"> type=
         add_symbol ~pubtab:ctorpubtab ~privtab:ctorprivtab ~ivs:localivs dfn_idx component_name sr ctor_dcl2
       end its'
 
-  | DCL_cstruct (sts, reqs) ->
+  | DCL_cstruct (sts, reqs,variance) ->
       let tvars = List.map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst ivs) in
       let stype = `AST_name(sr, id, tvars) in
 
       (* Add symbols to sym_table *)
-      add_symbol ~pubtab ~privtab symbol_index id sr ( SYMDEF_cstruct (sts, reqs));
+      add_symbol ~pubtab ~privtab symbol_index id sr ( SYMDEF_cstruct (sts, reqs,variance));
 
       (* Possibly add the struct to the public symbol table. *)
       if access = `Public then add_unique pub_name_map id symbol_index;
@@ -1617,12 +1617,12 @@ print_endline ("Adding callback " ^ id ^ "<"^string_of_int symbol_index^"> type=
       add_tvars privtab
 
 
-  | DCL_struct sts ->
+  | DCL_struct (sts,variance) ->
       let tvars = List.map (fun (s,_,_)-> `AST_name (sr,s,[])) (fst ivs) in
       let stype = `AST_name(sr, id, tvars) in
 
       (* Add symbols to sym_table *)
-      add_symbol ~pubtab ~privtab symbol_index id sr ( SYMDEF_struct sts);
+      add_symbol ~pubtab ~privtab symbol_index id sr ( SYMDEF_struct (sts,variance));
 
       (* Possibly add the struct to the public symbol table. *)
       if access = `Public then add_unique pub_name_map id symbol_index;

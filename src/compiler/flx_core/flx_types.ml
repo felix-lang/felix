@@ -56,9 +56,9 @@ type dcl_t =
   | DCL_lemma of         params_t * axiom_method_t
   | DCL_reduce of        (vs_list_t * simple_parameter_t list * expr_t * expr_t) list
   | DCL_function of      params_t * typecode_t * typecode_t * property_t list * asm_t list
-  | DCL_union of         (Flx_id.t * int option * vs_list_t * typecode_t * typecode_t option) list
-  | DCL_struct of        (Flx_id.t * typecode_t) list
-  | DCL_cstruct of       (Flx_id.t * typecode_t) list * named_req_expr_t
+  | DCL_union of         (Flx_id.t * int option * vs_list_t * typecode_t * typecode_t option) list * variance_list_t
+  | DCL_struct of        (Flx_id.t * typecode_t) list * variance_list_t 
+  | DCL_cstruct of       (Flx_id.t * typecode_t) list * named_req_expr_t * variance_list_t
   | DCL_typeclass of     asm_t list
   | DCL_match_handler of pattern_t * (string * bid_t) * asm_t list
 
@@ -78,7 +78,7 @@ type dcl_t =
   (* binding structures [prolog] *)
   | DCL_newtype of       typecode_t
   | DCL_instance_type of typecode_t
-  | DCL_abs of           type_qual_t list * Flx_code_spec.t * named_req_expr_t
+  | DCL_abs of           type_qual_t list * Flx_code_spec.t * named_req_expr_t * variance_list_t
   | DCL_const of         property_t list * typecode_t * Flx_code_spec.t * named_req_expr_t
   | DCL_fun of           property_t list * typecode_t list * typecode_t * Flx_code_spec.t * named_req_expr_t * prec_t
   | DCL_callback of      property_t list * typecode_t list * typecode_t * named_req_expr_t
@@ -112,7 +112,7 @@ type symbol_definition_t =
   | SYMDEF_label of string
   | SYMDEF_newtype of typecode_t
   | SYMDEF_instance_type of typecode_t
-  | SYMDEF_abs of type_qual_t list * Flx_code_spec.t * named_req_expr_t
+  | SYMDEF_abs of type_qual_t list * Flx_code_spec.t * named_req_expr_t * variance_list_t
   | SYMDEF_parameter of  param_kind_t * typecode_t
   | SYMDEF_typevar of kindcode_t (* usually KND_type *)
   | SYMDEF_kindvar of sortcode_t (* usually KND_type *)
@@ -137,9 +137,9 @@ type symbol_definition_t =
   | SYMDEF_fun of property_t list * typecode_t list * typecode_t * Flx_code_spec.t  * named_req_expr_t * prec_t
   | SYMDEF_callback of property_t list * typecode_t list * typecode_t * named_req_expr_t
   | SYMDEF_insert of Flx_code_spec.t  * ikind_t * named_req_expr_t
-  | SYMDEF_union of (Flx_id.t * int *  ivs_list_t * typecode_t * typecode_t * bool) list
-  | SYMDEF_struct of (Flx_id.t * typecode_t) list
-  | SYMDEF_cstruct of (Flx_id.t * typecode_t) list * named_req_expr_t 
+  | SYMDEF_union of (Flx_id.t * int *  ivs_list_t * typecode_t * typecode_t * bool) list * variance_list_t
+  | SYMDEF_struct of (Flx_id.t * typecode_t) list * variance_list_t
+  | SYMDEF_cstruct of (Flx_id.t * typecode_t) list * named_req_expr_t  * variance_list_t
   | SYMDEF_type_alias of typecode_t
   | SYMDEF_type_function of iks_list_t * typecode_t
   | SYMDEF_inherit of qualified_name_t

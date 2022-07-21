@@ -842,20 +842,20 @@ and subst_or_expand recurse recursion_limit local_prefix seq reachable macros (s
 
   | STMT_comment _  ->  tack st
 
-  | STMT_union (sr, id, vs, idts ) ->
+  | STMT_union (sr, id, vs, idts, variance ) ->
     let idts = List.map (fun (id,v,vs,d,c) -> 
       id,v,vs,mt sr d, (match c with | None-> None | Some c -> Some (mt sr c))) 
       idts 
     in
-    tack (STMT_union (sr, mi sr id, vs, idts))
+    tack (STMT_union (sr, mi sr id, vs, idts, variance))
 
-  | STMT_struct (sr, id, vs, idts) ->
+  | STMT_struct (sr, id, vs, idts, variance) ->
     let idts = List.map (fun (id,t) -> id,mt sr t) idts in
-    tack (STMT_struct (sr, mi sr id, vs, idts))
+    tack (STMT_struct (sr, mi sr id, vs, idts, variance))
 
-  | STMT_cstruct (sr, id, vs, idts, reqs) ->
+  | STMT_cstruct (sr, id, vs, idts, reqs, variance) ->
     let idts = List.map (fun (id,t) -> id,mt sr t) idts in
-    tack (STMT_cstruct (sr, mi sr id, vs, idts, rqmap sr reqs))
+    tack (STMT_cstruct (sr, mi sr id, vs, idts, rqmap sr reqs, variance))
 
   | STMT_typeclass (sr, id, vs, sts) ->
     tack (STMT_typeclass (sr, mi sr id, vs, ms sts))

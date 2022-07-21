@@ -32,7 +32,7 @@ let is_solo_union bsym_table t =
     in
     let entry =  Flx_bsym.bbdcl bsym in
     begin match entry with
-    | BBDCL_union (vs,[id,idx,[],dt,ct,gadt]) -> not gadt
+    | BBDCL_union (vs,[id,idx,[],dt,ct,gadt],_) -> not gadt
     | _ -> false
     end
   | _ -> false
@@ -52,7 +52,7 @@ let get_solo_union_ctor_arg_type bsym_table t =
     in
     let entry =  Flx_bsym.bbdcl bsym in
     begin match entry with
-    | BBDCL_union (vs,[id,idx,[],dt,ct,gadt]) -> dt
+    | BBDCL_union (vs,[id,idx,[],dt,ct,gadt],_) -> dt
     | _ -> assert false
     end
   | _ -> assert false
@@ -79,7 +79,7 @@ assert (vs = []);
         t'
       
 (* Eliminate unions with one constructor *)
-      | BBDCL_union (vs,[id,idx,[],dt,ct,gadt]) when not gadt ->
+      | BBDCL_union (vs,[id,idx,[],dt,ct,gadt],variance) when not gadt ->
 (*
 print_endline ("[flx_strabs] Eliminating union with one constructor: union name="  ^
   Flx_bsym.id bsym ^
@@ -307,8 +307,8 @@ let strabs_symbol bsym_table index parent bsym bsym_table' =
   | BBDCL_val (bvs, t, kind) ->
       h (bbdcl_val (bvs, ft t, kind))
 
-  | BBDCL_external_type (bvs, btqs, c, breqs) ->
-      h (bbdcl_external_type (bvs, fq btqs, c, fb breqs))
+  | BBDCL_external_type (bvs, btqs, c, breqs,variance) ->
+      h (bbdcl_external_type (bvs, fq btqs, c, fb breqs,variance))
 
   | BBDCL_external_const (props, bvs, t, c, breqs) ->
       h (bbdcl_external_const (props,  bvs, ft t, c, fb breqs))
@@ -335,17 +335,17 @@ print_endline ("Removing entry for index = "^si index^" : union " ^Flx_bsym.id b
     ()
 *)
 
-  | BBDCL_union (bvs, cts) ->
+  | BBDCL_union (bvs, cts,variance) ->
       let cts = map (fun (s,j,evs,d,c,gadt) -> s,j,evs,ft d, ft c,gadt) cts in
-      h (bbdcl_union (bvs, cts))
+      h (bbdcl_union (bvs, cts,variance))
 
-  | BBDCL_struct (bvs, cts) ->
+  | BBDCL_struct (bvs, cts,variance) ->
       let cts = map (fun (s,t) -> s,ft t) cts in
-      h (bbdcl_struct (bvs, cts))
+      h (bbdcl_struct (bvs, cts,variance))
 
-  | BBDCL_cstruct (bvs, cts, breqs) ->
+  | BBDCL_cstruct (bvs, cts, breqs,variance) ->
       let cts = map (fun (s,t) -> s,ft t) cts in
-      h (bbdcl_cstruct (bvs, cts, fb breqs))
+      h (bbdcl_cstruct (bvs, cts, fb breqs,variance))
 (*  
   | BBDCL_const_ctor (bvs, j, t1, k, evs, etraint) when is_solo_union bsym_table t1 -> 
 print_endline ("Removing entry for index = "^si index^

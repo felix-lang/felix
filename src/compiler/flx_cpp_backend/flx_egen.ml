@@ -625,7 +625,7 @@ print_endline "Apply struct";
     in
     let ts = map tsub ts in
     begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_cstruct (vs,cts,_) ->
+    | BBDCL_cstruct (vs,cts,_,_) ->
       let name = tn (btyp_inst (`Nominal,index,ts,Flx_kind.KIND_type)) in
       let struct_field_names = List.map fst cts in
       let handle ps = 
@@ -668,7 +668,7 @@ print_endline "Apply struct";
         assert false
       end
 
-    | BBDCL_struct (vs,cts) ->
+    | BBDCL_struct (vs,cts,_) ->
       let name = tn (btyp_inst (`Nominal,index,ts,Flx_kind.KIND_type)) in
       if length cts > 1 then
         (* argument must be an lvalue *)
@@ -1182,9 +1182,9 @@ print_endline ("Generating class new for t=" ^ ref_type);
           | [BTYP_tuple ls] -> let n = length ls in ce_atom (si n)
           | [BTYP_inst (`Nominal, i,_,_)] ->
             begin match Flx_bsym_table.find_bbdcl bsym_table i with
-              | BBDCL_struct (_,ls) -> let n = length ls in ce_atom (si n)
-              | BBDCL_cstruct (_,ls,_) -> let n = length ls in ce_atom (si n)
-              | BBDCL_union (_,ls) -> let n = length ls in ce_atom (si n)
+              | BBDCL_struct (_,ls,_) -> let n = length ls in ce_atom (si n)
+              | BBDCL_cstruct (_,ls,_,_) -> let n = length ls in ce_atom (si n)
+              | BBDCL_union (_,ls,_) -> let n = length ls in ce_atom (si n)
               | _ ->
                 clierrx "[flx_cpp_backend/flx_egen.ml:1196: E286] " sr (
                   "#memcount function requires type with members to count, got: " ^

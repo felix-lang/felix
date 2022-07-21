@@ -79,7 +79,7 @@ let remap_bbdcl offset bbdcl =
       bbdcl_instance_type (remap_bvs vs, remap_btype ty)
 
 
-  | BBDCL_external_type (vs, quals, code, reqs) ->
+  | BBDCL_external_type (vs, quals, code, reqs,variance) ->
       let vs = remap_bvs vs in
       let quals =
         List.map begin function
@@ -88,7 +88,7 @@ let remap_bbdcl offset bbdcl =
         end quals
       in
       let reqs = remap_breqs reqs in
-      bbdcl_external_type (vs, quals, code, reqs)
+      bbdcl_external_type (vs, quals, code, reqs,variance)
 
   | BBDCL_external_const (props, vs, ty, code, reqs) ->
       let vs = remap_bvs vs in
@@ -113,21 +113,21 @@ let remap_bbdcl offset bbdcl =
       let reqs = remap_breqs reqs in
       bbdcl_external_code (vs, code, ikind, reqs)
 
-  | BBDCL_union (vs, cs) ->
+  | BBDCL_union (vs, cs,variance) ->
       let vs = remap_bvs vs in
       let cs = List.map (fun (n,v,evs,d,c,gadt) -> n,v,remap_bvs evs,remap_btype d, remap_btype c, gadt) cs in
-      bbdcl_union (vs, cs)
+      bbdcl_union (vs, cs,variance)
 
-  | BBDCL_struct (vs, cs) ->
+  | BBDCL_struct (vs, cs,variance) ->
       let vs = remap_bvs vs in
       let cs = List.map (fun (n,t) -> n,remap_btype t) cs in
-      bbdcl_struct (vs, cs)
+      bbdcl_struct (vs, cs,variance)
 
-  | BBDCL_cstruct (vs, cs, reqs) ->
+  | BBDCL_cstruct (vs, cs, reqs,variance) ->
       let vs = remap_bvs vs in
       let cs = List.map (fun (n,t) -> n,remap_btype t) cs in
       let reqs = remap_breqs reqs in
-      bbdcl_cstruct (vs, cs, reqs)
+      bbdcl_cstruct (vs, cs, reqs,variance)
 
   | BBDCL_typeclass (props, vs) ->
       bbdcl_typeclass (props, remap_bvs vs)

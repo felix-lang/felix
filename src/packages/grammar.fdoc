@@ -2755,6 +2755,7 @@ SCHEME """
   (define (first x)(car x))
   (define (second x)(cadr x))
   (define (third x)(caddr x))
+  (define (fourth x)(cadddr x))
   (define (tail x)(cdr x))
   (define fold_left
     (lambda (f acc lst)
@@ -2885,8 +2886,8 @@ SCHEME """
       (ct (second vsct)) ;; individual constraint
       (v (first vtc))    ;; 
       (t (second vtc))
-      (c (caddr vtc))
-      (variance (cadddr vtc))
+      (c (third vtc))
+      (variance (fourth vtc))
       (ct2
         (cond
           ((eq? 'NoConstraint c) ct )

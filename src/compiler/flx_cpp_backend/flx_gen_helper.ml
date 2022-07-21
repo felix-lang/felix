@@ -154,7 +154,7 @@ let is_gc_pointer syms bsym_table sr t =
           string_of_bid i);
     in
     begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_external_type (_,tqs,_,_) -> mem `GC_pointer tqs
+    | BBDCL_external_type (_,tqs,_,_,_) -> mem `GC_pointer tqs
     | _ -> false
     end
   | _ -> false

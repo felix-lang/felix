@@ -1552,7 +1552,7 @@ and string_of_statement level s =
     string_of_compound level sts
 
 
-  | STMT_struct (_,name, vs, cs) ->
+  | STMT_struct (_,name, vs, cs, variance) ->
     let string_of_struct_component (name,ty) =
       (spaces (level+1)) ^ string_of_id name ^ ": " ^
       string_of_typecode ty ^ ";"
@@ -1562,7 +1562,7 @@ and string_of_statement level s =
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     spaces level ^ "}"
 
-  | STMT_cstruct (_,name, vs, cs, reqs) ->
+  | STMT_cstruct (_,name, vs, cs, reqs, variance) ->
     let string_of_struct_component (name,ty) =
       (spaces (level+1)) ^ string_of_id name ^ ": " ^
       string_of_typecode ty ^ ";"
@@ -1584,7 +1584,7 @@ and string_of_statement level s =
     string_of_qualified_name name ^ " = " ^
     string_of_compound level sts
 
-  | STMT_union (_,name, vs,cs) ->
+  | STMT_union (_,name, vs,cs, variance) ->
     let string_of_union_component (name,cval, vs,d,c) =
       (spaces (level+1)) ^ "|" ^ string_of_id name ^
       (match cval with None -> "" | Some i -> "="^ si i) ^
@@ -1980,7 +1980,7 @@ and string_of_symdef entry name vs =
     "inherit fun " ^ string_of_id name ^ string_of_ivs vs ^" = " ^
     string_of_qualified_name qn ^ ";"
 
-  | SYMDEF_abs (quals,code, reqs) ->
+  | SYMDEF_abs (quals,code, reqs,variance) ->
     (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
     "type " ^ string_of_id name ^ string_of_ivs vs ^
     " = " ^ string_of_code_spec code ^
@@ -2033,13 +2033,13 @@ and string_of_symdef entry name vs =
     string_of_named_reqs reqs ^
     ";"
 
-  | SYMDEF_union (cts) ->
+  | SYMDEF_union (cts,variance) ->
     "union " ^ string_of_id name ^ string_of_ivs vs ^ ";"
 
-  | SYMDEF_struct (cts) ->
+  | SYMDEF_struct (cts,variance) ->
     "struct " ^ string_of_id name ^ string_of_ivs vs ^ ";"
 
-  | SYMDEF_cstruct (cts, reqs) ->
+  | SYMDEF_cstruct (cts, reqs,variance) ->
     "cstruct " ^ string_of_id name ^ string_of_ivs vs ^ string_of_named_reqs reqs ^ ";"
 
 
@@ -2577,7 +2577,7 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     "\n" ^
     string_of_asm_compound level asms
 
-  | DCL_struct (cs) ->
+  | DCL_struct (cs,variance) ->
     let string_of_struct_component (name,ty) =
       (spaces (level+1)) ^ string_of_id name ^ ": " ^ st ty ^ ";"
     in
@@ -2586,7 +2586,7 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     sl ^ "}"
 
-  | DCL_cstruct (cs, reqs) ->
+  | DCL_cstruct (cs, reqs, variance) ->
     let string_of_struct_component (name,ty) =
       (spaces (level+1)) ^ string_of_id name ^ ": " ^ st ty ^ ";"
     in
@@ -2599,7 +2599,7 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     sl ^ "type class " ^ string_of_id name ^ seq ^ string_of_vs vs ^ " =\n" ^
     string_of_asm_compound level asms
 
-  | DCL_union (cs) ->
+  | DCL_union (cs, variance) ->
     let string_of_union_component (name,v,vs,d,c) =
       (spaces (level+1)) ^
       "|" ^ string_of_id name ^
@@ -2622,7 +2622,7 @@ and string_of_dcl level name seq vs (s:dcl_t) =
     " = " ^ st nt ^ ";"
 
 
-  | DCL_abs (quals, code, reqs) -> sl ^
+  | DCL_abs (quals, code, reqs, variance) -> sl ^
     (match quals with [] ->"" | _ -> string_of_quals quals ^ " ") ^
     "type " ^ string_of_id name ^ seq ^ string_of_vs vs ^
     " = " ^ string_of_code_spec code ^
@@ -2857,7 +2857,7 @@ and string_of_bbdcl bsym_table bbdcl index : string =
     "instance type " ^ name ^  string_of_bvs vs ^
     " = " ^ sobt t ^ ";"
 
-  | BBDCL_external_type (vs,quals,code,reqs) ->
+  | BBDCL_external_type (vs,quals,code,reqs,variance) ->
     (match quals with [] ->"" | _ -> string_of_bquals bsym_table quals ^ " ") ^
     "type " ^ name ^  string_of_bvs vs ^
     " = " ^ string_of_code_spec code ^ 
@@ -2900,7 +2900,7 @@ and string_of_bbdcl bsym_table bbdcl index : string =
     string_of_breqs bsym_table reqs ^ 
     ":"
 
-  | BBDCL_union (vs,cs) ->
+  | BBDCL_union (vs,cs,variance) ->
     let string_of_union_component (name,v,evs,d,c,gadt) =
       "  " ^ "| " ^ string_of_id name ^
      "="^si v^
@@ -2912,7 +2912,7 @@ and string_of_bbdcl bsym_table bbdcl index : string =
     catmap ";\n" string_of_union_component cs ^ "\n" ^
     "}"
 
-  | BBDCL_struct (vs,cs) ->
+  | BBDCL_struct (vs,cs,variance) ->
     let string_of_struct_component (name,ty) =
       "  " ^ string_of_id name ^ ": " ^ sobt ty ^ ";"
     in
@@ -2921,7 +2921,7 @@ and string_of_bbdcl bsym_table bbdcl index : string =
     catmap "\n" string_of_struct_component cs ^ "\n" ^
     "}"
 
-  | BBDCL_cstruct (vs,cs, reqs) ->
+  | BBDCL_cstruct (vs,cs, reqs,variance) ->
     let string_of_struct_component (name,ty) =
       "  " ^ string_of_id name ^ ": " ^ sobt ty ^ ";"
     in

@@ -35,8 +35,8 @@ let rec is_pod bsym_table t =
     let bbdcl = Flx_bsym.bbdcl bsym in
   begin match Flx_bsym_table.find_bbdcl bsym_table k with
     | BBDCL_union _ -> true
-    | BBDCL_external_type (_,quals,_,_) -> List.mem `Pod quals
-    | BBDCL_struct (vs,idts) -> 
+    | BBDCL_external_type (_,quals,_,_,_) -> List.mem `Pod quals
+    | BBDCL_struct (vs,idts,_) -> 
       let varmap = Flx_btype_subst.mk_varmap (Flx_bsym.sr bsym) vs ts in
       let idts =  List.map (fun (s,t) -> s,Flx_btype_subst.varmap_subst varmap t) idts in
        List.fold_left (fun acc (_,t) -> acc && is_pod t) true idts

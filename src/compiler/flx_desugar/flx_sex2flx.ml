@@ -1145,15 +1145,15 @@ print_endline ("ast_curry effects " ^ xid id ^ ", effects=" ^ Flx_print.string_o
 
   | Lst [Id "ast_union"; sr; id; vs; ucmp] -> let sr = xsr sr in 
       let ucmp = lst "union component" (xucmp sr) ucmp in
-      STMT_union (sr, xid id, xvs sr vs, ucmp)
+      STMT_union (sr, xid id, xvs sr vs, ucmp, xvariance_list_t sr vs)
 
   | Lst [Id "ast_struct"; sr; id; vs; ucmp] -> let sr = xsr sr in 
       let ucmp = lst "struct component" (xscmp sr) ucmp in
-      STMT_struct (sr, xid id, xvs sr vs, ucmp)
+      STMT_struct (sr, xid id, xvs sr vs, ucmp, xvariance_list_t sr vs)
 
   | Lst [Id "ast_cstruct"; sr; id; vs; ucmp; reqs] -> let sr = xsr sr in 
       let ucmp = lst "cstruct component" (xscmp sr) ucmp in
-      STMT_cstruct (sr, xid id, xvs sr vs, ucmp, xrr sr reqs)
+      STMT_cstruct (sr, xid id, xvs sr vs, ucmp, xrr sr reqs, xvariance_list_t sr vs)
 
   | Lst [Id "ast_type_alias"; sr; id; vs; t] -> let sr = xsr sr in 
 (*

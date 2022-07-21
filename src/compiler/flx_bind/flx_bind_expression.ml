@@ -1791,7 +1791,7 @@ print_endline ("`EXPR_variant_subtype_match_coercion");
       begin match ut with
       | BTYP_inst (_,i,ts',_) ->
         begin match hfind "lookup" state.sym_table i with
-        | { Flx_sym.id=id; symdef=SYMDEF_union ls } ->
+        | { Flx_sym.id=id; symdef=SYMDEF_union (ls,_) } ->
           let vidx =
             let rec scan = function
             | [] -> None
@@ -1950,7 +1950,7 @@ print_endline ("match ho ctor, binding expr = " ^ string_of_expr e);
       begin match ut with
       | BTYP_inst (_,i,ts',_) ->
         begin match hfind "lookup" state.sym_table i with
-        | { Flx_sym.id=id; symdef=SYMDEF_union ls } ->
+        | { Flx_sym.id=id; symdef=SYMDEF_union (ls,_) } ->
           let _,vs,_  = find_split_vs state.sym_table bsym_table i in
 (*
         print_endline ( "OK got union type " ^ id ^ "<"^si i ^ "> vs= " ^ catmap "," (fun (id,j,_)-> id^"<"^si j^">") vs 
