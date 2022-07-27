@@ -147,8 +147,10 @@ let handle_bind state main_prog module_name =
   
   let t0 = Unix.gettimeofday () in
 
-  let ntsc lhs rhs = Flx_unify.nominal_subtype bsym_table lhs rhs in
-  Flx_btype.set_unif_thunk (Flx_unify.unif ntsc state.syms.counter);
+  (* This cannot work because the bsym_yable is not unique, new ones get
+  created all the time.
+  *)
+  Flx_btype.set_unif_thunk (Flx_unify.unif bsym_table state.syms.counter);
 
 
   (* Do the binding here *)

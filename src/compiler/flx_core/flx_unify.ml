@@ -30,24 +30,41 @@ let check_recursion bsym_table t =
       sbt bsym_table t);
     raise Bad_recursion 
 
-let nominal_subtype bsym_table lhs rhs =
-  match lhs, rhs with
-  | BTYP_inst (`Nominal,l,[],_),BTYP_inst(`Nominal,r,[],_) ->
-    (* meta types have to agree if types do? *)
-    if l <> r && not (Flx_bsym_table.is_indirect_supertype bsym_table l r)
-    then raise Not_found
-  | _ -> raise Not_found
-
-
 (* LHS ge RHS, parameter supertype of argument *)
-let rec solve_subtypes nominal_subtype counter lhs rhs dvars (s:vassign_t option ref) (add_eq:reladd_t) (add_ge:reladd_t) =
+let rec solve_subtypes bsym_table counter lhs rhs dvars (s:vassign_t option ref) (add_eq:reladd_t) (add_ge:reladd_t) =
 (*
 print_endline ("Solve subtypes " ^ Flx_btype.str_of_btype lhs ^ " >=? " ^ Flx_btype.str_of_btype rhs); 
 *)
-  try nominal_subtype lhs rhs
-  with Not_found ->
-
   match lhs, rhs with
+  | BTYP_inst (`Nominal,l,[],_),BTYP_inst(`Nominal,r,[],_) -> (* distinct monomorphic nominal types *)
+    if l <> r && not (Flx_bsym_table.is_indirect_supertype bsym_table l r)
+    then raise Not_found
+
+  | BTYP_inst (`Nominal,l,lts,_),BTYP_inst(`Nominal,r,rts,_) when l = r -> (* same polymorphic nominal type *)
+    let bsym = Flx_bsym_table.find bsym_table l in
+    let bbdcl = Flx_bsym.bbdcl bsym in
+    begin match bbdcl with
+    | BBDCL_external_type (_,_,_,_,variance)
+    | BBDCL_union (_,_,variance)
+    | BBDCL_cstruct (_,_,_,variance)
+    | BBDCL_struct (_,_,variance) ->
+      assert (List.length lts = List.length rts);
+      let t2 = List.combine lts rts in
+      assert(List.length variance <= List.length lts);
+      let variance = (Flx_list.repeat `invariant (List.length lts - List.length variance)) @ variance in
+      List.iter2 (fun (l, r) variance -> 
+        match variance with
+        | `covariant -> add_ge (l, r)
+        | `invariant ->  add_eq  (l, r)
+        | `contravariant -> add_ge (r, l)
+      ) t2 variance
+
+    | BBDCL_newtype _  (* FIXME: newtype should have variance too *)
+    | BBDCL_instance_type _ -> List.iter2 (fun l r -> add_eq (l,r)) lts rts
+      
+    | _ -> assert false
+    end
+
   (* a non-uniq parameter accepts a uniq one, uniq T is a subtype of T,
      also, covariant ???????
   *)
@@ -220,9 +237,9 @@ print_endline ("Solve subtypes " ^ Flx_btype.str_of_btype lhs ^ " >=? " ^ Flx_bt
 
 
   | _ ->  
-    solve_subsumption nominal_subtype counter lhs rhs dvars s add_eq
+    solve_subsumption bsym_table counter lhs rhs dvars s add_eq
 
-and solve_subsumption nominal_subtype counter lhs rhs  dvars (s:vassign_t option ref) (add_eqn:reladd_t) =
+and solve_subsumption bsym_table counter lhs rhs  dvars (s:vassign_t option ref) (add_eqn:reladd_t) =
       begin match lhs,rhs with
       | BTYP_instancetype _, BTYP_instancetype _ -> () (* weirdo but we have to do it *)
       | BTYP_rev t1, BTYP_rev t2 ->
@@ -569,7 +586,7 @@ print_endline "Trying to unify type map";
         raise Not_found
       end
 
-let unif nominal_subtype counter (inrels: rels_t) (dvars:dvars_t) =
+let unif bsym_table counter (inrels: rels_t) (dvars:dvars_t) =
 (*
 print_endline ("Unif:");
   print_endline ( "Dvars = { " ^ catmap ", " si (BidSet.elements dvars) ^ "}");
@@ -603,8 +620,8 @@ print_endline ("Unif:");
 print_endline ("Trying " ^ sbt bsym_table lhs ^ " " ^ string_of_relmode_t mode ^ " " ^ sbt bsym_table rhs);
 *)
       begin match mode with
-      | `Eq -> solve_subsumption nominal_subtype counter lhs rhs dvars s add_eq 
-      | `Ge -> solve_subtypes nominal_subtype counter lhs rhs dvars s add_eq add_ge
+      | `Eq -> solve_subsumption bsym_table counter lhs rhs dvars s add_eq 
+      | `Ge -> solve_subtypes bsym_table counter lhs rhs dvars s add_eq add_ge
       end
       ;
       begin match !s with
@@ -649,32 +666,28 @@ let find_vars_eqns eqns =
   !lhs_vars,!rhs_vars
 
 let unification bsym_table counter eqns dvars =
-  let nominal_subtype lhs rhs = nominal_subtype bsym_table lhs rhs in
   let eqns = List.map (fun x -> `Eq, x) eqns in
-  unif nominal_subtype counter eqns dvars
+  unif bsym_table counter eqns dvars
 
 let maybe_unification bsym_table counter eqns =
-  let nominal_subtype lhs rhs = nominal_subtype bsym_table lhs rhs in
   let l,r = find_vars_eqns eqns in
   let dvars = BidSet.union l r in
   let eqns = List.map (fun x -> `Eq, x) eqns in
-  try Some (unif nominal_subtype counter eqns dvars)
+  try Some (unif bsym_table counter eqns dvars)
   with Not_found -> None
 
 (* same as unifies so why is this here? *)
 let maybe_matches bsym_table counter eqns =
-  let nominal_subtype lhs rhs = nominal_subtype bsym_table lhs rhs in
   let l,r = find_vars_eqns eqns in
   let dvars = BidSet.union l r in
   let eqns = List.map (fun x -> `Eq, x) eqns in
-  try Some (unif nominal_subtype counter eqns dvars)
+  try Some (unif bsym_table counter eqns dvars)
   with Not_found -> None
 
 (* LHS is parameter, RHS is argument, we require LHS >= RHS *)
 let maybe_specialisation_with_dvars bsym_table counter eqns dvars =
-  let nominal_subtype lhs rhs = nominal_subtype bsym_table lhs rhs in
   let eqns = List.map (fun x -> `Ge, x) eqns in
-  try Some (unif nominal_subtype counter eqns dvars)
+  try Some (unif bsym_table counter eqns dvars)
   with Not_found -> 
     None
 
@@ -684,7 +697,6 @@ let maybe_specialisation bsym_table counter eqns =
   maybe_specialisation_with_dvars bsym_table counter eqns l
 
 let unifies bsym_table counter t1 t2 =
-  let nominal_subtype lhs rhs = nominal_subtype bsym_table lhs rhs in
   let eqns = [t1,t2] in
   match maybe_unification bsym_table counter eqns with
   | None -> false

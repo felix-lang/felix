@@ -276,6 +276,38 @@ print_endline ("Dst type " ^ Flx_print.sbt bsym_table dstt);
   let srct = unfold "expand_coercion srct" srct in
   let dstt = unfold "expand_coercion dstt" dstt in
   match srct,dstt with
+  | BTYP_inst (`Nominal, src,lts,_), BTYP_inst (`Nominal, dst,rts,_) when src = dst ->
+    let bsym = Flx_bsym_table.find bsym_table src in
+    let bbdcl = Flx_bsym.bbdcl bsym in
+    begin match bbdcl with
+    | BBDCL_cstruct (bvs,flds,_,variance)
+    | BBDCL_struct (bvs,flds,variance) ->
+      (* each member must be covariant: it's the same as a tuple *)
+
+      (* get list of src values *)
+      let lvarmap = Flx_btype_subst.mk_varmap sr bvs lts in
+      let sflds = List.map (fun (_, t) -> Flx_btype_subst.varmap_subst lvarmap t) flds in
+      let prjs = List.map2 (fun pos t -> bexpr_get_n t pos srce) (Flx_list.nlist (List.length flds)) sflds in
+
+      (* get list of dst types *)
+      let rvarmap = Flx_btype_subst.mk_varmap sr bvs rts in
+      let dtyps = List.map (fun (_, t) -> Flx_btype_subst.varmap_subst rvarmap t) flds in
+      let dtyp = btyp_tuple dtyps in 
+
+      (* get list of coerced values *) 
+      let vals = List.map2 (fun p t -> bexpr_coerce (p,t)) prjs dtyps in
+      (* build argument tuple *)
+      let arg = bexpr_tuple dtyp vals in
+
+      (* we cannot use a apply_struct yet so we have to form a closure instead *)
+      let ctor_typ = btyp_function (dtyp, dstt) in
+      let ctor = bexpr_closure ctor_typ (dst, rts) in
+      remap parent (bexpr_apply dstt (ctor, arg))
+
+    | x ->
+      Flx_exceptions.clierr sr ("Flx_xcoerce: NOT IMPLEMENTED: polymorphic nominal type coercions for " ^ Flx_print.sbt bsym_table srct) 
+    end
+
   | BTYP_inst (`Nominal, src,[],_), BTYP_inst (`Nominal, dst,[],_) ->
     if debug then
     print_endline ("Searching for nominal type conversion from " ^ 
@@ -286,7 +318,7 @@ print_endline ("Dst type " ^ Flx_print.sbt bsym_table dstt);
 
       let srcid = Flx_bsym.id (Flx_bsym_table.find bsym_table src) in
       let dstid = Flx_bsym.id (Flx_bsym_table.find bsym_table dst) in
-      print_endline ("Unable to find supertype coercion from " ^ 
+      print_endline ("Flx_xcoerce: Unable to find supertype coercion from " ^ 
       srcid ^ "<" ^ si src ^ "> to " ^ dstid ^ "<" ^ si dst ^ ">");
       Flx_bsym_table.iter_coercions bsym_table
         (fun ((a,b),c) -> print_endline ("       " ^ si c ^ ":" ^ si b ^ "->" ^ si a))
