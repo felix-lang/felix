@@ -230,29 +230,28 @@ print_endline ("Flx_bind_type_index: btyp_inst, meta type calculated by guess_me
       t
     end
 
-    | SYMDEF_abs _ ->
-      btyp_inst (`Nominal, index,ts,Flx_kind.KIND_type)
+    | SYMDEF_abs (_,_,_,variance) ->
+      btyp_inst (`Nominal variance, index,ts,Flx_kind.KIND_type)
 
     | SYMDEF_virtual_type  ->
       btyp_vinst (index,ts,Flx_kind.KIND_type)
 
-    | SYMDEF_newtype _
-    | SYMDEF_union _
-    | SYMDEF_struct _
-    | SYMDEF_cstruct _
+    | SYMDEF_newtype _ ->
+      btyp_inst (`Nominal [],index,ts,Flx_kind.KIND_type)
+
+    | SYMDEF_union (_,variance)
+    | SYMDEF_struct (_,variance)
+    | SYMDEF_cstruct (_,_,variance)
       ->
-(*
-print_endline ("bind type index, struct thing " ^ si index ^ " ts=" ^ catmap "," (sbt bsym_table) ts);
-*)
-      btyp_inst (`Nominal,index,ts,Flx_kind.KIND_type)
+      btyp_inst (`Nominal variance,index,ts,Flx_kind.KIND_type)
 
 
     (* allow binding to type constructors now too .. *)
     | SYMDEF_const_ctor (uidx,ut,idx,vs') ->
-      btyp_inst (`Nominal, index,ts,Flx_kind.KIND_type)
+      btyp_inst (`Nominal [], index,ts,Flx_kind.KIND_type)
 
     | SYMDEF_nonconst_ctor (uidx,ut,idx,vs',argt) ->
-      btyp_inst (`Nominal, index,ts,Flx_kind.KIND_type)
+      btyp_inst (`Nominal [], index,ts,Flx_kind.KIND_type)
 
     | SYMDEF_typeclass 
     | SYMDEF_module 

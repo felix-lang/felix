@@ -81,6 +81,7 @@ let gen_biface_header syms bsym_table modulename biface =
   | BIFACE_export_cfun (sr,index, export_name) ->
     gen_fun_header syms bsym_table `Cfun index export_name modulename
 
+  (* hack variance to [] because it doesn't matter now *)
   | BIFACE_export_type (sr, typ, export_name) ->
     "//EXPORT type " ^ sbt bsym_table typ ^ " as " ^ export_name  ^ "\n" ^
     (* "typedef ::flxusr::" ^ mname ^ "::" ^ cpp_type_classname syms bsym_table typ ^ " " ^ export_name ^ "_class;\n" ^ *)
@@ -91,8 +92,8 @@ let gen_biface_header syms bsym_table modulename biface =
     "typedef ::flxusr::" ^  mname ^ "::" ^ export_name ^ " " ^ export_name ^ ";\n"
 
   | BIFACE_export_union (sr, idx, export_name) ->
-    let typ = Flx_btype.btyp_inst (`Nominal, idx,[],Flx_kind.KIND_type) in 
     let sym = Flx_bsym_table.find bsym_table idx in 
+    let typ = Flx_btype.btyp_inst (`Nominal [], idx,[],Flx_kind.KIND_type) in 
     let fname = sym.Flx_bsym.id in
     "//EXPORT union "  ^ fname ^ ", type " ^ sbt bsym_table typ ^ " as " ^ export_name  ^ "\n" ^
     "namespace flxusr { namespace " ^ mname ^ "{\n" ^
@@ -101,11 +102,12 @@ let gen_biface_header syms bsym_table modulename biface =
     "typedef ::flxusr::" ^  mname ^ "::" ^ export_name ^ " " ^ export_name ^ ";\n"
 
 
+  (* hack variance to [] because it doesn't matter now *)
   | BIFACE_export_struct (sr,idx) ->
     let bsym = Flx_bsym_table.find bsym_table idx in
     let sname = Flx_bsym.id bsym in
     let bbdcl = Flx_bsym.bbdcl bsym in
-    let typ = Flx_btype.btyp_inst (`Nominal, idx,[],Flx_kind.KIND_type) in
+    let typ = Flx_btype.btyp_inst (`Nominal [], idx,[],Flx_kind.KIND_type) in
     let classname = cpp_type_classname syms bsym_table typ in
     "//EXPORT struct " ^ sname ^ "\n" ^
     "typedef ::flxusr::" ^ mname ^ "::" ^ classname ^ " " ^ sname ^ ";\n"

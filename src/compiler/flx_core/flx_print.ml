@@ -1336,6 +1336,8 @@ and string_of_named_reqs x = match x with
   | x -> " requires " ^ string_of_named_req_expr x
 
 and string_of_base_qual = function
+| `Regular-> "regular"
+| `Semiregular-> "semiregular"
 | `Incomplete -> "incomplete"
 | `Uncopyable-> "uncopyable"
 | `Pod -> "pod"

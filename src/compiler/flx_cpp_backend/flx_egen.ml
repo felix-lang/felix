@@ -625,8 +625,8 @@ print_endline "Apply struct";
     in
     let ts = map tsub ts in
     begin match Flx_bsym.bbdcl bsym with
-    | BBDCL_cstruct (vs,cts,_,_) ->
-      let name = tn (btyp_inst (`Nominal,index,ts,Flx_kind.KIND_type)) in
+    | BBDCL_cstruct (vs,cts,_,variance) ->
+      let name = tn (btyp_inst (`Nominal variance,index,ts,Flx_kind.KIND_type)) in
       let struct_field_names = List.map fst cts in
       let handle ps = 
         let initlist = match fst a with
@@ -668,8 +668,8 @@ print_endline "Apply struct";
         assert false
       end
 
-    | BBDCL_struct (vs,cts,_) ->
-      let name = tn (btyp_inst (`Nominal,index,ts,Flx_kind.KIND_type)) in
+    | BBDCL_struct (vs,cts,variance) ->
+      let name = tn (btyp_inst (`Nominal variance,index,ts,Flx_kind.KIND_type)) in
       if length cts > 1 then
         (* argument must be an lvalue *)
         ce_atom ("reinterpret<"^ name ^">(" ^ ge a ^ ")/* apply struct */")
@@ -1180,7 +1180,7 @@ print_endline ("Generating class new for t=" ^ ref_type);
 
           | [BTYP_sum ls] 
           | [BTYP_tuple ls] -> let n = length ls in ce_atom (si n)
-          | [BTYP_inst (`Nominal, i,_,_)] ->
+          | [BTYP_inst (`Nominal _, i,_,_)] ->
             begin match Flx_bsym_table.find_bbdcl bsym_table i with
               | BBDCL_struct (_,ls,_) -> let n = length ls in ce_atom (si n)
               | BBDCL_cstruct (_,ls,_,_) -> let n = length ls in ce_atom (si n)

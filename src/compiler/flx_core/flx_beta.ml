@@ -361,7 +361,7 @@ print_endline ("processed ts = " ^ catmap "," Flx_btype.st ts);
       with Not_found -> assert false
       end
 
-  | BTYP_inst (`Nominal, i,ts,mt) -> btyp_inst (`Nominal,i, List.map br ts,mt)
+  | BTYP_inst (`Nominal v, i,ts,mt) -> btyp_inst (`Nominal v,i, List.map br ts,mt)
   | BTYP_typeop (op,t,k) -> 
 (*
 print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);

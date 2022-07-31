@@ -18,7 +18,12 @@ type variance_t = [
 ]
 type variance_list_t = variance_t list
 
+let string_of_variance_list v =
+  String.concat "," (List.map (function | `covariant -> "+" | `invariant -> "!" | `contravariant -> "-") v)
+
 type base_type_qual_t = [
+  | `Regular
+  | `Semiregular
   | `Incomplete
   | `Uncopyable
   | `Pod

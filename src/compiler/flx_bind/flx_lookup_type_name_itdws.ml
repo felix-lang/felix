@@ -31,12 +31,12 @@ let handle_type
   state bsym_table rs sra srn name ts index =
   let sym = get_data state.sym_table index in
   match sym.Flx_sym.symdef with
+  | SYMDEF_struct (_,variance) 
+  | SYMDEF_cstruct (_,_,variance) -> btyp_inst (`Nominal [],index,ts,Flx_kind.KIND_type)
+  | SYMDEF_nonconst_ctor _
   | SYMDEF_function _
   | SYMDEF_fun _
-  | SYMDEF_struct _
-  | SYMDEF_cstruct _
-  | SYMDEF_nonconst_ctor _
-  | SYMDEF_callback _ -> btyp_inst (`Nominal,index,ts,Flx_kind.KIND_type)
+  | SYMDEF_callback _ -> btyp_inst (`Nominal [],index,ts,Flx_kind.KIND_type)
   | SYMDEF_instance_type _ ->
 (*
 print_endline ("Lookup_type_name_in_table_dirs_with_sig: Handle type " ^ name ^ " ... binding type index " ^ string_of_int index);
@@ -158,11 +158,14 @@ let lookup_type_name_in_table_dirs_with_sig
       print_endline "Found virtual type";
       Some (btyp_vinst (sye index, ts, Flx_kind.KIND_type))
 
-    | SYMDEF_newtype _
-    | SYMDEF_abs _
-    | SYMDEF_union _ ->
+    (* FIXME when newtype gets variance! *)
+    | SYMDEF_newtype _ ->
+      Some (btyp_inst (`Nominal [],sye index, ts, Flx_kind.KIND_type))
+
+    | SYMDEF_abs (_,_,_,variance)
+    | SYMDEF_union (_,variance) ->
       (* print_endline "Found abs,union,or newtype"; *)
-      Some (btyp_inst (`Nominal,sye index, ts, Flx_kind.KIND_type))
+      Some (btyp_inst (`Nominal variance,sye index, ts, Flx_kind.KIND_type))
 
     (* an instance type is just like a type alias in phase 1 *)
     | SYMDEF_instance_type t ->

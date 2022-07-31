@@ -24,12 +24,12 @@ let str_of_pmode  = function
   | `N -> "NULL"
 
 type instkind_t = [
-  | `Nominal (* nominal type: primitive or user defined *)
+  | `Nominal of variance_list_t (* nominal type: primitive or user defined *)
   | `Alias (* type alias, to be eliminated *)
 ]
 
 let str_of_instkind = function
-  | `Nominal -> "Nominal"
+  | `Nominal v -> "Nominal["^string_of_variance_list v^"]"
   | `Alias -> "Alias"
  
 type btpattern_t = {
@@ -640,7 +640,7 @@ let btyp_vinst (bid, ts,mt) =
   BTYP_vinst (bid, ts,mt)
 
 
-let btyp_int () = btyp_inst (`Nominal,Flx_concordance.flx_int, [], Flx_kind.kind_type)
+let btyp_int () = btyp_inst (`Nominal[],Flx_concordance.flx_int, [], Flx_kind.kind_type)
 
 (** Construct a BTYP_array type. *)
 let btyp_array (t, n) =

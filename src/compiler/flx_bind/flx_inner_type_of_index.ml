@@ -190,8 +190,8 @@ print_endline ("** FINISH **** Calculating Function type for function " ^ sym.Fl
       clierrx "[flx_bind/flx_lookup.ml:2048: E108] " sym.Flx_sym.sr ("Union " ^ sym.Flx_sym.id ^ " doesn't have a type")
 
   (* struct as function *)
-  | SYMDEF_cstruct (ls,_,_)
-  | SYMDEF_struct (ls,_) ->
+  | SYMDEF_cstruct (ls,_,variance)
+  | SYMDEF_struct (ls,variance) ->
       let _,vs,_  = find_split_vs state.sym_table bsym_table index in
       let ts = List.map
         (fun (s,i,_) -> `TYP_name (sym.Flx_sym.sr,s,[]))
@@ -219,7 +219,7 @@ print_endline ("** FINISH **** Calculating Function type for function " ^ sym.Fl
       *)
 
       let mt = Flx_kind.kind_type in
-      let result = btyp_function (bt sym.Flx_sym.sr t, btyp_inst (`Nominal,index, ts, mt)) in
+      let result = btyp_function (bt sym.Flx_sym.sr t, btyp_inst (`Nominal variance,index, ts, mt)) in
 (*
 print_endline ("struct as function [inner_type_of_index] " ^ sbt bsym_table result);
 *)

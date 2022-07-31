@@ -1210,6 +1210,8 @@ syntax cbind {
   //$ Pointers can still be formed.
   stype_qual := "incomplete" =># "'Incomplete";
   stype_qual := "uncopyable" =># "'Uncopyable";
+  stype_qual := "regular" =># "'Regular";
+  stype_qual := "semiregular" =># "'Semiregular";
 
   //$ The type qualified pod is used to specify
   //$ that a type has a trivial destructor.

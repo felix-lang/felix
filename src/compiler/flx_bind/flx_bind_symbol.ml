@@ -757,7 +757,7 @@ print_endline ("Flx_bbind: Adding type of index " ^ si symbol_index ^ " to cache
   | SYMDEF_union (cs,variance) ->
     if state.print_flag then
       print_endline ("//Binding union " ^ si symbol_index ^ " --> " ^ sym.Flx_sym.id);
-    let ut = btyp_inst ( `Nominal,
+    let ut = btyp_inst ( `Nominal variance,
       symbol_index, 
       List.map (fun (s,i,k) -> btyp_type_var (i,k)) bvs, 
       Flx_kind.KIND_type) 

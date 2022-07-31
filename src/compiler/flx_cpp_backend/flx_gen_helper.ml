@@ -147,7 +147,7 @@ let is_gc_pointer syms bsym_table sr t =
   match t with
   | BTYP_function _ -> true
   | BTYP_ptr _ -> true
-  | BTYP_inst (`Nominal, i,_,_) ->
+  | BTYP_inst (`Nominal _, i,_,_) ->
     let bsym =
       try Flx_bsym_table.find bsym_table i with Not_found ->
         clierrx "[flx_cpp_backend/flx_gen_helper.ml:112: E310] " sr ("[is_gc_pointer] Can't find nominal type " ^

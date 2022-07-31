@@ -276,7 +276,7 @@ print_endline ("Dst type " ^ Flx_print.sbt bsym_table dstt);
   let srct = unfold "expand_coercion srct" srct in
   let dstt = unfold "expand_coercion dstt" dstt in
   match srct,dstt with
-  | BTYP_inst (`Nominal, src,lts,_), BTYP_inst (`Nominal, dst,rts,_) when src = dst ->
+  | BTYP_inst (`Nominal _, src,lts,_), BTYP_inst (`Nominal _, dst,rts,_) when src = dst ->
     let bsym = Flx_bsym_table.find bsym_table src in
     let bbdcl = Flx_bsym.bbdcl bsym in
     begin match bbdcl with
@@ -308,7 +308,10 @@ print_endline ("Dst type " ^ Flx_print.sbt bsym_table dstt);
       Flx_exceptions.clierr sr ("Flx_xcoerce: NOT IMPLEMENTED: polymorphic nominal type coercions for " ^ Flx_print.sbt bsym_table srct) 
     end
 
-  | BTYP_inst (`Nominal, src,[],_), BTYP_inst (`Nominal, dst,[],_) ->
+    (* argument ......................  parameter *)
+  | BTYP_inst (`Nominal _, src,sts,_), BTYP_inst (`Nominal _, dst,dts,_) ->
+    if List.length sts > 0 || List.length dts > 0 then
+       print_endline ("UNIMPLEMENTED POLYMORPHIC NOMINAL TYPE COERCION");
     if debug then
     print_endline ("Searching for nominal type conversion from " ^ 
     si src  ^ " -> " ^ si dst);
@@ -340,6 +343,11 @@ print_endline ("Dst type " ^ Flx_print.sbt bsym_table dstt);
         let cod = match ft with | BTYP_function (dom,cod) -> cod | _ -> assert false in
         if debug then
         print_endline ("Function " ^ (Flx_bsym_table.find bsym_table fn).id ^ "<" ^ string_of_int fn ^">:" ^ Flx_print.sbt bsym_table ft);
+(* FIXME: we cannot do this now: instead we have to first find the MGU from specialising the domain so it matches the argument,
+   the resulting type variable assignments then have to be ordered the same as those in the function, and then we use those type
+   expressions in the closure. The resulting application yields an argument with the function's (dependent) type variables eliminated 
+   We know this has to work because unification had to do this too to type check it 
+*)
         let cls = bexpr_closure ft (fn,[]) in
         bexpr_apply cod (cls, acc)
         ) 

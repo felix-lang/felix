@@ -11,7 +11,7 @@ type pmode = [
 
 val str_of_pmode: pmode -> string
 type instkind_t = [
-  | `Nominal (* nominal type: primitive or user defined *)
+  | `Nominal of Flx_ast.variance_list_t (* nominal type: primitive or user defined *)
   | `Alias (* type alias, to be eliminated *)
 ]
 

@@ -74,7 +74,7 @@ let record_union bsym_table counter br ls =
 let nominal_intersect bsym_table counter br ls =
   let js = List.fold_left (fun acc elt ->
     match elt with
-    | BTYP_inst (`Nominal, j, [], KIND_type) -> j :: acc
+    | BTYP_inst (`Nominal _, j, [], KIND_type) -> j :: acc
     | t -> 
       print_endline ("Flx_intersect: Nominal type intersect requires monomorphic nominal type, got " ^ Flx_btype.st t);
       failwith ("Flx_intersect: Nominal type intersect requires monomorphic nominal type, got " ^ Flx_btype.st t)
@@ -85,12 +85,12 @@ let nominal_intersect bsym_table counter br ls =
   | None -> 
     print_endline ("Flx_intersect: No unique greatest subtype found: " ^ Flx_print.sbt bsym_table (btyp_intersect ls) );
     failwith ("Flx_intersect: No unique greatest subtype found")
-  | Some i -> btyp_inst (`Nominal, i, [], KIND_type)
+  | Some i -> btyp_inst (`Nominal [], i, [], KIND_type)
 
 let nominal_union bsym_table counter br ls =
   let js = List.fold_left (fun acc elt ->
     match elt with
-    | BTYP_inst (`Nominal, j, [], KIND_type) -> j :: acc
+    | BTYP_inst (`Nominal [], j, [], KIND_type) -> j :: acc
     | t -> 
       print_endline ("Flx_intersect: Nominal type union requires monomorphic nominal type, got " ^ Flx_btype.st t);
       failwith ("Flx_intersect: Nominal type union requires monomorphic nominal type, got " ^ Flx_btype.st t)
@@ -101,7 +101,7 @@ let nominal_union bsym_table counter br ls =
   | None -> 
     print_endline ("Flx_intersect: No unique least supertype found: " ^ Flx_print.sbt bsym_table (btyp_intersect ls) );
     failwith ("Flx_intersect: No unique least supertype found")
-  | Some i -> btyp_inst (`Nominal, i, [], KIND_type)
+  | Some i -> btyp_inst (`Nominal [], i, [], KIND_type)
 
 
 
@@ -110,7 +110,7 @@ let intersect bsym_table counter br ls =
   match ls with
   | [] -> btyp_any ()
   | BTYP_record _ :: _ -> record_intersect bsym_table counter br ls 
-  | BTYP_inst (`Nominal, _, [], KIND_type) :: _ -> nominal_intersect bsym_table counter br ls
+  | BTYP_inst (`Nominal _, _, [], KIND_type) :: _ -> nominal_intersect bsym_table counter br ls
   | t :: tail  -> 
     print_endline ("Flx_intersect: Intersection only defined for records and monomorphic nominal types, got " ^ Flx_btype.st t);
     failwith ("Flx_intersect: Intersection only defined for records and monomorphic nominal types, got " ^ Flx_btype.st t)
@@ -120,7 +120,7 @@ let union bsym_table counter br ls =
   match ls with
   | [] -> btyp_any ()
   | BTYP_record _ :: _ -> record_union bsym_table counter br ls 
-  | BTYP_inst (`Nominal, _, [], KIND_type) :: _ -> nominal_union bsym_table counter br ls
+  | BTYP_inst (`Nominal _, _, [], KIND_type) :: _ -> nominal_union bsym_table counter br ls
   | t :: tail  -> 
     print_endline ("Flx_intersect: Union only defined for records and monomorphic nominal types, got " ^ Flx_btype.st t);
     failwith ("Flx_intersect: Union only defined for records and monomorphic nominal types, got " ^ Flx_btype.st t)

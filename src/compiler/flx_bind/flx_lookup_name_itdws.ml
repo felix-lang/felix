@@ -218,7 +218,7 @@ if name = debugid then
     (* if its a struct with a record argument we return it without checking if the record
        matches ..
     *)
-    | (SYMDEF_cstruct _ | SYMDEF_struct _ )
+    | (SYMDEF_struct (_,variance) | SYMDEF_cstruct (_,_,variance ) )
       when
         (match t2 with
         | [BTYP_record _] -> true
@@ -229,7 +229,7 @@ if name = debugid then
           print_endline ("lookup_name_in_table_dirs_with_sig finds struct constructor " ^ id);
           print_endline ("Record Argument type is " ^ catmap "," (sbt bsym_table) t2);
         end;
-        Some (bexpr_closure (btyp_inst (`Nominal, sye index,ts,Flx_kind.KIND_type)) (sye index,ts))
+        Some (bexpr_closure (btyp_inst (`Nominal variance, sye index,ts,Flx_kind.KIND_type)) (sye index,ts))
         (*
         failwith "NOT IMPLEMENTED YET"
         *)
@@ -399,14 +399,21 @@ if name = debugid then
             { Flx_sym.id=id; sr=sr; vs=vs; symdef=entry }->
             if id = debugid then print_endline ("FOUND " ^ id);
             match entry with
-            | (SYMDEF_cstruct _ | SYMDEF_struct _ ) ->
+            | (SYMDEF_struct (_,variance) | SYMDEF_cstruct (_,_,variance) ) ->
                 (match t2 with
                 | [BTYP_record _] -> true
                 | _ -> false
                 )
             | _ -> false
           ) ->
-            Some (bexpr_closure (btyp_inst (`Nominal, sye i,ts,Flx_kind.KIND_type)) (sye i,ts))
+            let variance = 
+              match get_data state.sym_table (sye i) with
+              { Flx_sym.id=id; sr=sr; vs=vs; symdef=entry }->
+              match entry with
+              | (SYMDEF_struct (_,variance) | SYMDEF_cstruct (_,_,variance) ) -> variance
+              | _ -> assert false
+            in
+            Some (bexpr_closure (btyp_inst (`Nominal variance, sye i,ts,Flx_kind.KIND_type)) (sye i,ts))
 
         | _ ->
         let fs =

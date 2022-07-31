@@ -927,6 +927,8 @@ and xtype_qual_t sr x : type_qual_t =
   let ex x = xexpr_t sr x in
   let ti x = type_of_sex sr x in
   match x with
+  | Id "Regular" -> `Regular
+  | Id "Semiregular" -> `Semiregular
   | Id "Incomplete" -> `Incomplete
   | Id "Uncopyable" -> `Uncopyable
   | Id "Pod" -> `Pod

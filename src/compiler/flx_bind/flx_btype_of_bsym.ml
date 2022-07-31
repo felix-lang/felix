@@ -82,7 +82,7 @@ print_endline ("btype of bsym struct " ^ Flx_bsym.id bsym ^ "<" ^ si bid ^ ">, #
         ts
       in
       let t = btyp_tuple (List.map snd ls) in
-      let result = btyp_function (t, btyp_inst (`Nominal, bid, ts, Flx_kind.KIND_type)) in
+      let result = btyp_function (t, btyp_inst (`Nominal variance, bid, ts, Flx_kind.KIND_type)) in
 (*
 print_endline ("struct as function [btype_of_bsym] " ^ sbt bsym_table result);
 *)

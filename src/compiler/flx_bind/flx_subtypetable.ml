@@ -13,10 +13,12 @@ let report_subtypes syms =
 (*
       print_endline ("Felix  Function: Symbol table " ^ string_of_int bid ^ " -> " ^ sym.id);
 *)
+(*
       if List.length vs <> 0 then
         print_endline ("   Improper subtype, no type variables allowed, got " ^
          string_of_int (List.length vs))
       else
+*)
       let ps = fst params in
       begin match ps with
       | Satom (sr,kind,id,typ,initopt) -> () 
@@ -33,10 +35,12 @@ let report_subtypes syms =
 (*
       print_endline ("Extern Function: Symbol table " ^ string_of_int bid ^ " -> " ^ sym.id);
 *)
+(*
       if List.length vs <> 0 then
         print_endline ("   Improper subtype, no type variables allowed, got " ^
          string_of_int (List.length vs))
       else
+*)
       begin match ps with
       | [typ] -> ()
 (*

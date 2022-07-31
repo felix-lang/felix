@@ -453,7 +453,7 @@ and process_inst syms bsym_table weak instps ref_insts1 i ts inst =
     let hvarmap = hashtable_of_list vars in
     let tss = map (varmap_subst hvarmap) argtypes in
     iter rtr tss;
-    rtnr (btyp_inst (`Nominal, i,ts,Flx_kind.KIND_type))
+    rtnr (btyp_inst (`Nominal variance, i,ts,Flx_kind.KIND_type))
 
 
   | BBDCL_cstruct (vs,ps, reqs, variance) ->
@@ -465,7 +465,7 @@ and process_inst syms bsym_table weak instps ref_insts1 i ts inst =
     iter rtr tss;
     let vs t = varmap_subst hvarmap t in
     do_reqs vs reqs;
-    rtnr (btyp_inst (`Nominal, i,ts,Flx_kind.KIND_type))
+    rtnr (btyp_inst (`Nominal variance, i,ts,Flx_kind.KIND_type))
 
   | BBDCL_struct (vs,ps, variance) ->
     let argtypes = map snd ps in
@@ -474,11 +474,11 @@ and process_inst syms bsym_table weak instps ref_insts1 i ts inst =
     let hvarmap = hashtable_of_list vars in
     let tss = map (varmap_subst hvarmap) argtypes in
     iter rtr tss;
-    rtnr (btyp_inst (`Nominal, i,ts,Flx_kind.KIND_type));
+    rtnr (btyp_inst (`Nominal variance, i,ts,Flx_kind.KIND_type));
 
   | BBDCL_newtype (vs,t) ->
     rtnr t;
-    rtnr (btyp_inst (`Nominal, i,ts,Flx_kind.KIND_type))
+    rtnr (btyp_inst (`Nominal [], i,ts,Flx_kind.KIND_type))
 
   | BBDCL_val (vs,t,_) ->
     if length vs <> length ts

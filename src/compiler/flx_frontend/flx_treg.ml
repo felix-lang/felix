@@ -285,7 +285,7 @@ print_endline ("ERROR, trying to register borrowed type " ^ Flx_btype.st t');
   | BTYP_ptr (_,t',[]) -> add_weak weak t'; rnr t
   | BTYP_ptr (_,c,[d]) -> rr d; rr c; rnr t
 
-  | BTYP_inst (`Nominal, i,ts,_)->
+  | BTYP_inst (`Nominal _, i,ts,_)->
 (*
 print_endline ("Instance type, registering argument ts=" ^ catmap "," (sbt bsym_table) ts);
 *)

@@ -309,7 +309,7 @@ print_endline ("Flx_tgen.cpp_type_classname " ^ sbt bsym_table t);
 
   | BTYP_vinst (i,ts,_) -> assert false
 
-  | BTYP_inst (`Nominal,i,ts,_) ->
+  | BTYP_inst (`Nominal _,i,ts,_) ->
     let bsym = Flx_bsym_table.find bsym_table i in
     let fname = Flx_bsym.id bsym in
     let bbdcl = Flx_bsym.bbdcl bsym in
@@ -490,7 +490,7 @@ and cpp_structure_name syms bsym_table t =
   | BTYP_finst _ -> assert false
   | BTYP_vinst _ -> assert false
 
-  | BTYP_inst (`Nominal, i,ts,_) ->
+  | BTYP_inst (`Nominal _, i,ts,_) ->
     let bsym = Flx_bsym_table.find bsym_table i in
     let fname = Flx_bsym.id bsym in
     let bbdcl = Flx_bsym.bbdcl bsym in

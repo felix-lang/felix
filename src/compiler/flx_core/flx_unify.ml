@@ -36,34 +36,22 @@ let rec solve_subtypes bsym_table counter lhs rhs dvars (s:vassign_t option ref)
 print_endline ("Solve subtypes " ^ Flx_btype.str_of_btype lhs ^ " >=? " ^ Flx_btype.str_of_btype rhs); 
 *)
   match lhs, rhs with
-  | BTYP_inst (`Nominal,l,[],_),BTYP_inst(`Nominal,r,[],_) -> (* distinct monomorphic nominal types *)
+  | BTYP_inst (`Nominal _,l,[],_),BTYP_inst(`Nominal _,r,[],_) -> (* distinct monomorphic nominal types *)
     if l <> r && not (Flx_bsym_table.is_indirect_supertype bsym_table l r)
     then raise Not_found
 
-  | BTYP_inst (`Nominal,l,lts,_),BTYP_inst(`Nominal,r,rts,_) when l = r -> (* same polymorphic nominal type *)
-    let bsym = Flx_bsym_table.find bsym_table l in
-    let bbdcl = Flx_bsym.bbdcl bsym in
-    begin match bbdcl with
-    | BBDCL_external_type (_,_,_,_,variance)
-    | BBDCL_union (_,_,variance)
-    | BBDCL_cstruct (_,_,_,variance)
-    | BBDCL_struct (_,_,variance) ->
-      assert (List.length lts = List.length rts);
-      let t2 = List.combine lts rts in
-      assert(List.length variance <= List.length lts);
-      let variance = (Flx_list.repeat `invariant (List.length lts - List.length variance)) @ variance in
-      List.iter2 (fun (l, r) variance -> 
-        match variance with
-        | `covariant -> add_ge (l, r)
-        | `invariant ->  add_eq  (l, r)
-        | `contravariant -> add_ge (r, l)
-      ) t2 variance
+  | BTYP_inst (`Nominal variance,l,lts,_),BTYP_inst(`Nominal _,r,rts,_) when l = r -> (* same polymorphic nominal type *)
+    assert (List.length lts = List.length rts);
+    let t2 = List.combine lts rts in
+    assert(List.length variance <= List.length lts);
+    let variance = (Flx_list.repeat `invariant (List.length lts - List.length variance)) @ variance in
+    List.iter2 (fun (l, r) variance -> 
+      match variance with
+      | `covariant -> add_ge (l, r)
+      | `invariant ->  add_eq  (l, r)
+      | `contravariant -> add_ge (r, l)
+    ) t2 variance
 
-    | BBDCL_newtype _  (* FIXME: newtype should have variance too *)
-    | BBDCL_instance_type _ -> List.iter2 (fun l r -> add_eq (l,r)) lts rts
-      
-    | _ -> assert false
-    end
 
   (* a non-uniq parameter accepts a uniq one, uniq T is a subtype of T,
      also, covariant ???????

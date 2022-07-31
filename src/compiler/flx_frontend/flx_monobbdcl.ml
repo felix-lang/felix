@@ -77,7 +77,7 @@ with Not_found ->
   assert false
 end
 
-let mono_union syms bsym_table virtualinst polyinst  mt bsym sr i ts (vs,cps) =
+let mono_union syms bsym_table virtualinst polyinst  mt bsym sr i ts (vs,cps) variance =
 (*
     if List.length vs <> List.length ts then begin
       print_endline ("Monomorphise union " ^ sbt bsym_table (btyp_inst (i,ts)) ^ 
@@ -92,7 +92,7 @@ let mono_union syms bsym_table virtualinst polyinst  mt bsym sr i ts (vs,cps) =
     let gadt = List.fold_left (fun acc (name,index,evs,d,c,gadt) -> 
        gadt || acc) false cps
     in
-    let ut = btyp_inst (`Nominal,i,ts,Flx_kind.KIND_type) in
+    let ut = btyp_inst (`Nominal variance,i,ts,Flx_kind.KIND_type) in
 if gadt then
 begin
 (*
@@ -356,7 +356,7 @@ print_endline ("Monomorphising variable "^Flx_bsym.id bsym ^" polytype " ^ sbt b
     Some (bbdcl_external_code (vs,cs,ikind,reqs))
 
   | BBDCL_union (vs,cps,variance) ->
-    mono_union syms bsym_table virtualinst polyinst  mt bsym sr i ts (vs,cps)  
+    mono_union syms bsym_table virtualinst polyinst  mt bsym sr i ts (vs,cps) variance
 
   | BBDCL_cstruct (vs,cps, reqs,variance) -> 
     assert (List.length vs = List.length ts);

@@ -509,15 +509,15 @@ print_endline ("Binding `TYP_name " ^s^ " via params to " ^ sbt bsym_table t);
           syserr sr ("Synthetic name "^name ^ " not in symbol table!")
       in
       begin match sym.Flx_sym.symdef with
-      | SYMDEF_struct _
-      | SYMDEF_cstruct _
-      | SYMDEF_union _
-      | SYMDEF_abs _ ->
+      | SYMDEF_struct (_,variance)
+      | SYMDEF_cstruct (_,_,variance)
+      | SYMDEF_union (_,variance)
+      | SYMDEF_abs (_,_,_,variance) ->
           let ts = List.map
             (fun (s,i,mt) -> btyp_type_var (i, Flx_btype.bmt "Flx_bind_type1" mt))
             (fst sym.Flx_sym.vs)
           in
-          btyp_inst (`Nominal,index,ts,Flx_kind.KIND_type)
+          btyp_inst (`Nominal variance,index,ts,Flx_kind.KIND_type)
       | SYMDEF_typevar _ ->
           print_endline ("Synthetic name "^name ^ " is a typevar!");
           syserr sr ("Synthetic name "^name ^ " is a typevar!")

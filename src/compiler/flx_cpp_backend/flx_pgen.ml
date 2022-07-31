@@ -23,7 +23,7 @@ let rec shape_of' use_assoc_type syms bsym_table tn t =
   match t with
   | _ when islinear_type t -> "::flx::rtl::cl_t_ptr_map"
 
-  | BTYP_inst (`Nominal, i,ts,_) ->
+  | BTYP_inst (`Nominal _, i,ts,_) ->
     let bsym = Flx_bsym_table.find bsym_table i in
     begin match Flx_bsym.bbdcl bsym with
     | BBDCL_union (vs,[id,n,[],t',_,false],_) -> 

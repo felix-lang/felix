@@ -102,7 +102,7 @@ Flx_print.sbt bsym_table t);
     in
     ct
 
-  | BTYP_inst (`Nominal, i,ts,_) ->
+  | BTYP_inst (`Nominal _, i,ts,_) ->
     let bsym =
       try Flx_bsym_table.find bsym_table i with Not_found -> assert false
     in

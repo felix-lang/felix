@@ -246,10 +246,12 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
       let vs = fst sym.Flx_sym.vs in
       begin match sym.Flx_sym.symdef with
       | SYMDEF_function (params,ret,effect,props,_) when List.mem `Subtype props ->
+(*
         if List.length vs <> 0 then
           clierr sr ("   Improper subtype, no type variables allowed, got " ^
            string_of_int (List.length vs))
         else
+*)
         let dom, cod = 
           let ps = fst params in
           begin match ps with
@@ -281,20 +283,22 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
           print_endline ("Type of function " ^ string_of_int i ^ " is " ^ sbt bsym_table ft);
 *)
           match ft with
-          | BTYP_function (BTYP_inst (`Nominal, dom,[],_),BTYP_inst (`Nominal, cod,[],_)) ->
+          | BTYP_function (BTYP_inst (`Nominal _, dom,_,_),BTYP_inst (`Nominal _, cod,_,_)) ->
 (*
             print_endline ("Domain index = " ^ string_of_int dom ^ " codomain index = " ^ string_of_int cod);
 *)
             Flx_bsym_table.add_supertype bsym_table ((cod,dom),i)
  
-          | _ -> clierr sr ("Subtype specification requires nonpolymorphic nominal typed function")
+          | _ -> clierr sr ("Subtype specification requires function from and to nominal type")
         end
 
       | SYMDEF_fun (props,ps,ret,_,_,_) when List.mem `Subtype props ->
+(*
         if List.length vs <> 0 then
           print_endline ("   Improper subtype, no type variables allowed, got " ^
            string_of_int (List.length vs))
         else
+*)
         let dom, cod = 
           begin match ps with
           | [typ] -> typ,ret
@@ -325,12 +329,12 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
           print_endline ("Type of function " ^ string_of_int i ^ " is " ^ sbt bsym_table ft);
 *)
           match ft with
-          | BTYP_function (BTYP_inst (`Nominal, dom,[],_),BTYP_inst (`Nominal, cod,[],_)) ->
+          | BTYP_function (BTYP_inst (`Nominal _, dom,_,_),BTYP_inst (`Nominal _, cod,_,_)) ->
 (*
             print_endline ("Domain index = " ^ string_of_int dom ^ " codomain index = " ^ string_of_int cod);
 *)
             Flx_bsym_table.add_supertype bsym_table ((cod,dom),i)
-          | _ -> clierr sr ("Subtype specification requires nonpolymorphic nominal typed function")
+          | _ -> clierr sr ("Subtype specification requires function from and to nominal types")
         end
       | _ -> ()
       end (* symdef *)
