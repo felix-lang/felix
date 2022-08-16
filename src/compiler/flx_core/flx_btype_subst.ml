@@ -98,10 +98,18 @@ let mk_varmap sr (vs:Flx_kind.bvs_t) ts =
   ;
   varmap
 
+let str_of_varmap table = String.concat ", " 
+  (Hashtbl.fold (fun k v lst -> (string_of_int k ^ " |-> " ^ Flx_btype.st v) :: lst) table []) 
+
 let varmap_of_mgu mgu = 
   let varmap = Hashtbl.create 97 in
   List.iter (fun (varidx, typ) -> Hashtbl.add varmap varidx typ) mgu;
   varmap
+
+let compose_varmaps a b =
+  let c = Hashtbl.create 97 in
+  Hashtbl.iter (fun k t -> Hashtbl.add c k (varmap_subst b t)) a;
+  c
 
 let tsubst sr (vs:Flx_kind.bvs_t) ts t =
   varmap_subst (mk_varmap sr vs ts) t

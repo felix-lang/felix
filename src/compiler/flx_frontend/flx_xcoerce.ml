@@ -278,6 +278,9 @@ print_endline ("Dst type " ^ Flx_print.sbt bsym_table dstt);
   match srct,dstt with
   | BTYP_inst (`Nominal _, src,lts,_), BTYP_inst (`Nominal _, dst,rts,_) when src = dst ->
     let bsym = Flx_bsym_table.find bsym_table src in
+(*
+print_endline ("SAME instance coercion");
+*)
     let bbdcl = Flx_bsym.bbdcl bsym in
     begin match bbdcl with
     | BBDCL_cstruct (bvs,flds,_,variance)
@@ -310,11 +313,13 @@ print_endline ("Dst type " ^ Flx_print.sbt bsym_table dstt);
 
     (* argument ......................  parameter *)
   | BTYP_inst (`Nominal _, src,sts,_), BTYP_inst (`Nominal _, dst,dts,_) ->
+(*
     if List.length sts > 0 || List.length dts > 0 then
        print_endline ("UNIMPLEMENTED POLYMORPHIC NOMINAL TYPE COERCION");
     if debug then
     print_endline ("Searching for nominal type conversion from " ^ 
     si src  ^ " -> " ^ si dst);
+*)
     let coercion_chains = Flx_bsym_table.find_coercion_chains bsym_table dst src in
     begin match coercion_chains with
     | [] -> 
@@ -328,33 +333,71 @@ print_endline ("Dst type " ^ Flx_print.sbt bsym_table dstt);
       ;
       Flx_exceptions.clierr sr ("Unable to find supertype coercion from " ^ 
       srcid ^ "<" ^ si src ^ "> to " ^ dstid ^ "<" ^ si dst ^ ">");
- 
+
     | chains ->
-      if debug then
+      (* if debug then *)
+(*
       print_endline ("Found "^string_of_int (List.length chains) ^" coercion chains from " ^
       si src ^ " to " ^ si dst);
+*)
       let shortest_chain = 
         List.fold_left (fun acc chain -> 
           let n = List.length acc in if n = 0 || n > List.length chain then chain else acc
         ) [] chains
       in
-      let result = List.fold_left (fun acc fn ->
-        let ft = Flx_bsym_table.get_fun_type bsym_table fn in
-        let cod = match ft with | BTYP_function (dom,cod) -> cod | _ -> assert false in
-        if debug then
-        print_endline ("Function " ^ (Flx_bsym_table.find bsym_table fn).id ^ "<" ^ string_of_int fn ^">:" ^ Flx_print.sbt bsym_table ft);
-(* FIXME: we cannot do this now: instead we have to first find the MGU from specialising the domain so it matches the argument,
-   the resulting type variable assignments then have to be ordered the same as those in the function, and then we use those type
-   expressions in the closure. The resulting application yields an argument with the function's (dependent) type variables eliminated 
-   We know this has to work because unification had to do this too to type check it 
+
+(*
+print_endline ("Selected chain " ^ Flx_util.catmap "," string_of_int shortest_chain);
 *)
-        let cls = bexpr_closure ft (fn,[]) in
-        bexpr_apply cod (cls, acc)
+      (* FOLD *)
+      let result,_ = List.fold_left (fun (acc,ts) f ->
+        let bsym = Flx_bsym_table.find bsym_table f in
+        let dom,cod,bvs = match bsym.bbdcl with
+          | BBDCL_external_fun (_,bvs,params,ret,_,_,_ ) -> btyp_tuple params, ret, bvs
+          | BBDCL_fun (_,bvs,bparams,ret,_,_) -> Flx_bparams.get_btype bparams, ret, bvs
+          | _ -> assert false
+        in 
+        match dom,cod with
+          (* param=Dom=Derived[vs]->Cod=Base[ts(vs)] *)
+          | BTYP_inst (`Nominal pvar, p,pts,_), BTYP_inst (`Nominal avar, a, ats,knd) ->
+(*
+  print_endline ("Coercion type = " ^ Flx_btype.st (Flx_btype.btyp_function (dom,cod)));
+  print_endline ("Argument type = " ^ Flx_btype.st (snd acc));
+  print_endline ("Argument ts = " ^ Flx_util.catmap "," Flx_btype.st ts);
+*)
+            (* the pts MUST be the sequence of type variables in bvs, the subtype *)
+            let vmap = Flx_btype_subst.mk_varmap bsym.sr bvs ts in
+(*
+  print_endline ("Coercion varmap " ^ Flx_btype_subst.str_of_varmap vmap);
+*)
+            let xts = List.map (Flx_btype_subst.varmap_subst vmap) ats  in
+(*
+  print_endline ("Coercion domain unifier ts = " ^ Flx_util.catmap "," Flx_btype.st xts);
+*)
+            let d = snd acc in
+            let c = Flx_btype.btyp_inst (`Nominal avar, a, xts, knd) in
+(*
+  print_endline ("Coercion codomain = " ^ Flx_btype.st c);
+*)
+            let d = snd acc in
+            let ft = btyp_function (d,c) in
+(*
+  print_endline ("new coercion type = " ^ Flx_btype.st ft);
+*)
+            let cls = Flx_bexpr.bexpr_closure ft (f,ts) in
+(*
+  print_endline ("Coercion closure " ^ Flx_print.sbe bsym_table cls);
+*)
+            bexpr_apply c (cls, acc),ts
+          | _ -> assert false
         ) 
-        srce 
+        (srce,sts)
        (List.rev shortest_chain)
       in
       assert (dstt = snd result);
+(*
+print_endline ("FINAL RESULT " ^ Flx_print.sbe bsym_table result);
+*)
       result
     end
      

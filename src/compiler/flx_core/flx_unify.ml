@@ -36,10 +36,11 @@ let rec solve_subtypes bsym_table counter lhs rhs dvars (s:vassign_t option ref)
 print_endline ("Solve subtypes " ^ Flx_btype.str_of_btype lhs ^ " >=? " ^ Flx_btype.str_of_btype rhs); 
 *)
   match lhs, rhs with
+(*
   | BTYP_inst (`Nominal _,l,[],_),BTYP_inst(`Nominal _,r,[],_) -> (* distinct monomorphic nominal types *)
     if l <> r && not (Flx_bsym_table.is_indirect_supertype bsym_table l r)
     then raise Not_found
-
+*)
   | BTYP_inst (`Nominal variance,l,lts,_),BTYP_inst(`Nominal _,r,rts,_) when l = r -> (* same polymorphic nominal type *)
     assert (List.length lts = List.length rts);
     let t2 = List.combine lts rts in
@@ -51,6 +52,66 @@ print_endline ("Solve subtypes " ^ Flx_btype.str_of_btype lhs ^ " >=? " ^ Flx_bt
       | `invariant ->  add_eq  (l, r)
       | `contravariant -> add_ge (r, l)
     ) t2 variance
+
+  (* recall the supertype is the BASE TYPE and subtype is DERIVED we want
+     a coercion from DERIVED TO BASE
+
+     So coercion from RHS to LHS
+     which means the argument is the RHS and the domain of the coercion.
+  *)
+  | BTYP_inst (`Nominal variance,l,lts,knd),BTYP_inst(`Nominal _,r,rts,_)  -> (* distinct polymorphic nominal type *)
+    let chains = Flx_bsym_table.find_coercion_chains bsym_table l r in
+    let n = List.length chains in
+(*
+    if n > 0 then
+      print_endline ("Unify Found " ^ string_of_int n ^ " chains");
+*)
+    begin match chains with
+    | [] -> raise Not_found (* not a subtype *)
+    | chain :: _ ->
+(*
+      print_endline ("Unify using chain length " ^ string_of_int (List.length chain));
+      print_endline ("Chain= " ^ Flx_util.catmap "," string_of_int chain);
+*)
+      let ts = List.fold_left 
+        (fun ats f -> 
+(*
+print_endline ("Input argument ats = " ^ Flx_util.catmap "," Flx_btype.st ats);
+*)
+           let bsym = Flx_bsym_table.find bsym_table f in
+           let dom,cod,bvs = match bsym.bbdcl with
+             | BBDCL_external_fun (_,bvs,params,ret,_,_,_ ) -> btyp_tuple params, ret, bvs
+             | BBDCL_fun (_,bvs,bparams,ret,_,_) -> Flx_bparams.get_btype bparams, ret, bvs
+             | _ -> assert false
+           in 
+(*
+print_endline ("Coercion " ^ Flx_btype.st (btyp_function (dom,cod)));
+*)
+           match dom,cod with
+             (* Dom=Derived[vs]->Cod=Base[ts(vs)] *)
+             | BTYP_inst (`Nominal _, d,dts,_), BTYP_inst (`Nominal _, c, cts,_) ->
+               (* the pts MUST be the sequence of type variables in bvs, the subtype *)
+(*
+print_endline ("[derived] ats = " ^ Flx_util.catmap "," Flx_btype.st ats);
+*)
+               let vmap = Flx_btype_subst.mk_varmap bsym.sr bvs ats in
+               let mapped_cts = List.map (Flx_btype_subst.varmap_subst vmap) cts in
+(*
+print_endline ("[base] cts = " ^ Flx_util.catmap "," Flx_btype.st mapped_cts);
+*)
+               mapped_cts
+         
+             | _ -> assert false
+        ) 
+        rts (List.rev chain)
+      in
+      let x = btyp_inst (`Nominal variance, l, ts, knd) in
+(*
+print_endline ("Adding inequality " ^ Flx_btype.st lhs ^ " > " ^ Flx_btype.st x);
+*)
+      add_ge (lhs, x)
+    end    
+
 
 
   (* a non-uniq parameter accepts a uniq one, uniq T is a subtype of T,
