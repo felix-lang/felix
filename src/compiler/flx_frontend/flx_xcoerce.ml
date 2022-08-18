@@ -400,6 +400,10 @@ print_endline ("FINAL RESULT " ^ Flx_print.sbe bsym_table result);
 *)
       result
     end
+
+  (* pointer to nominal type coercion *)
+  | BTYP_ptr (_,BTYP_inst (`Nominal _, src,sts,_),[]), BTYP_ptr (_, BTYP_inst (`Nominal _, dst,dts,_),[]) ->
+    bexpr_reinterpret_cast (srce, dstt) 
      
   | BTYP_linearfunction (ld,lc) , BTYP_function (rd,rc) ->
     (* print_endline ("Coercing linear function type to ordinary function type .."); *)

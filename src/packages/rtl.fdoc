@@ -162,6 +162,20 @@ T &reinterpret(U const &x) {
   return reinterpret_cast<T&>(const_cast<U&>(x));
 }
 
+// convert any pointer to any other: the T should be a pointer.
+template<typename T, typename U>
+T reinterpret(U const *x) {
+  return reinterpret_cast<T>(const_cast<U*>(x));
+}
+
+// convert any pointer to non-const to any other: the T should be a pointer.
+template<typename T, typename U>
+T reinterpret(U *x) {
+  return reinterpret_cast<T>(x);
+}
+
+
+
 // dflt init
 template<typename T> 
 void dflt_init(T *p){ new(p) T(); }
