@@ -11,6 +11,7 @@ type t = {
   table: (bid_t, elt) Hashtbl.t;
   childmap: (int, BidSet.t) Hashtbl.t; (** All of this bsym table's roots. *)
   mutable subtype_map: ((int * int) * int) list; (* super=cod:param, sub=dom:arg -> coercion *)
+  mutable pointer_subtype_map: ((int * int) * int) list; (* super=cod:param, sub=dom:arg -> coercion *)
   mutable reductions:  Flx_mtypes2.reduction_t list;
 }
 
@@ -33,6 +34,7 @@ let create_fresh () =
   { table=Hashtbl.create 97;
     childmap=Hashtbl.create 97; 
     subtype_map = [];
+    pointer_subtype_map = [];
     reductions = []
   }
 
@@ -40,6 +42,7 @@ let create_from bsym_table =
   { table=Hashtbl.create 97;
     childmap=Hashtbl.create 97; 
     subtype_map = bsym_table.subtype_map;
+    pointer_subtype_map = bsym_table.pointer_subtype_map;
     reductions = []
   }
 
@@ -54,6 +57,8 @@ so the codomain is actually first in the pair.
 
 *)
 type coercion_t = (bid_t * bid_t) * bid_t
+
+(* ----------- START VALUE COERCIONS --------------- *)
 
 (* temporary hackery *)
 let add_supertype bsym_table x =
@@ -181,6 +186,116 @@ let greatest_subtype bsym_table ls : int option =
 let fold_coercions bsym_table f init =
   List.fold_left f init bsym_table.subtype_map 
 
+(* ----------- END VALUE COERCIONS --------------- *)
+
+
+(* ----------- START POINTER COERCIONS --------------- *)
+
+(* temporary hackery *)
+let add_pointer_supertype bsym_table x =
+  bsym_table.pointer_subtype_map <- x :: bsym_table.pointer_subtype_map
+
+let set_pointer_coercions bsym_table x =
+  bsym_table.pointer_subtype_map <- x
+
+let get_pointer_coercions bsym_table = bsym_table.pointer_subtype_map
+
+let iter_pointer_coercions bsym_table f =
+  List.iter f bsym_table.pointer_subtype_map 
+
+
+let maybe_pointer_coercion bsym_table param arg  = 
+  try Some (List.assoc (param,arg) bsym_table.pointer_subtype_map)
+  with Not_found -> None
+
+let is_direct_pointer_supertype bsym_table param arg =
+  List.mem_assoc (param, arg) bsym_table.pointer_subtype_map
+
+let find_pointer_coercion_chains bsym_table param arg : int list list = 
+  let limit = 10 in
+  let chains = ref [] in
+  let rec iis counter chain a = 
+    if counter > limit then failwith ("circular subtype definition, chain limit " ^ string_of_int limit ^ ", exceeded");
+
+     (* find all the types to which the argument can be coerced *)
+    let cands = List.fold_left (fun acc ((p',a'),j) -> if a = a' then (p',j)::acc else acc) [] bsym_table.pointer_subtype_map in
+    if List.mem_assoc param cands 
+    then chains := (List.assoc param cands :: chain) :: !chains
+    else
+      if cands = [] then ()
+      else
+        List.iter (fun (p',j) -> iis (counter + 1) (j::chain) p') cands
+  in 
+  iis 0 [] arg;
+(*
+  print_endline (string_of_int (List.length !chains) ^ " coercion chains to parameter " ^ string_of_int param ^ " from argument  " ^ string_of_int arg);
+  List.iter (fun chain -> print_endline ("Chain=" ^ String.concat "," (List.map string_of_int chain))) !chains;
+*)
+  !chains
+
+let is_indirect_pointer_supertype bsym_table param arg : bool =
+  let limit = 10 in
+  let rec iis counter a = 
+    if counter > limit then failwith ("circular subtype definition, chain limit " ^ string_of_int limit ^ ", exceeded");
+    (* find all the types to which the argument can be coerced *)
+    let cands = List.fold_left (fun acc ((p',a'),_) -> if a = a' then p'::acc else acc) [] bsym_table.pointer_subtype_map in
+    if List.mem param cands then true
+    else
+      if cands = [] then false
+      else
+        List.fold_left (fun acc p' -> acc || iis (counter + 1) p') false cands
+  in 
+  let result = iis 0 arg in
+  result
+
+let is_indirect_pointer_subtype bsym_table arg param : bool = is_indirect_pointer_supertype bsym_table param arg
+
+(* These sets are inclusive *)
+let pointer_supertypes_of bsym_table a : BidSet.t =
+  List.fold_left (fun acc ((p',a'),j) -> if a = a' then BidSet.add p' acc else acc) (BidSet.singleton a) bsym_table.pointer_subtype_map
+
+let pointer_subtypes_of bsym_table p : BidSet.t =
+  List.fold_left (fun acc ((p',a'),j) -> if p = p' then BidSet.add a' acc else acc) (BidSet.singleton p) bsym_table.pointer_subtype_map
+
+let least_pointer_supertype bsym_table ls : int option =
+  match ls with
+  | [] -> None
+  | [x] -> Some x
+  | h :: tail ->
+    let cands =  List.fold_left 
+      (fun acc elt -> BidSet.inter acc (pointer_supertypes_of bsym_table elt)) 
+      (pointer_supertypes_of bsym_table h) 
+      tail
+    in 
+    if BidSet.is_empty cands then None else 
+    let chosen = BidSet.choose cands in
+    let cands = BidSet.remove chosen cands in
+    Some (BidSet.fold (fun cand current -> 
+      if is_indirect_pointer_supertype bsym_table current cand then cand else current
+    ) cands chosen)
+
+let greatest_pointer_subtype bsym_table ls : int option =
+  match ls with
+  | [] -> None
+  | [x] -> Some x
+  | h :: tail ->
+    let cands =  List.fold_left 
+      (fun acc elt -> BidSet.inter acc (pointer_subtypes_of bsym_table elt)) 
+      (pointer_subtypes_of bsym_table h) 
+      tail
+    in 
+    if BidSet.is_empty cands then None else 
+    let chosen = BidSet.choose cands in
+    let cands = BidSet.remove chosen cands in
+    Some (BidSet.fold (fun cand current -> 
+      if is_indirect_pointer_subtype bsym_table current cand then cand else current
+    ) cands chosen)
+
+
+let fold_pointer_coercions bsym_table f init =
+  List.fold_left f init bsym_table.pointer_subtype_map 
+
+(* ----------- END POINTER COERCIONS --------------- *)
 
 (** Returns how many items are in the bound symbol table. *)
 let length bsym_table = Hashtbl.length bsym_table.table
@@ -318,7 +433,8 @@ let copy bsym_table =
   { bsym_table with 
       table=Hashtbl.copy bsym_table.table;
       childmap=Hashtbl.copy bsym_table.childmap;
-      subtype_map=bsym_table.subtype_map
+      subtype_map=bsym_table.subtype_map;
+      pointer_subtype_map=bsym_table.pointer_subtype_map
   }
 
 (** Set's a symbol's parent. *)
@@ -429,7 +545,8 @@ let validate msg bsym_table =
   let f_bid index = if not (index = 0 || mem bsym_table index) 
      then raise (IncompleteBsymTable (0,index,"subtype table"))
   in
-  List.iter (fun ((a,b),c) -> f_bid a; f_bid b; f_bid c) bsym_table.subtype_map
+  List.iter (fun ((a,b),c) -> f_bid a; f_bid b; f_bid c) bsym_table.subtype_map;
+  List.iter (fun ((a,b),c) -> f_bid a; f_bid b; f_bid c) bsym_table.pointer_subtype_map
 
 let validate_types f_btype bsym_table =
   iter begin fun bid _ bsym ->

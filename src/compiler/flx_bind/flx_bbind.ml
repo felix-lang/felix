@@ -246,12 +246,6 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
       let vs = fst sym.Flx_sym.vs in
       begin match sym.Flx_sym.symdef with
       | SYMDEF_function (params,ret,effect,props,_) when List.mem `Subtype props ->
-(*
-        if List.length vs <> 0 then
-          clierr sr ("   Improper subtype, no type variables allowed, got " ^
-           string_of_int (List.length vs))
-        else
-*)
         let dom, cod = 
           let ps = fst params in
           begin match ps with
@@ -289,7 +283,11 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
 *)
             Flx_bsym_table.add_supertype bsym_table ((cod,dom),i)
  
-          | _ -> clierr sr ("Subtype specification requires function from and to nominal type")
+          | BTYP_function (BTYP_ptr (`RW, BTYP_inst (`Nominal _, dom,_,_), []),BTYP_ptr(`RW, BTYP_inst (`Nominal _, cod,_,_),[])) ->
+            print_endline ("Pointer coercion: Domain index = " ^ string_of_int dom ^ " codomain index = " ^ string_of_int cod);
+
+            Flx_bsym_table.add_pointer_supertype bsym_table ((cod,dom),i)
+          | _ -> clierr sr ("Subtype specification requires function from and to nominal type or pointers thereto")
         end
 
       | SYMDEF_fun (props,ps,ret,_,_,_) when List.mem `Subtype props ->
@@ -334,6 +332,10 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
             print_endline ("Domain index = " ^ string_of_int dom ^ " codomain index = " ^ string_of_int cod);
 *)
             Flx_bsym_table.add_supertype bsym_table ((cod,dom),i)
+          | BTYP_function (BTYP_ptr (`RW, BTYP_inst (`Nominal _, dom,_,_), []),BTYP_ptr(`RW, BTYP_inst (`Nominal _, cod,_,_),[])) ->
+            print_endline ("Pointer coercion: Domain index = " ^ string_of_int dom ^ " codomain index = " ^ string_of_int cod);
+
+            Flx_bsym_table.add_pointer_supertype bsym_table ((cod,dom),i)
           | _ -> clierr sr ("Subtype specification requires function from and to nominal types")
         end
       | _ -> ()

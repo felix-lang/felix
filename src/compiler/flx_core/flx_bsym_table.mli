@@ -30,8 +30,28 @@ val iter_coercions: t -> (coercion_t -> unit) -> unit
 val fold_coercions: t -> ('a -> coercion_t -> 'a) -> 'a -> 'a
 val set_coercions: t -> coercion_t list -> unit
 val get_coercions: t -> coercion_t list
-val get_fun_type: t -> bid_t -> Flx_btype.t 
+val least_supertype: t -> int list -> int option
+val greatest_subtype: t -> int list -> int option
+val subtypes_of: t -> bid_t -> BidSet.t
+val supertypes_of: t -> bid_t -> BidSet.t
 
+val add_pointer_supertype: t -> coercion_t -> unit
+val is_direct_pointer_supertype: t -> bid_t -> bid_t -> bool
+val is_indirect_pointer_supertype: t -> bid_t -> bid_t -> bool
+val is_indirect_pointer_subtype: t -> bid_t -> bid_t -> bool
+val find_pointer_coercion_chains : t -> bid_t -> bid_t -> bid_t list list
+val maybe_pointer_coercion: t -> bid_t -> bid_t -> bid_t option
+val iter_pointer_coercions: t -> (coercion_t -> unit) -> unit
+val fold_pointer_coercions: t -> ('a -> coercion_t -> 'a) -> 'a -> 'a
+val set_pointer_coercions: t -> coercion_t list -> unit
+val get_pointer_coercions: t -> coercion_t list
+val least_pointer_supertype: t -> int list -> int option
+val greatest_pointer_subtype: t -> int list -> int option
+val pointer_subtypes_of: t -> bid_t -> BidSet.t
+val pointer_supertypes_of: t -> bid_t -> BidSet.t
+
+
+val get_fun_type: t -> bid_t -> Flx_btype.t 
 val get_reductions: t -> Flx_mtypes2.reduction_t list
 val set_reductions: t -> Flx_mtypes2.reduction_t list -> unit
 val add_reduction_case: t -> string -> Flx_mtypes2.reduction_case_t ->  unit
@@ -133,9 +153,4 @@ val is_function : t -> bid_t -> bool
 val validate : string -> t -> unit
 val validate_types: (Flx_btype.t -> unit) -> t -> unit
 val is_prim: t -> bid_t -> bool
-
-val least_supertype: t -> int list -> int option
-val greatest_subtype: t -> int list -> int option
-val subtypes_of: t -> bid_t -> BidSet.t
-val supertypes_of: t -> bid_t -> BidSet.t
 
