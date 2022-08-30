@@ -3037,6 +3037,7 @@ class Flx
         var pass = 0;
         var fail = 0;
         files = sort files;
+        var save_extra_cxx = control*.cpps;
         for file in files do
           var arg = Filename::join (control*.INDIR, file);
           var path,ext = Filename::split_extension(arg);
@@ -3047,6 +3048,11 @@ class Flx
           loopctl.base <- base;
           // temporary hack, to force reset of the linker filename, stdout, and expect
           // file names in cal_depvars so they depend on the current file.
+          control.cpps <- save_extra_cxx; // because in C++ batch mode there's no main so we have to tack it on here
+          if control*.CXXONLY == 1 do
+            control.cpps <- control*.cpps + file;
+            println$ "[flx] --c++ set cpps = " + control*.cpps._strr;
+          done
           control.LINKER_OUTPUT_FILENAME <- "";
           control.STDOUT <- "";
           control.EXPECT <- "";
@@ -3248,6 +3254,11 @@ class BootFlx
           control.LINKER_OUTPUT_FILENAME <- "";
           control.STDOUT <- "";
           control.EXPECT <- "";
+          control.cpps <- save_extra_cxx; // because in C++ batch mode there's no main so we have to tack it on here
+          if control*.CXXONLY == 1 do
+            control.cpps <- control*.cpps + file;
+            //`println$ "[flx] --c++ set cpps = " + control*.cpps._strr;
+          done
           var dvars = FlxDepvars::cal_depvars(toolchain_maker,c_compiler_executable, cxx_compiler_executable, *config,control,*loopctl);
           if control*.FANCYLOG == 1 do
             print$ f"Processing [%02d/%02d]: %S\r" (i, n, (file+" "*40).(0..40));
