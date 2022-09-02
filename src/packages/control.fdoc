@@ -27,7 +27,7 @@ open class Control
   fun fix[D,C] (f:(D->C)->D->C) (x:D) : C => f (fix f) x;
 
   // for functors TYPE->K only, the K *must* be specified
-  typefun tfix<K> (f: TYPE->K):K => f x as x:K;
+  typefun tfix<K> (f: K ->K):K => f x as x:K;
 
 
   /* Example use: factorial function
