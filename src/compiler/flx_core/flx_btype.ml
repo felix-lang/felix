@@ -1182,7 +1182,9 @@ and widen_fixgap level t =
     let fx t = adj (depth + 1) t in
     match map ~f_btype:fx t with
     | BTYP_fix (i, mt) when i + depth < 0 -> 
+(*
       print_endline ("Widening fixgap by " ^ string_of_int level);
+*)
       btyp_fix (i-level) mt
     | x -> x
   in adj 0 t

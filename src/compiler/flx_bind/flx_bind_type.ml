@@ -312,13 +312,14 @@ print_endline ("FUDGE: Binding `TYP_var " ^ si i ^ ", HACKING KIND TO TYPE");
       btyp_type_var (i, Flx_kind.KIND_var "AnyKind")
     end
 
-  | `TYP_as (t,s) ->
+  | `TYP_as (t,s,k) ->
 (*
 print_endline ("\n\n+++++++++\nTrying to bind recursive type " ^ string_of_typecode t ^ " AS " ^ s);
 *)
+    let k = Flx_btype.bmt "Flx_bind_type:TYP_as" k in
     let t = bind_type'
       env
-      { rs with as_fixlist = (s,rs.depth)::rs.as_fixlist }
+      { rs with as_fixlist = (s,(rs.depth,k))::rs.as_fixlist }
       sr
       t
       params
@@ -491,9 +492,8 @@ print_endline ("  ***** Bound `TYP_apply: " ^ Flx_btype.st x );
   | `TYP_type_tuple ts -> btyp_type_tuple (List.map bt ts)
 
   | `TYP_name (sr,s,[]) when List.mem_assoc s rs.as_fixlist ->
-(* HACK metatype guess *)
-print_endline ("Flx_bind_type: as_fixlistL TYP_name metatype hack!");
-    btyp_fix ((List.assoc s rs.as_fixlist) - rs.depth) (Flx_kind.KIND_type)
+    let level, kind = List.assoc s rs.as_fixlist in
+    btyp_fix (level - rs.depth) kind 
 
   | `TYP_name (sr,s,[]) when List.mem_assoc s params ->
     let t = List.assoc s params in

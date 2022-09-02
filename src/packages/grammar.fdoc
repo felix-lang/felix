@@ -74,6 +74,7 @@ syntax types {
   k[sarrow_pri] := k[>sarrow_pri] "->" k[sarrow_pri] =># "`(knd_arrow (,_1 ,_3))";
   k[sproduct_pri] := k[>sproduct_pri] ("*" k[>sproduct_pri])+ =># "(chain 'knd_tuple _1 _2)" note "mul";
   k[satomic_pri] := katom =># "_1";
+  k[satomic_pri] := "(" skindexpr ")"  =># "_2";
   katom := sname =># "`(knd_name ,_1)";
   skindexpr_comma_list = list::commalist1<skindexpr>;
  
@@ -88,7 +89,8 @@ syntax types {
     `(typ_typefun ,_sr ,_2 ,_4 ,_6)
     """;
 
-  t[sas_expr_pri] := t[sas_expr_pri] "as" sname =># "`(typ_as ,_sr (,_1 ,_3))";
+  t[sas_expr_pri] := t[sas_expr_pri] "as" sname =># '`(typ_as ,_sr (,_1 ,_3 (knd_name "TYPE")))';
+  t[sas_expr_pri] := t[sas_expr_pri] "as" sname ":" skindexpr =># "`(typ_as ,_sr (,_1 ,_3 ,_5))";
 
   t[stuple_pri] := stypeexpr ("," stypeexpr )+ =># "(chain 'typ_type_tuple _1 _2)";
 

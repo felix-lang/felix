@@ -61,7 +61,7 @@ let map_type f (t:typecode_t):typecode_t = match t with
   | `TYP_borrowed t -> `TYP_borrowed (f t)
   | `TYP_array (t1, t2) -> `TYP_array (f t1, f t2)
   | `TYP_compactarray (t1, t2) -> `TYP_compactarray (f t1, f t2)
-  | `TYP_as (t,s) -> `TYP_as (f t,s)
+  | `TYP_as (t,s,k) -> `TYP_as (f t,s,k)
 
   (* type sets *)
   | `TYP_typeset ts -> `TYP_typeset (List.map f ts)

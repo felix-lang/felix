@@ -579,7 +579,7 @@ and st prec tc : string =
     | `TYP_borrowed t -> 1,"borrowed[" ^ st 0 t ^ "]"
 
     | `TYP_typeof e -> 0,"typeof(" ^ string_of_expr e ^ ")"
-    | `TYP_as (t,s) -> 0, "([" ^ st 0 t ^ "] as " ^ string_of_id s ^ ")"
+    | `TYP_as (t,s,k) -> 0, "([" ^ st 0 t ^ "] as " ^ string_of_id s ^ ":" ^str_of_kindcode k^")"
 
     | `TYP_dual t -> 2,"~"^ st 2 t
 

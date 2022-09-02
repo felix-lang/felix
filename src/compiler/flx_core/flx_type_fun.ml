@@ -100,7 +100,9 @@ Unfortunately this means the trail comparison must use alpha equivalance, not eq
 NOTE: alpha equiv is easy, we alph convert both terms using the SAME initial counter then 
 do normal comparison .. but I think maybe the type equality routine should do this.
 *)
+(*
 if not (Flx_btype.complete_type arg) then print_endline ("Type lambda argument is not complete! \n" ^ Flx_btype.st arg);
+*)
       let f = Flx_alpha.alpha_convert counter f in
       (* I think this is wrong but it is essential in some case if the argument
          must be a type tuple, and is actually an application that produces one.

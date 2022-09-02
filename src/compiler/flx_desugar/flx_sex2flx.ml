@@ -139,9 +139,10 @@ print_endline ("sex2flx:type] " ^ Sex_print.string_of_sex x);
   | Lst [Id "typ_typeset"; sr; Lst ts] ->
     `TYP_typeset (List.map ti ts)
 
-  | Lst [Id "typ_as"; sr; Lst[t;id]] -> 
+  | Lst [Id "typ_as"; sr; Lst[t;id;knd]] -> 
     let sr = xsr sr in
-    `TYP_as (ti t, xid id)
+    let k = kind_of_sex sr knd in
+    `TYP_as (ti t, xid id, k)
 
   | Lst [Id "typ_apply";  sr; Lst [e1; e2]] -> `TYP_apply(ti e1, ti e2)
   | Lst [Id "typ_type_tuple";  sr; Lst es] -> `TYP_type_tuple (map ti es)

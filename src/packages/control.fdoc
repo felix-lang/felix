@@ -22,8 +22,13 @@ open class Control
 {
   open C_hack;
 
-  // FIXPOINT OPERATOR
+  // FIXPOINT OPERATORS
+  // For functions
   fun fix[D,C] (f:(D->C)->D->C) (x:D) : C => f (fix f) x;
+
+  // for functors TYPE->K only, the K *must* be specified
+  typefun tfix<K> (f: TYPE->K):K => f x as x:K;
+
 
   /* Example use: factorial function
   fun flat_fact (g:int->int) (x:int):int =>

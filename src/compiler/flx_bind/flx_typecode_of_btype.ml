@@ -59,7 +59,7 @@ let typecode_of_btype ?sym_table:(sym_table=None) bsym_table counter sr t0 =
     in
     if isrecursive then 
        let label = match mutrail with (_,label)::_ -> label | _ -> assert false in
-       `TYP_as (r,label)
+       `TYP_as (r,label,KND_type)
     else r
   in
   let r = tc 0 [] t0 in

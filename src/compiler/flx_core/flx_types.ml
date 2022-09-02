@@ -27,7 +27,7 @@ type recstop = {
   constraint_overload_trail: bid_t list;
   idx_fixlist: bid_t list;
   type_alias_fixlist: (bid_t * int) list;
-  as_fixlist: (string * int) list;
+  as_fixlist: (string * (int * Flx_kind.kind)) list;
   expr_fixlist: (expr_t * int) list;
   depth: int;
   open_excludes: (ivs_list_t * qualified_name_t) list;

@@ -127,7 +127,7 @@ and typecode_t = [
   | `TYP_borrowed of typecode_t                     (** uniq type *)
   | `TYP_array of typecode_t * typecode_t       (** array type base ^ index *)
   | `TYP_compactarray of typecode_t * typecode_t       (** array type base ^ index *)
-  | `TYP_as of typecode_t * Flx_id.t            (** fixpoint *)
+  | `TYP_as of typecode_t * Flx_id.t * kindcode_t (** fixpoint *)
   | `TYP_typeof of expr_t                       (** typeof *)
   | `TYP_var of index_t                         (** unknown type *)
   | `TYP_none                                   (** unspecified *)

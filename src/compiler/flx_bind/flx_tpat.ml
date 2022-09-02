@@ -84,7 +84,7 @@ let type_of_tpattern counter p =
 
        1 + int * list as list => list
     *)
-    | `TYP_as (t,n) ->
+    | `TYP_as (t,n,k) ->
       let t = tp t in
       let j = fresh_bid counter in
       as_vars := (j,n) :: !as_vars;
