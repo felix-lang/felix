@@ -3241,6 +3241,7 @@ class BootFlx
         var n = files.len.int;
         println$ "Processing " + files.len.str + " files";
         var i = 1;
+        var save_extra_cxx = control*.cpps;
         for file in files do
           var arg = Filename::join (control*.INDIR, file);
           var path,ext = Filename::split_extension(arg);
