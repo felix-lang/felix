@@ -145,7 +145,14 @@ let parse_file state parser_state file =
   in
   
   (* Shortcut variables. *)
-  let local_prefix = Filename.chop_suffix (Filename.basename file_name) ".flx" in
+(*
+  let local_prefix = 
+    try Filename.chop_suffix (Filename.basename file_name) ".flx" 
+    with _ -> 
+      print_endline ("Filename '" ^ file_name ^ "' expected to have suffix '.flx' but doesn't!");
+      assert false
+  in
+*)
   let include_dirs = state.syms.compiler_options.include_dirs in
 
   (* Debugging. *)
