@@ -167,7 +167,7 @@ and fst_in_conj fun_typ = parse
   | [^'&''(''['']''|'] + { fst_in_conj fun_typ lexbuf }
   | '&' { let start_pos = Lexing.lexeme_start lexbuf in
     let end_pos = end_of_conj lexbuf in
-    String.fill fun_typ start_pos (end_pos-start_pos) ' ' }
+    Bytes.fill fun_typ start_pos (end_pos-start_pos) ' ' }
   | ['(''['] { remove_conj_2 fun_typ lexbuf;
     fst_in_conj fun_typ lexbuf }
   | ['|'']'] { () }
