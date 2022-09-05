@@ -1562,6 +1562,9 @@ print_endline ("Coercion uses reinterpret cast!");
     ctyp ^ "(" ^
       fold_left
       (fun s e ->
+        match snd e with
+        | BTYP_tuple [] -> s (* unit arguments in records are elided *)
+        | _ -> 
         let s = name s in
         let x = ge_arg e in
         if String.length x = 0 then s else

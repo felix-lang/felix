@@ -740,26 +740,29 @@ otherwise the polyrecord will survive to the back end which cannot handle
 polyrecords. Use Flx_btype_subst.neuter_polyrecord to strip the name out!
 *)
 
-let btyp_polyrecord ts s v = 
+let rec btyp_polyrecord fields s v = 
 (*
 print_endline ("Constructing polyrecord, extensions=" ^ catmap "," (fun (s,t) -> s^":"^str_of_btype t) ts);
 print_endline ("   ... core = " ^ st v);
 *)
-   match ts with [] -> v | _ ->
+   match fields with [] -> v | _ ->
    match s,v with
-   | "",BTYP_record flds -> 
-     btyp_record (ts @ flds)
 
-   | _,BTYP_void -> btyp_record ts
+   (* this is the ONLY case the polyrecord survives, when 
+      the type variable is a row variable *)
+   | _, BTYP_type_var _ ->
+     BTYP_polyrecord (fields,s,v) 
 
-   | "",BTYP_polyrecord (flds,s2,v2) ->
-     let cmp (s1,t1) (s2, t2) = compare s1 s2 in
-     let fields = List.stable_sort cmp (ts @ flds) in
-     BTYP_polyrecord (fields,s2,v2)
-   | _ -> 
-     let cmp (s1,t1) (s2, t2) = compare s1 s2 in
-     let ts = List.stable_sort cmp ts in
-     BTYP_polyrecord (ts,s,v)
+   | _,BTYP_record fields2 -> 
+     btyp_record (fields @ fields2 )
+
+   | _,BTYP_void -> btyp_record fields (* ?? *)
+
+   | _,BTYP_polyrecord (fields2,s2,v2) ->
+     btyp_polyrecord (fields @ fields2) s2 v2
+
+   | _,v -> 
+     btyp_record ((s,v)::fields)
 
 
 (* FIXME: Idiot Ocaml strikes again. We need to minimise t before hashing
