@@ -145,6 +145,7 @@ val cal_removal :
 val bexpr_remove_fields : t -> string list -> t
 val bexpr_getall_field : t -> string -> t
 val bexpr_polyrecord : (string * t) list -> t -> t
+val bexpr_intersect : t list -> t
 val bexpr_variant : Flx_btype.t -> string * t -> t
 val bexpr_aprj : t -> Flx_btype.t -> Flx_btype.t -> t
 val bexpr_inj : int -> Flx_btype.t -> Flx_btype.t -> t

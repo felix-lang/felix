@@ -190,14 +190,6 @@ open Str[Gmp::mpf];
 include "gnu/gmp";
 open Gmp;
 
-syntax gmp_syntax {
-  x[ssetunion_pri] := x[ssetunion_pri] "/\" x[>ssetunion_pri] =># 
-    "`(ast_apply ,_sr (lcm (ast_tuple ,_sr (,_1 ,_3))))" note "lcm";
-  x[ssetintersection_pri] := x[ssetintersection_pri] "\/" x[>ssetintersection_pri] =># 
-    "`(ast_apply ,_sr (gcd (ast_tuple ,_sr (,_1 ,_3))))" note "gcd";
-}
-open syntax gmp_syntax;
-
 {
   val x:mpz = mpz_of_int 99;
   val y:mpz = mpz_of_int 7;
@@ -218,8 +210,8 @@ open syntax gmp_syntax;
 
   print$ lcm (x,y); endl;
   print$ gcd (x,y); endl;
-  print$ x /\ y; endl;
-  print$ x \/ y; endl;
+  print$ lcm(x,y); endl;
+  print$ gcd(x,y); endl;
 };
 {
   val x:mpq = mpq_of_int 99;

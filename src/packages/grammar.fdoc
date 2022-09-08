@@ -482,6 +482,7 @@ syntax expressions {
 
   //$ multiplication: right associative
   x[sproduct_pri] := x[>sproduct_pri] "\otimes" x[sproduct_pri] =># "(Infix)";
+  x[sproduct_pri] := x[sproduct_pri]  ("/\" x[>sproduct_pri])+ =># "(chain 'ast_intersect _1 _2)";
 
   // repeated sum type, eg 4 *+ int == int + int + int + int
   // right associative:  2 *+ 3 *+ int is approx 6 *+ int

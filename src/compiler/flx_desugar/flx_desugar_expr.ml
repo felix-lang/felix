@@ -146,12 +146,16 @@ let rec rex rst_with_ret mkreqs map_reqs (state:desugar_state_t) name (e:expr_t)
   | `EXPR_case_arg _
   | `EXPR_arrow _
   | `EXPR_effector _
-  | `EXPR_intersect _
   | `EXPR_union _
   | `EXPR_isin _
     ->
     clierrx "[flx_desugar/flx_desugar_expr.ml:127: E326] " sr ("[rex] Unexpected " ^ string_of_expr e)
 
+  | `EXPR_intersect (sr, es) ->
+    let lxs = List.map rex es in
+    let ls,xs = List.split lxs in
+    let ls = List.concat ls in
+    ls, `EXPR_intersect (sr, xs)
 
   | `EXPR_longarrow (sr,x) -> [], `EXPR_longarrow (sr,x)
 

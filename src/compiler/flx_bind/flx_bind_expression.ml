@@ -166,7 +166,6 @@ let rec bind_expression'
   | `EXPR_arrow _
   | `EXPR_effector _
   | `EXPR_longarrow _
-  | `EXPR_intersect _
   | `EXPR_union _
   | `EXPR_isin _
     ->
@@ -1489,6 +1488,10 @@ print_endline ("Bind_expression general apply " ^ string_of_expr e);
       bexpr_tuple t bets
     end else if n = 1 then List.hd bets
     else syserr sr "Empty array?"
+
+  | `EXPR_intersect (sr, es) ->
+    let es = List.map be es in
+    bexpr_intersect es
 
   (* the code for this is pretty messy and inefficient but it should work *)
   (* actually no, it only works at binding time! we need tuple_cons, which

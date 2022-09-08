@@ -263,7 +263,7 @@ let mkcurry seq sr name vs args return_type effects kind body props =
         print_endline "Found an object, scanning for methods and bogus returns";
         *)
         let methods = ref [] in
-
+        let bases = ref [] in
         List.iter 
           (fun st ->
             (*
@@ -275,6 +275,12 @@ let mkcurry seq sr name vs args return_type effects kind body props =
             | STMT_curry (_,name, vs, pss, (res,traint) , effects, kind, adjectives, ss)
                 when kind = `Method || kind = `GeneratorMethod -> 
                 methods := name :: !methods
+            | STMT_var_decl (_, name, ([],_),_,e) when String.length name > 6 && String.sub name 0 6 = "_base_" ->
+(*
+print_endline ("Flx_curry: Base " ^ name);
+*)
+              bases := name :: !bases
+    
             | _ -> ()
           )
           body
@@ -286,6 +292,11 @@ let mkcurry seq sr name vs args return_type effects kind body props =
         let record = `EXPR_record (sr, List.map mkfield (!methods)) in
 (*
         print_endline ("Object method record: " ^ string_of_expr record);
+*)
+        let bases = List.map (fun s -> `EXPR_name (sr,s,[])) !bases in
+        let record = `EXPR_intersect (sr, record :: bases) in
+(*
+        print_endline ("Object " ^name^ " return value " ^ string_of_expr record); 
 *)
         let retstatement = STMT_fun_return (sr, record) in
         let revbody = retstatement :: revbody in

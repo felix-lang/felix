@@ -596,6 +596,7 @@ let bexpr_getall_field (e',t' as e) s =
   
 
 (************************ POLYRECORD **************************)
+
 let bexpr_polyrecord (es: (string * t) list) ((e',t') as e) =
 (*
 print_endline ("[bexpr_polyrecord] Constructing polyrecord: extension fields = " ^ String.concat "," (List.map (fun (s,(_,t)) -> s^":"^ st t) es));
@@ -700,6 +701,35 @@ print_endline ("Core = " ^ st (snd reduced_e));
    let es = es @ [fld] in
    bexpr_record es
 
+let rec bexpr_intersect es =
+  let rec aux out es =
+    match es with
+    | [] -> out
+    | ((_,ht) as h) :: tail ->
+      let mkprj fld seq fldt : t = bexpr_rnprj fld seq ht fldt in
+      match ht with
+      | BTYP_record flds -> 
+        let dcnt = ref 0 in
+        let idx = ref 0 in
+        let ctrl_key = ref "" in
+        let nuflds = ref [] in
+        let first = ref true in
+        List.iter 
+          (fun (name,t) -> 
+            if !first then begin first := false; ctrl_key := name; dcnt := 0 end else
+            if name = !ctrl_key then incr dcnt else begin ctrl_key := name; dcnt := 0 end;
+            let x = bexpr_apply t (mkprj name (!dcnt) t, h) in
+            nuflds := ( name, x) :: !nuflds;
+            incr idx
+          ) 
+          flds
+        ;
+        aux (out @ (List.rev !nuflds)) tail 
+
+      | _ ->
+        print_endline ("bexpr_intersect requires arguments to be records at the moment");
+        assert false
+  in bexpr_record (aux [] es)
 
 (************************ END POLYRECORD **************************)
 let bexpr_aprj ix d c = 
