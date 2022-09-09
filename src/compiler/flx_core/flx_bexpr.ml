@@ -701,34 +701,53 @@ print_endline ("Core = " ^ st (snd reduced_e));
    let es = es @ [fld] in
    bexpr_record es
 
+let split_fields mkprj h flds =
+  let dcnt = ref 0 in
+  let idx = ref 0 in
+  let ctrl_key = ref "" in
+  let nuflds = ref [] in
+  let first = ref true in
+  List.iter 
+    (fun (name,t) -> 
+      if !first then begin first := false; ctrl_key := name; dcnt := 0 end else
+      if name = !ctrl_key then incr dcnt else begin ctrl_key := name; dcnt := 0 end;
+      let x = bexpr_apply t (mkprj name (!dcnt) t, h) in
+      nuflds := ( name, x) :: !nuflds;
+      incr idx
+    ) 
+    flds
+  ;
+  List.rev !nuflds
+
 let rec bexpr_intersect es =
   let rec aux out es =
     match es with
     | [] -> out
     | ((_,ht) as h) :: tail ->
-      let mkprj fld seq fldt : t = bexpr_rnprj fld seq ht fldt in
+      let mkrprj fld seq fldt : t = bexpr_rnprj fld seq ht fldt in
+      let mktprj fld seq fldt : t = bexpr_prj seq ht fldt in
       match ht with
       | BTYP_record flds -> 
-        let dcnt = ref 0 in
-        let idx = ref 0 in
-        let ctrl_key = ref "" in
-        let nuflds = ref [] in
-        let first = ref true in
-        List.iter 
-          (fun (name,t) -> 
-            if !first then begin first := false; ctrl_key := name; dcnt := 0 end else
-            if name = !ctrl_key then incr dcnt else begin ctrl_key := name; dcnt := 0 end;
-            let x = bexpr_apply t (mkprj name (!dcnt) t, h) in
-            nuflds := ( name, x) :: !nuflds;
-            incr idx
-          ) 
-          flds
-        ;
-        aux (out @ (List.rev !nuflds)) tail 
+        let flds = split_fields mkrprj h flds in
+        aux (out @ flds) tail 
+      | BTYP_tuple flds ->
+        let flds = List.map (fun v -> "",v) flds in
+        let flds = split_fields mktprj h flds in
+        aux (out @ flds) tail 
+      | BTYP_array (fld,BTYP_unitsum n) when n <= 20 ->
+        let flds =
+          let rec aux out n = if n == 0 then out else aux (("",fld)::out) (n - 1) in 
+          aux [] n
+        in
+        let flds = split_fields mktprj h flds in
+        aux (out @ flds) tail 
 
       | _ ->
+        aux (out @ ["",h]) tail
+(*
         print_endline ("bexpr_intersect requires arguments to be records at the moment");
         assert false
+*)
   in bexpr_record (aux [] es)
 
 (************************ END POLYRECORD **************************)
