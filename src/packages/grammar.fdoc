@@ -102,7 +102,7 @@ syntax types {
   t[satomic_pri] := "true"  =># "`(typ_true,_sr)";
   t[satomic_pri] := "false"  =># "`(typ_false ,_sr)";
 
-  // this is the intersection combinator
+  // this is the type intersection combinator
   t[sproduct_pri] := t[sproduct_pri]  "/\" t[>sproduct_pri] =># '`(typ_intersect ,_sr ,_1 ,_3)';
   t[ssum_pri] := t[ssum_pri]  "\/" t[>ssum_pri] =># '`(typ_union ,_sr ,_1 ,_3)';
 
