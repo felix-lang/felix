@@ -1,0 +1,53 @@
+@title intersection test
+
+@felix
+interface IX { 
+  getx: 1-> int; 
+  gety: 1 -> int;
+}
+object X (x:int, y:int) {
+  method fun getx() => x; 
+  method fun gety() => y; 
+}
+
+object Y (y:int, anX: IX, anotherX: IX) { 
+  var _base_X = anX; 
+  var _base_X2 = anotherX; 
+  method fun gety() => y; 
+}
+
+var x42=  X(42,1);
+var x142=  X(142,2);
+var y63 = Y(3, x42, x142);
+println$ x42.getx(), x42.gety();
+println$ y63.getx(), y63.gety();
+
+println$ y63.gety();
+println$ (y63 without gety).gety();
+println$ (y63 without gety gety).gety();
+
+var x = (a=1,b=2);
+var y = (a=77, c=4);
+var z = x /\ y;
+println$ z._strr;
+var z2 = (a=1,a=99, b=2 | y);
+println$ z2._strr;
+
+// tuple intersection
+println$  ((1,2) /\ (3.0, "hello") /\ (a=1) /\ "hi")._strr;
+println$ 1 /\ 2 /\ 7;
+
+fun pair[A,B] (a:A, b:B)=> a /\ b;
+println$ pair ((1,2),(3,4));
+@expect
+(42, 1)
+(142, 3)
+3
+2
+1
+(a=1,a=77,b=2,c=4)
+(a=1,a=99,a=77,b=2,c=4)
+(=1,=2,=3,='hello',='hi',a=1)
+(1, 2, 7)
+((1, 2), (3, 4))
+@
