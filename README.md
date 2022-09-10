@@ -182,7 +182,7 @@ Binary Download                      | <http://github.com/felix-lang/felix/relea
 
 # Mailing List
 
-mailto:felix-lang@googlegroups.com
+mailto:felixpl@googlegroups.com
 
 
 # Licence
