@@ -34,11 +34,7 @@ var z2 = (a=1,a=99, b=2 | y);
 println$ z2._strr;
 
 // tuple intersection
-println$  ((1,2) /\ (3.0, "hello") /\ (a=1) /\ "hi")._strr;
-println$ 1 /\ 2 /\ 7;
-
-fun pair[A,B] (a:A, b:B)=> a /\ b;
-println$ pair ((1,2),(3,4));
+println$  ((1,2) /\ (3.0, "hello") /\ (a=1))._strr;
 @expect
 (42, 1)
 (142, 3)
@@ -48,6 +44,4 @@ println$ pair ((1,2),(3,4));
 (a=1,a=77,b=2,c=4)
 (a=1,a=99,a=77,b=2,c=4)
 (=1,=2,=3,='hello',='hi',a=1)
-(1, 2, 7)
-((1, 2), (3, 4))
 @

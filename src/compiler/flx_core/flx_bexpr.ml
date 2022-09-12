@@ -743,11 +743,8 @@ let rec bexpr_intersect es =
         aux (out @ flds) tail 
 
       | _ ->
-        aux (out @ ["",h]) tail
-(*
         print_endline ("bexpr_intersect requires arguments to be records at the moment");
         assert false
-*)
   in bexpr_record (aux [] es)
 
 (************************ END POLYRECORD **************************)
