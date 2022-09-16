@@ -95,12 +95,14 @@ int main() {
   constexpr auto two = Enum<4>(2);
   constexpr auto three = Enum<5>(3);
 
-  double x[n.size()]; // prove its a constant
  
   // 1,2,3 of type 3 * 4 * 5 should have rep
   // 1 * 20 + 2 * 5 + 3 = 33
   constexpr auto const n= Product<Enum<3>,Enum<4>,Enum<5>>  (one,two,three);
   auto xxx = one * two * three;
+
+  double x[n.size()]; // prove its a constant
+
   ::std::cout << "Size=" << n.size() << ", Rep=" << n.rep << ::std::endl;
   ::std::cout << "Size=" << xxx.size() << ", Rep=" << xxx.rep << ::std::endl;
 }
