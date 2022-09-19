@@ -3,10 +3,8 @@
 // compact linear types are constructed with just two combinators:
 // Products and Sums of 0 or more arguments.
 
+// Representation type natural numbers
 using Nat = unsigned long;
-
-template<class T> 
-constexpr Nat size(T) { return T::size(); }
 
 template<class ...Args> 
 struct Product;
@@ -67,7 +65,7 @@ struct Sum<N, Args...> {
 
 //====================================================
 // Convenience constructors
-// Note this ONLY works because C++ templates are broken
+// FIXME: This ONLY works because C++ templates are broken
 // What we actually want is a function constructing a sum of units
 
 template<int N>
@@ -110,16 +108,6 @@ namespace helper {
   };
 
 }
-
-// The divisor needed to compute projection j of a product
-template<int j, class ...T>
-struct product_divisor;
-
-template<int j, class ...T>
-struct product_divisor<j, Product<T...>> {
-  static constexpr Nat dd() { return helper::pack_divisor<j,T...>::d(); }
-};
-
 namespace helper {
   // Computations with parameter packs
   template<int j, class ...T>
@@ -134,22 +122,34 @@ namespace helper {
     }
   };
 
-  // error terminator case 
+  // error terminator case  (division by zero)
   template<int j>
   struct pack_modulus<j> {
-    static constexpr Nat m() { return -1; }
+    static constexpr Nat m() { return 0; }
   };
 }
 
+namespace debug {
+  // The divisor needed to compute projection j of a product
+  template<int j, class ...T>
+  struct product_divisor;
 
-// The modulus to compute projection j of a product
-template<int j, class ...T>
-struct product_modulus;
+  template<int j, class ...T>
+  struct product_divisor<j, Product<T...>> {
+    static constexpr Nat dd() { return helper::pack_divisor<j,T...>::d(); }
+  };
 
-template<int j, class ...T>
-struct product_modulus<j, Product<T...>> {
-  static constexpr Nat mm() { return helper::pack_modulus<j,T...>::m(); }
-};
+
+  // The modulus to compute projection j of a product
+  template<int j, class ...T>
+  struct product_modulus;
+
+  template<int j, class ...T>
+  struct product_modulus<j, Product<T...>> {
+    static constexpr Nat mm() { return helper::pack_modulus<j,T...>::m(); }
+  };
+}
+
 
 // Projection
 template<int j, class T>
@@ -167,15 +167,11 @@ struct projection<j, Product<T...>> {
   }
 };
 
-
-
 int main() {
   constexpr auto one = Enum<3>(1);
   constexpr auto two = Enum<4>(2);
   constexpr auto three = Enum<5>(3);
   using CLT345 = Product<Enum<3>,Enum<4>,Enum<5>>;
-
-
  
   // 1,2,3 of type 3 * 4 * 5 should have rep
   // 1 * 20 + 2 * 5 + 3 = 33
@@ -186,14 +182,14 @@ int main() {
   ::std::cout << "Size=" << t345_v123.size() << ", Rep=" << t345_v123.rep << ::std::endl;
 
   // divisor for index 0 should be 20
-  ::std::cout << "Divisor index 0=" << product_divisor<0, CLT345>::dd() << ::std::endl;
-  ::std::cout << "Divisor index 1=" << product_divisor<1, CLT345>::dd() << ::std::endl;
-  ::std::cout << "Divisor index 2=" << product_divisor<2, CLT345>::dd() << ::std::endl;
+  ::std::cout << "Divisor index 0=" << debug::product_divisor<0, CLT345>::dd() << ::std::endl;
+  ::std::cout << "Divisor index 1=" << debug::product_divisor<1, CLT345>::dd() << ::std::endl;
+  ::std::cout << "Divisor index 2=" << debug::product_divisor<2, CLT345>::dd() << ::std::endl;
 
    // modulus for index 0 should be 3
-  ::std::cout << "Modulus index 0=" << product_modulus<0, CLT345>::mm() << ::std::endl;
-  ::std::cout << "Modulus index 1=" << product_modulus<1, CLT345>::mm() << ::std::endl;
-  ::std::cout << "Modulus index 2=" << product_modulus<2, CLT345>::mm() << ::std::endl;
+  ::std::cout << "Modulus index 0=" << debug::product_modulus<0, CLT345>::mm() << ::std::endl;
+  ::std::cout << "Modulus index 1=" << debug::product_modulus<1, CLT345>::mm() << ::std::endl;
+  ::std::cout << "Modulus index 2=" << debug::product_modulus<2, CLT345>::mm() << ::std::endl;
 
   // projection for index 0 should be 1
   ::std::cout << "Applied projection index 0=" << projection<0, CLT345>::prj (t345_v123) << ::std::endl;
