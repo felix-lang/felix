@@ -87,22 +87,117 @@ constexpr Sum<T...> operator + (T ...x) { return Sum <T...>(x...); }
  
 //====================================================
 // Projections
-// TODO!
+// Indexing is from 0 on the left (big endian)
+
+namespace helper {
+  // Computations with parameter packs
+  template<int j, class ...T>
+  struct pack_divisor;
+
+  // recurive case
+  template<int j, class H, class ...T>
+  struct pack_divisor<j, H, T...> {
+    static constexpr Nat d() { 
+      if (j == 0) return Product<T...>::size();
+      else return pack_divisor<j - 1, T...>::d();
+    }
+  };
+
+  // terminator case
+  template<int j>
+  struct pack_divisor<j> {
+    static constexpr Nat d() { return 1; }
+  };
+
+}
+
+// The divisor needed to compute projection j of a product
+template<int j, class ...T>
+struct product_divisor;
+
+template<int j, class ...T>
+struct product_divisor<j, Product<T...>> {
+  static constexpr Nat dd() { return helper::pack_divisor<j,T...>::d(); }
+};
+
+namespace helper {
+  // Computations with parameter packs
+  template<int j, class ...T>
+  struct pack_modulus;
+
+  // recursive case
+  template<int j, class H, class ...T>
+  struct pack_modulus<j, H, T...> {
+    static constexpr Nat m() { 
+      if (j == 0) return Product<H>::size();
+      else return pack_modulus<j - 1, T...>::m();
+    }
+  };
+
+  // error terminator case 
+  template<int j>
+  struct pack_modulus<j> {
+    static constexpr Nat m() { return -1; }
+  };
+}
+
+
+// The modulus to compute projection j of a product
+template<int j, class ...T>
+struct product_modulus;
+
+template<int j, class ...T>
+struct product_modulus<j, Product<T...>> {
+  static constexpr Nat mm() { return helper::pack_modulus<j,T...>::m(); }
+};
+
+// Projection
+template<int j, class T>
+struct projection;
+
+template<int j, class ...T>
+struct projection<j, Product<T...>> {
+  using P = Product<T...>;
+
+  static constexpr Nat prj (P x) { 
+    return x.rep /
+      helper::pack_divisor<j,T...>::d() %
+      helper::pack_modulus<j,T...>::m()
+    ; 
+  }
+};
+
 
 
 int main() {
   constexpr auto one = Enum<3>(1);
   constexpr auto two = Enum<4>(2);
   constexpr auto three = Enum<5>(3);
+  using CLT345 = Product<Enum<3>,Enum<4>,Enum<5>>;
+
 
  
   // 1,2,3 of type 3 * 4 * 5 should have rep
   // 1 * 20 + 2 * 5 + 3 = 33
-  constexpr auto const n= Product<Enum<3>,Enum<4>,Enum<5>>  (one,two,three);
-  auto xxx = one * two * three;
+  constexpr auto const t345_v123= CLT345 (one,two,three);
 
-  double x[n.size()]; // prove its a constant
+  double x[t345_v123.size()]; // prove its a constant
 
-  ::std::cout << "Size=" << n.size() << ", Rep=" << n.rep << ::std::endl;
-  ::std::cout << "Size=" << xxx.size() << ", Rep=" << xxx.rep << ::std::endl;
+  ::std::cout << "Size=" << t345_v123.size() << ", Rep=" << t345_v123.rep << ::std::endl;
+
+  // divisor for index 0 should be 20
+  ::std::cout << "Divisor index 0=" << product_divisor<0, CLT345>::dd() << ::std::endl;
+  ::std::cout << "Divisor index 1=" << product_divisor<1, CLT345>::dd() << ::std::endl;
+  ::std::cout << "Divisor index 2=" << product_divisor<2, CLT345>::dd() << ::std::endl;
+
+   // modulus for index 0 should be 3
+  ::std::cout << "Modulus index 0=" << product_modulus<0, CLT345>::mm() << ::std::endl;
+  ::std::cout << "Modulus index 1=" << product_modulus<1, CLT345>::mm() << ::std::endl;
+  ::std::cout << "Modulus index 2=" << product_modulus<2, CLT345>::mm() << ::std::endl;
+
+  // projection for index 0 should be 1
+  ::std::cout << "Applied projection index 0=" << projection<0, CLT345>::prj (t345_v123) << ::std::endl;
+  ::std::cout << "Applied projection index 1=" << projection<1, CLT345>::prj (t345_v123) << ::std::endl;
+  ::std::cout << "Applied projection index 2=" << projection<2, CLT345>::prj (t345_v123) << ::std::endl;
+ 
 }
