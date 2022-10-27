@@ -13,5 +13,6 @@ jobs:
       - run: cd ocaml; make
       - run: cd ocaml; sudo make install
       - run: ocaml --version
+      - run: ls
 
 
