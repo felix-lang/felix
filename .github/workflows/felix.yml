@@ -6,4 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: echo "TEST RUN"
+      - run: git clone -b 4.14 https://github.com/ocaml/ocaml.git
+      - run: ./configure
+
 
