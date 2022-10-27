@@ -15,8 +15,8 @@ jobs:
       - run: python3 --version
       - run: g++ --version
       - run: ls
-      - export FLX_SHELL_ECHO=1
-      - export FLX_BUILD_TOOLCHAIN_FAMILY=gcc
+      - run: export FLX_SHELL_ECHO=1
+      - run: export FLX_BUILD_TOOLCHAIN_FAMILY=gcc
       - run: make
 
 
