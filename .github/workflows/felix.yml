@@ -8,5 +8,6 @@ jobs:
       - run: echo "TEST RUN"
       - run: git clone -b 4.14 https://github.com/ocaml/ocaml.git
       - run: cd ocaml; ./configure
+      - run: cd ocaml; make
 
 
