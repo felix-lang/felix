@@ -471,7 +471,7 @@ syntax expressions {
 
   // coarray injection
   // (ainj (r:>>4) of (4 *+ int)) 42
-  x[scase_literal_pri] := "ainj"  stypeexpr "of" t[ssum_pri] =># "`(ast_ainj ,_sr ,_2 ,_4)";
+  x[scase_literal_pri] := "ainj" sexpr "of" t[ssum_pri] =># "`(ast_ainj ,_sr ,_2 ,_4)";
 
   spv_name := "case" sname =># "_2";
   spv_name := "`" sname =># "_2";

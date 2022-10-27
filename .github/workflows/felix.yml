@@ -1,0 +1,9 @@
+name: felix
+run-name: ${{ github.actor }} test
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - echo "TEST RUN"
+

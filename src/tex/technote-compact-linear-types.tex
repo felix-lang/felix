@@ -20,148 +20,530 @@
 \newcommand*{\fullref}[1]{\hyperref[{#1}]{\autoref*{#1} \nameref*{#1}}}
 \DeclareMathOperator{\quot}{div}
 \DeclareMathOperator{\rmd}{rmd}
+\newtheorem{lemma}{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem{notation}{Notation}
 \title{Compact Linear Types}
 \author{John Skaller}
 \begin{document}
 \maketitle
-\section{Introduction}
-Let us observe that the number of pennies in 3 pounds, 10 shillings, and 8 
-pennies, is given by:
-$$8 + 10 \times 20 + 3 \times 20 \times 12$$
-because there are 12 pennies in a shilling, and 20 shillings in a pound.
-Generalising this idea we have:
-$$a=x_0+\sum_{i=1}^{n-1} (x_i \prod^{i-1}_{j=0} c_j)$$
-which is a general finite positional number system, with $j$ ranging from 0 to $n-2$ 
-representing an n position system, and $c_j$ representing the number of digits
-in the j'th position.
+\section{Motivation}
+During the development of the Felix programming language, an interesting problem arose.
+Compact linear types were developed to solve this problem, so we will
+present the system progressively.
 
-Decoding is given by 
-$$x_i = (a \rmd \prod^{n-2}_{j=i} c_j) \quot \prod^{i-1}_{j=0} c_j$$
+\subsection{Primitives}
+Felix has a structural type system based on cartesian closed categories,
+augmented with pointers. We start with a collection of primitve semi-regular
+types which are not intrinsic, but instead are lifted with binding
+constructions from C++. For example
+\begin{minted}{felix}
+type cint = "int";
+const zero: cint = "0";
+const one : cint = "1";
+fun add: cint * cint -> cint = "$1+$2";
+proc print: cint = 'printf("%d\n", $1);'
+  requires header '#include <cstdio>'
+;
+print (one + one);
+\end{minted}
 
-\section{Application to types}
-Let the symbol decimal integer $n$ represent the sum of $n$ units,
-where the unit type is the type of an empty tuple. Call the
-type void, the sum of no units, and observe
+\subsection{Products}
+The structural type system has two standard type constructors for
+sums and products. Products use the familiar C operator \verb%*%
+for the Cartesian product, and the the comma \verb"," for
+tuple value formation:
 
+\begin{minted}{felix}
+var tuple : int * double = 1, 2.0;
+println$ "Tuple " + tuple.str + ", first is " + tuple.0.str;
+\end{minted}
+
+We're using integer literals for component selection, that is,
+to specify categorical projections. (The \verb%str% operator
+is a generic function to convert values to a string for printing).
+
+\subsection{Tuple Projections}
+A projection is a function with properties required by category theory.
+For a tuple of type \verb$int * double * string$ the projection function 
+to find the second, double, component, must have type:
+\begin{minted}{felix}
+  int * double * string -> double
+\end{minted}
+Felix has a way to write this projection function:
+\begin{minted}{felix}
+  proj 1 of int * double * string 
+\end{minted}
+So to grab the double component we do this:
+\begin{minted}{felix}
+  var a : int * double * string = 1, 2.4, "Hello";
+  var d = (proj 1 of int * double * string) a; 
+    // apply projection
+  var d2 = a . (proj 1 of int  double * string); 
+    // reverse application
+\end{minted}
+The dot notation is precisely reverse application, it has nothing to do
+with "componant access" as it does in C. It looks like it does, but this
+is a deliberate trick to make it easy to learn Felix.
+
+These projections are builtin to the compiler because they're a fundamental
+part of the structural type system. Now I'm going to digress temporarily
+to show what happens with structs, a nominal type:
+\begin{minted}{felix}
+  struct X { i:int; d:double; s:string; }
+  var x = X(1, 2.4, "hello"); 
+  var d2 = (d of X) x;
+  var d2 = x. (d of X);
+  var d3 = d x; // HUH??
+  var d4 = x.d; // HUH??
+\end{minted}
+Notice the projections have the same form as for tuples except we use the
+component names instead of numbers. But what that third and fourth case?
+
+Of course the third case is {\em obviously} overload resolution! There could
+be more than one function \verb$d$, but only one accepts an argument of type X.
+And so the fourth case follows, it's just reverse application!
+
+Now Felix is all about {\em symmetry} and so by symmetry:
+
+\begin{minted}{felix}
+  var x : int * double * string = 1, 2.4, "Hello";
+  var d = (proj 1 of int * double * string) a; 
+    // apply projection
+  var d2 = a . (proj 1 of int ( double * string);
+    // reverse application
+  var d3 = 1 a; // overload resolution 
+  var d4 = a.1; // with sugar!
+\end{minted}
+
+We're just allowing an integer constant to imply a projection when the
+argument is a tuple, and to select the projection function based on
+the tuple type. So this is a little more than mere overload resolution,
+the 1 literal is actually somewhat more generic.
+
+
+
+\subsection{Sums}
+Sum types use \verb%+% for the discriminated union,
+and a simple \verb%case% construction, or a shorthand
+with a backquite \verb$`$ for the injection functions:
+
+\begin{minted}{felix}
+var intcase : int + double = (case 0 of int + double) 42;
+var doublecase : int + double = (`1:int + double) 2.1;
+
+proc show(x:int + double) => 
+  match x with
+  | case 0 x => println$ "Int " + x.str;
+  | case 1 x => println$ "Double " + x.str;
+  endmatch
+;
+show intcase;
+show doublecase;
+\end{minted}
+
+We're using pattern matching here to decode the values of the sum type.
+
+\subsection{Arrays}
+Now one of the key unifying principles in Felix is that an array
+is nothing more than a tuple for which all the components have
+the same type:
+\begin{minted}{felix}
+var array: int * int * int = 1, 2, 3;
+for i in 0 <..3 perform println$ i,array.i;
+\end{minted}
+
+Now this may seem pretty obvious but an astute reader will
+immediately spot a serious problem! It just shouldn't work!
+Why? Because the array index is a variable! And an array is
+a tuple! So you cannot access a tuple component with a variable,
+it has to be a constant, since, potentially, the result of such
+an access could have a different type for each component!
+
+Obviously the compiler is doing something tricky! Yes indeed,
+here it is again:
+\begin{minted}{felix}
+var array: int ^ 3 = 1, 2, 3;
+for i in 0 <..3 perform println$ i,array.i;
+\end{minted}
+The trick is that \verb$int * int * int$ is the same type
+as \verb$int ^ 3$ and the latter is indeed an array type.
+The compiler always uses an array type constructor when possible
+because this is the specified canonical form.
+
+Whew! That's how it works! Yes? Bzzzz! Nope!
+
+There's another problem! The compiler cannot use that internal
+form because the compiler doesn't know what an integer is!
+Unlike other programming languages, arrays lengths are not
+integers.
+
+In fact the problem is even worse than you think, because we want
+the exponentiation expression to take {\em type} arguments and
+integer constants are {\em not} types.
+
+\subsection{Enumerations}
+How can we fix this! Here's the answer: in the type language,
+we specify 0 as the name of the empty sum, and 1 as the name
+of the empty product. There are no values of type 0, and only
+one value of type 1, namely \verb%()%, the empty tuple.
+Now we provide a shorthand so that
+$$5 = 1 + 1 + 1 + 1 + 1$$
 \begin{minted}{felix}
 typedef void = 0;
 typedef unit = 1;
 typedef bool = 2;
 \end{minted}
+So now, a sequence of decimal digits is indeed a type. However,
+it is not an integer literal: the value \verb$42_1u$ is an integer
+literal of type \verb%uint% and is not acceptable in the type language.
 
-Call any such type a unitsum. Now observe that the positional number
-system described in section 1 may be used to encode and decode 
-values of a finite product of unit sums by adding a limit on the
-number of digits in the higest term.
-
-The formula for the $x_i$ are then projections of the product
-which is formed by the formula for the $a$. The set of integers
-calculated by the constructor then has size
-$$N=\prod_{j=0}^{n-1}c_j$$
-and the set is compact and consists of the values 0 through $N-1$
-and is therefore also linear.
-
-The system is also familiar as the decomposition of cyclic groups
-and exhibits the isomorphism
-$$Z_N \cong {\mathbb Z}_{j_0} \times {\mathbb Z}_{j_1} \ldots {\mathbb Z}_{j_{n-1}}$$
-
-\section{Application to arrays}
-A fundamental problem in computing is that a loop
-through an array of arrays requires two loops:
-
+So now, we have partially solved the problem, but we have a serious
+problem:
 \begin{minted}{felix}
-  var a = ((1,2,3),(4,5,6));
-  var sum = 0;
-  for i in 0..<2 
-    for j in 0..<3 perform 
-       sum += (a.i).j;
-  println$ sum;
+var x : int ^ string = ... // WOOPS!
 \end{minted}
 
-and for an array of rank $k$ we need $k$ loops. There is a two 
-step solution to this problem. We desire to make the transformation
-of types
-
-$${{\tt int}^3}^2 \longrightarrow 
-{\tt int} ^ {3 \times 2}$$
-
-This has the effect of changing the data functor to a single
-array, indexed by a tuple:
+\subsection{UNITSUM kind}
+The exponentiation operator obviously cannot make sense if
+the exponent can be any type. It has to be one of those
+sums of units:
 
 \begin{minted}{felix}
-  var a = ((1,2,3),(4,5,6));
-  var b = a :>> (int^(2 * 3));
-  var sum = 0;
-  for i in 0..<2
-    for j in 0..<3 perform
-       sum += b.(i:>>2,j:>>3);
-  println$ sum;
+typedef array[t,n:UNITSUM] = t ^ n;
+var a: array[int, 3] = 1,2,3;
 \end{minted}
 
-Although we still need two indices and two loops, we have
-formed a new data functor by composition of two array functors.
+The first solution is illustrated here: the first type variable \verb$t$
+defaults to kind \verb$TYPE$ a general kind of type, but the compiler
+has a builtin kind \verb$UNITSUM$ which only allows types which are 
+sums of units. 
 
-A second isomorphism solves our problem:
+The kind \verb$UNITSUM$ is a subkind of the kind \verb%TYPE% and acts
+as a constraint on the type variable $n$ above so the compiler can
+reject type expressions like \verb$int^string$.
 
-$$ {\tt int} ^ {2 \times 3} \longrightarrow {\tt int} ^ 6 $$
+The kind \verb$UNITSUM$ is more commonly known as an {\em enumeration},
+but in particular it is a canonical enumeration because it is constructed
+entirely using basic type constructors of the structural type system.
 
-with
+Ok, so it may seem we're done but this is just the tip of the iceburg!
+We have sane constructors for linear arrays, but we have to have
+projections! Unlike tuple projections, array projections can be expressions,
+provided they have the correct type! 
+\subsection{Array Projections}
+Now, finally, we can get back to the array case!
+Here's the real low level code:
+\begin{minted}{felix}
+var x = 1,2,3;
+var index : 3 = `1:3;
+var x1 = (aproj index of int ^ 3) x;
+println$ x1; 
+\end{minted}
+
+There are two things to notice here: first, the constructor for an array
+projection is named \verb$aproj$. We cannot use a tuple projection,
+because that only accepts an integer literal. Arrays can be indexed
+in a loop, so a variable must be used in that case. More generally
+you can use any expression of the correct type.
+
+So now you notice the type of the variable is 3, the same as the type
+of the array length. And it's an enumeration or \verb$UNITSUM$ type
+so the value is given as such, namely \verb$`1:3$, the second case
+of three cases. Which of course selects the second component of 
+an array. The type of the array projection is:
+\begin{minted}{felix}
+  3 -> int ^ 3 -> int
+\end{minted}
+It's not only a first class function, it's a higher order function to boot.
+There's something important to notice: Felix never needs array bounds checks
+because values of the index type cannot be out of bounds!
+
+Of course .. since an array {\em is} a tuple you can also use tuple
+projections as well.
+
+\ssubsection{Coarrays}
+Coarrays are the dual of arrays, they involve a repeated sum.
+\begin{minted}{felix}
+var index = `0:3;
+var s = (ainj index of 3*+int) 42;
+\end{minted}
+The name \verb$ainj$ is a compiler intrinsic used to construct coarray injections.
+The big advantage of coarrays, dually to arrays, is that the arguments of
+all injections have the same type. The \verb%ainj% operator can therefore
+accept an expression to designate the selected injection, and conversely,
+a coarray can be decoded to extract the injection index and argument
+with a function.
+\begin{minted}{felix}
+// WOOPS NOT IMPLEMENTED! 
+\end{minted}
+
+\subsection{Iteration}
+It's possible to iterator over all the values in a unitsum type:
+\begin{minted}{felix}
+var x = 1,2,3;
+for i in ..[3] perform println$ x . i;
+\end{minted}
+which also guarantees completeness as well as correctness: precisely all the indexes
+are used, no more and no less.
+
+\subsection{Matices}
+Now we are ready for the big time. Consider the following code:
+\begin{minted}{felix}
+var a : (int ^ 2) ^ 3 = (1,2),(3,4),(5,6);
+var sum = 0;
+for i in ..[3]
+  for j in ..[2]
+    perform sum += a.i.j;
+\end{minted}
+
+As you can see, we have an array of arrays. The elements are actually stored
+contiguously so we should be able to access them with a single loop. To do that
+we first have to use the usual index laws to convert the array of arrays into
+a matrix. 
+\begin{minted}{felix}
+var a : (int ^ 2) ^ 3 = (1,2),(3,4),(5,6);
+var b = a :>> int ^ (2 \* 3);
+  // coercion to matrix
+
+var sum = 0;
+for i in ..[3]
+  for j in ..[2]
+    perform sum += b.(i\,j);
+\end{minted}
+
+Here, we coerce the array of arrays to a linear array with a structured
+index type. We use the product constructor \verb%\*% and the tuple
+constructor \verb$\,$ because these construct a new kind of type and new
+kind of value called a {\em compact linear type}. These operations have the
+same categorical semantics as ordinary product and tuple formation, however
+the compact tuple packs the component values into a single natural number.
+
+The coercion we used to convert a to b is called a reshaping coercion.
+It's clear that we need that
+\begin{minted}{felix}
+(i\,j) = i * 2 + j
+\end{minted}
+for the formula to work. The general rule for coercions to and about compact
+linear types is that the coercion is allowed if, and only if, the corresponding
+index law for plain natural numbers is valid.
+
+You should note carefully this works too:
+\begin{minted}{felix}
+var sum = 0;
+for i in ..[3]
+  for j in ..[2] do
+    var index = i\,j;
+    perform sum += b.index;
+  done
+\end{minted}
+
+What we have actually done here is flatten the data into a linear array, but retain the
+shape information by moving it into the index type. But we can discard that too:
 
 \begin{minted}{felix}
-  var a = ((1,2,3),(4,5,6));
-  var b = a :>> int^(2*3);
-  var c = b :>> int^6;
-  var sum = 0;
-  for i in 0..<6 perform
-    sum += c.i;
-  println$ sum;
+var a : (int ^ 2) ^ 3 = (1,2),(3,4),(5,6);
+var b = a :>> int ^ (2 \* 3);
+  // coercion to matrix
+var c = b :>> int ^ 6;
+
+var sum = 0;
+for i in ..[6]
+  perform sum += b.i;
 \end{minted}
 
-performing a compact linear encoding.
+Now we have flattened the index type as well, since the standard laws for
+natural numbers say $2 * 3 = 6$.
 
-\section{Extension to Arrays}
-If the base type of an array is itself compact linear,
-then the whole array is also compact linear. For example
+In particular we have done something radical and powerful: we have linearised
+the computation so it only uses one loop.
 
+However we have cheated: \verb$2\*3$ is not a \verb$UNITSUM$! It is, in fact
+a more general kind \verb$COMPACTLINEAR$ which is still less general than
+\verb$TYPE$. So in particular the array constructor is now written:
 \begin{minted}{felix}
-var x : bool ^ 4 = true, false, true, true;
-println$ x :>> int; 
+typedef array[T,N:COMPACTLINEAR] = T ^ N;
 \end{minted}
 
-Bit arrays drop out of compact linear types as a special case.
+We should note now that we not only also provide compact sums with \verb$\+$
+but also projections, injections, compact arrays with \verb$\^$ and 
+compact coarrays with \verb$\*+_$. 
 
-\section{Extension to sums}
-We consider first the case of two arrays of the
-same base type. If the first has length $n$ and the second length $m$
-then an index of type $n+m$ is interpreted as follows: first chose
-which array to index, then use the argument of the selected case
-as the index. By concatenating the arrays, we see the index is
-isomorphic to an array of length $n+m$.
+The primary difference between the two systems is that whilst ordinary products
+have machine addressable components, compact ones do not. Nevertheless we can
+still modify components of a compact product using compact pointers!
 
-This suggests a sum of compact linear types is also compact linear.
+In the next section we will develop the mathematics which allows the functional
+operations to work. Components of products can then be made addressable
+by combining machine pointers with negative compact projections (that is,
+a type of operation which identifies a "hole" into which a value can be written,
+rather than an extractor like an ordinary projection). This turns out
+to need the idea of pointer projections.
 
-The size of a compact linear type is given inductively by
-the rule:
+I want to note that all of the mathematics here is trivial high school
+algebra. There is nothing novel in the index laws. It is the application
+to type systems which appears to be novel by constructing the type
+system with a sound theoretical basis, the addition of parametric
+polymorphism gives powerful optimisations such as array polyadic
+programming (operations on matrices independent of rank) for free.
 
-\begin{itemize}
-\item the size of a unitsum $n$ is $n$
-\item the size of a product of compact linear types is the product
-of the sizes
-\item the size of an exponential of compact linear types is
-the exponential of the sizes
-\item the size of a sum of compact linear types is the
-sum of the sizes
-\end{itemize}
 
-The encoding formula is:
-$$a = y_i \sum^{i-1}_{j=0} z_j$$
-where $z_j$ is the size of the j'th case. The $y_i$ are readily
-identified as the characteristic injections of the sum type.
+\section{Theory}
+With just two type constructors for sums and products, we construct a value
+representation in the natural numbers. We first define some convenient 
+auxilliary functions with comprehensible semantics, because the essence
+of the raw formulas is emboddied in superscripts and subscript details
+and the meaning would soon be lost.
 
-The decoding formula is in two parts: we must first calculate
-the correct case index, it is the unique $j$ such that 
-$$z_{j} > a \ge z_{j-1}$$
-Then the argument is given by
-$$y_j = a - \sum_{i=0}^{j-1}z_i$$
+\subsection{Size function}
+We define the \verb$size$ of a type as follows, using the usual \verb$|.|$ notation:
+
+\begin{align*}
+|\sum_iX_i| &= \sum_i|X_i|\\
+|\prod_iX_i| &= \prod_i|X_i|\\
+\end{align*}
+
+This just says the size of a sum is the sum of the sizes of its components,
+and the size of a product is the product of the sizes of its components.
+Note that by the convention for nullary terms, the size of the empty sum 0
+is 0, and the size of the empty product 1 is 1: the first mentioned number
+is a type whilst the second is a natural number.
+
+\subsection{Product Encoding}
+We can now present the encoding of values of the type system as natural numbers.
+First, for products the constructor is given by
+\begin{align*}
+\tt{rep}: \prod_{i=0}^{n-1}X_i &\longrightarrow \mathbb{N}\\
+(v0, ... ,v_{n-1}) &\mapsto \sum_{i=0}^{n-1}v_i | \prod_{j=i+1}^{n-1} X_j|
+\end{align*}
+and the projections are given by
+\begin{align*}
+\pi_j (p) = p \quot (|\prod_{i=j+1}^{n-1}X_i|) \, \rmd \, |X_j|
+\end{align*}
+In other words, we simply divide by the size of the tail of a component
+in the product to discard terms on the right, and then discard the terms
+on the left by using the modulus function.  The formula is therefore
+a simple generalisation of bthe usual right shift and mask operations
+applied to bitfields. Similarly, the construction is little more
+than the usual formula for variadic radix number systems.
+
+It is clear the projection specified is indeed a categorical projection.
+The significance, however, is that products are encoded in a single natural
+number.
+
+\subsection{Sum Encoding}
+For sum types, the constructors are injection functions:
+\begin{align*}
+v_i &\mapsto \sum_{i=0}^{n-1}v_i | \sum_{j=i+1}^{n-1} X_j|
+\end{align*}
+The interpretation is that, for component we sequentially assign a subrange
+of natural numbers correpsonding to the number of values of that component.
+The formula is the same as for the product constructor except we replace
+the multiplication of sizes with an addition.
+
+Decoding sums is more difficult. We first define
+$$
+\rm{case} (i,v) = \begin{cases}
+  i, v - \sum_{j=i+1}^{n-1}X_j& v \ge \sum_{j=i+1}^{n-1}X_j\\
+  \rm{case} (i+1,v) & \text{otherwise}
+\end{cases}
+$$
+
+This function returns both the index number of the injection function
+as well as its argument. Since both these values are natural numbers,
+the function happens to be well typed. The actual decode is performed by
+$$\rm{case} (v) = \rm{case}(0,v)$$
+We note the recursion must be terminated, since all natural numbers are
+greater than or equal to zero, the value of an empty quantified sum.
+
+In general, however, sum types cannot be handled by functions. Instead,
+continuations must be used to accept the injection argument.
+
+The mathematical formulation above if encoded literally has poor performance:
+it is linear in the number of components. Clearly with preparation a binary chop
+can be used to fine the subrange of integers in which a particular integer resides,
+obtaining logarithmic performace. In principle constant time performance can
+be obtains by a simple lookup array, but this would only be practical for
+type of a quite small size. However constant time is obtainable for plain
+enumerations.
+
+\subsection{Properties}
+The most fundamental properties of interest are isomorphism which
+induce equalities in the representation. If an isomorphism induces
+an equality, the isomorphism is said to be {\em natural}.
+
+\begin{definition}
+An {\em associator} is a transform that adds or remove parentheses in the
+expanded form of a type term.
+\end{definition}
+\begin{lemma}
+Associators are natural.
+\end{lemma}
+
+The consequences of this lemma are profound. Consider the isomorphism
+$$5 * (4 * 3) * 7 \simeq 5 * 4 * 3 * 7$$
+then we have two equivalent ways to extract the 4 term:
+$$\pi_0 (\pi_0(5 \star (4 \star 3))) = \pi_1 (5 \star 4 \star 3)$$
+which says the composition of the two projections on the left equals
+the projection on the right. In other words, projection composition
+is equivalent to an associator: indeed, associators are categorical
+natural transformations. In particular in the example we have a formula
+which says the divisor of the RHS is the product of the divisors of the
+LHS projections, in other words, we can compute the composite of the projections
+by multiplication
+$$ 7 * 3 \text{\ from composition} = 7 * 3 \text{\ from projection formula}$$
+
+\begin{lemma}
+Insertion or removal of units into a product or voids into a sum is natural.
+\end{lemma}
+
+\subsection{Ordering}
+So far we have not defined an ordering for our types, but we have constructed
+them carefully so that we can. The formulas we have given, somewhat unnaturally,
+are big endian: the decision is arbitrary but is designed so the following
+ordering is possible:
+\begin{definition}
+The ordering $<$ is imposed on values of a enumeration based on the 
+ordering of the injection indices, for a general sum and product
+the standard lexicographical ordering is used.
+\end{definition}
+\begin{lemma}
+Ordering is natural and total.
+\end{lemma}
+
+This result has profound implications, and in many senses is the entire
+purpose of this development. It says, for example, than a pair of iterators
+used to scan a two dimensional array can be replaced by a single iterator
+over the array formed by the associator which drops the nesting, and the
+same values will be scanned in the same order.
+
+What this means is that we suddenly have array polyadic programming,
+in other words we can use static casts to reshape any array indexed
+by any compact linear type, to a linear array, without moving any 
+array elements around, and retaining the order in which
+elements are visited.
+
+\subsection{Distributivity}
+So far we have a category with sums and products and a representation
+with natural properties. Our aim is to say that for any compact linear
+type, a large class of operations can be effected by shape changing
+isomorphisms for which the underlying computations involve only
+the well known index laws for natural numbers, and, in addition,
+allow many operations to be performed with a single flat loop.
+
+But we are missing the final result required:
+\begin{lemma}
+The distributive law
+$$X*(Y+Z) \simeq X*Y + X*Z$$
+holds and is natural.
+\end{lemma}
+
+Since we are dealing with a subcategory of Set, distributivity is automatic.
+However some thought is required to prove naturality although it clearly
+follows from the equality of the representations which itself follows
+from the distributive law over natural numbers.
+
+We do not present the results for coarrays but they follow from duality.
+
 
 \end{document}
