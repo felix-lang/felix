@@ -121,7 +121,73 @@ argument is a tuple, and to select the projection function based on
 the tuple type. So this is a little more than mere overload resolution,
 the 1 literal is actually somewhat more generic.
 
+\subsection{Pointer Projections}
+So far we have only looked at reading tuple components by using
+projection functions, but now we have to consider how to modify them.
+First we need to understand Felix model of mutation:
+\begin{minted}{felix}
+var x = 1;
+storeat(&x, 2); // intrinsic
+&x <- 3; // sugar
+x = 4; // sugar
+\end{minted}
+In Felix to store a value somewhere you have to call the \verb$storat$ procedure,
+passing a pointer to the location into which you want to store something,
+and of course the value you want to store there. The left arrow \verb%<-% is syntactic
+sugar for a call to this procedure, and the assignment operator \verb$=$ is syntactic
+sugar for storing in a variable which works by taking the address of the variable.
 
+But this does not work:
+\begin{minted}{felix}
+var x = 1,"Hello";
+x . 1 = "World"; // BZZT! 
+\end{minted}
+It fails because it would mean this:
+\begin{minted}{felix}
+&((proj 1 of int * string) x) <- "World";
+\end{minted}
+and you cannot take the address of an expression! Only variables
+are addressable!
+
+But this does work:
+\begin{minted}{felix}
+var x = 1,"Hello";
+&x . 1 <- "World"; // WORKS!
+\end{minted}
+and here's how it works:
+\begin{minted}{felix}
+var x = 1,"Hello";
+(proj 1 of &(int * string) &x <- "World"; // WORKS!
+\end{minted}
+The type of that projection term is:
+\begin{minted}{felix}
+&(int * string) -> &string
+\end{minted}
+in other words, it takea a pointer to a tuple, and returns a pointer
+to the selected components. I call this a {\em pointer projection}.
+The \verb%proj% operator is {\em overloaded} to work with pointers
+to tuples as well as tuples.
+
+Pointer projections are {\em not} categorical projections. However they
+obey a commutative diagram showing the law:
+\begin{minted}{felix}
+*(&x.j) = x.j
+\end{minted}
+in other words, fetching the value of a projection of the address of a tuple
+is the same as fetching the value directly. Internally, a pointer projection
+is just the addition of an offset to the base pointer.
+
+I had to introduce pointer projections here because down the track
+we will show how to construct pointer projections for compact linear
+types so that we can modify components of variables containing them.
+For motivation:
+\begin{minted}{felix}
+var x = true\, false\, true;
+&x . 1 <- true;
+\end{minted}
+The variable x is a bit array of three bits, stored in a single integer value.
+The assignment is modifying just one bit.  Try doing that in C++!
+Note careully: the individual bits are addressable!
 
 \subsection{Sums}
 Sum types use \verb%+% for the discriminated union,
@@ -262,7 +328,7 @@ because values of the index type cannot be out of bounds!
 Of course .. since an array {\em is} a tuple you can also use tuple
 projections as well.
 
-\ssubsection{Coarrays}
+\subsection{Coarrays}
 Coarrays are the dual of arrays, they involve a repeated sum.
 \begin{minted}{felix}
 var index = `0:3;
@@ -275,8 +341,13 @@ accept an expression to designate the selected injection, and conversely,
 a coarray can be decoded to extract the injection index and argument
 with a function.
 \begin{minted}{felix}
-// WOOPS NOT IMPLEMENTED! 
+var index = `1:3;
+var y = (ainj index of 3 *+ int) 42;
+println$ caseno y;
+println$ casearg y;
 \end{minted}
+
+
 
 \subsection{Iteration}
 It's possible to iterator over all the values in a unitsum type:
@@ -287,14 +358,13 @@ for i in ..[3] perform println$ x . i;
 which also guarantees completeness as well as correctness: precisely all the indexes
 are used, no more and no less.
 
-\subsection{Matices}
-Now we are ready for the big time. Consider the following code:
+\subsection{Motivation: Matices}
+Now we are ready for the big time! Consider the following code:
 \begin{minted}{felix}
 var a : (int ^ 2) ^ 3 = (1,2),(3,4),(5,6);
-var sum = 0;
 for i in ..[3]
   for j in ..[2]
-    perform sum += a.i.j;
+    perform println$ a.i.j;
 \end{minted}
 
 As you can see, we have an array of arrays. The elements are actually stored
@@ -303,13 +373,12 @@ we first have to use the usual index laws to convert the array of arrays into
 a matrix. 
 \begin{minted}{felix}
 var a : (int ^ 2) ^ 3 = (1,2),(3,4),(5,6);
-var b = a :>> int ^ (2 \* 3);
+var b = a :>> int ^ (3 \* 2);
   // coercion to matrix
-
-var sum = 0;
+  // NOTE REVERSED ORDER
 for i in ..[3]
   for j in ..[2]
-    perform sum += b.(i\,j);
+    perform println$ b.(i\,j);
 \end{minted}
 
 Here, we coerce the array of arrays to a linear array with a structured
@@ -343,17 +412,16 @@ shape information by moving it into the index type. But we can discard that too:
 
 \begin{minted}{felix}
 var a : (int ^ 2) ^ 3 = (1,2),(3,4),(5,6);
-var b = a :>> int ^ (2 \* 3);
+var b = a :>> int ^ (3 \* 2);
   // coercion to matrix
 var c = b :>> int ^ 6;
-
-var sum = 0;
+  // coercion to linear index
 for i in ..[6]
-  perform sum += b.i;
+  perform println$ b.i;
 \end{minted}
 
 Now we have flattened the index type as well, since the standard laws for
-natural numbers say $2 * 3 = 6$.
+natural numbers say $3 * 2 = 6$.
 
 In particular we have done something radical and powerful: we have linearised
 the computation so it only uses one loop.
@@ -367,8 +435,36 @@ typedef array[T,N:COMPACTLINEAR] = T ^ N;
 
 We should note now that we not only also provide compact sums with \verb$\+$
 but also projections, injections, compact arrays with \verb$\^$ and 
-compact coarrays with \verb$\*+_$. 
+compact coarrays with \verb$\*+_$, and we will also provide a new kind of pointer.
 
+\subsection{Why reversed order?}
+You may wonder why the order of the indices appears to be reversed.
+In fact if you may wonder why tuples use big-endian representation.
+The reason is that we want, arbitrarily, that in a tuple type like
+\begin{minted}{felix}
+\var x : 10^3 = `1:10\, `2:10\, `3:10;
+\end{minted}
+that the representation by 123, with the first digit being for hundreds
+because Europeans were rather stupid when adopting Arabic numbers and
+neglected the fact that Arabic is read from right to left. So in Arabic
+numbers are little-endian, but in Latin languages those numbers are
+read left to right, which is backwards.
+
+So in a tuple, with Latin lexicographical ordering, the most significant
+component comes first, but it is numbered 0, in the zero origin indexing
+system: in other words the lowest index finds the most significant component.
+
+In turn this means, when iterating, that the right hand term moves fastest;
+which you can see in a digital clock, with the right hand digit flashing over
+quickly and the left hand one moving slowly. This means in an array of arrays
+the natural iteration scans the inner arrays quickly, and the outer ones more
+slowly. So the outer array indices must come on the left, or first.
+
+It's unfortunate that the mathematics is less natural this way, but the alternative
+would be to read positional number systems represented in tuples from right to left.
+I found when debugging test cases this so was way too confusing.
+
+\subsection{Distinctions}
 The primary difference between the two systems is that whilst ordinary products
 have machine addressable components, compact ones do not. Nevertheless we can
 still modify components of a compact product using compact pointers!

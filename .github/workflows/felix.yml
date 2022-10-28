@@ -18,10 +18,7 @@ jobs:
       - run: g++ --version
       - run: ls
       - run: |
-          export FLX_SHELL_ECHO=1
           export FLX_BUILD_TOOLCHAIN_FAMILY=gcc
-          echo $FLX_BUILD_TOOLCHAIN_FAMILY
-          echo $FLX_SHELL_ECHO
           make
 
 
