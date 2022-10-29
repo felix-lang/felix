@@ -368,6 +368,7 @@ def config_host(ctx, build):
         ocamlc=ctx.options.host_ocamlc,
         ocamlopt=ctx.options.host_ocamlopt,
         flags=[
+            '-w', '-26', '-w', '-20', '-w', '-21'
             #'-unsafe-string', 
             #'-w', 'yzex', '-warn-error', 'FPSU'
             ],
