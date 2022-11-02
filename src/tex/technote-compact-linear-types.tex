@@ -510,10 +510,11 @@ We can now present the encoding of values of the type system as natural numbers.
 First, for products the constructor is given by
 \begin{align*}
 \tt{rep}: \prod_{i=0}^{n-1}X_i &\longrightarrow \mathbb{N}\\
-(v0, ... ,v_{n-1}) &\mapsto \sum_{i=0}^{n-1}v_i | \prod_{j=i+1}^{n-1} X_j|
+(v0, ... ,v_{n-1}) &\mapsto \sum_{i=0}^{n-1}\rm{rep}(v_i) | \prod_{j=i+1}^{n-1} X_j|
 \end{align*}
 and the projections are given by
 \begin{align*}
+\mathbb{N} \longrightarrow \mathbb{N}
 \pi_j (p) = p \quot (|\prod_{i=j+1}^{n-1}X_i|) \, \rmd \, |X_j|
 \end{align*}
 In other words, we simply divide by the size of the tail of a component
@@ -530,7 +531,8 @@ number.
 \subsection{Sum Encoding}
 For sum types, the constructors are injection functions:
 \begin{align*}
-v_i &\mapsto \sum_{i=0}^{n-1}v_i | \sum_{j=i+1}^{n-1} X_j|
+X^i\longrightarrow \sum_{j=0}^{n-1}X_j\\
+v_i &\mapsto \sum_{i=0}^{n-1}\rm{rep}(v_i) | \sum_{j=i+1}^{n-1} X_j|
 \end{align*}
 The interpretation is that, for component we sequentially assign a subrange
 of natural numbers correpsonding to the number of values of that component.
