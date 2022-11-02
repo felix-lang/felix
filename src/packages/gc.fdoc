@@ -2449,7 +2449,7 @@ provides_slib: -lflx_gc_static
 includes: '"flx_gc.hpp"'
 library: flx_gc
 macros: BUILD_FLX_GC
-Requires: judy flx_exceptions
+Requires: judy flx_exceptions pthread
 srcdir: src/gc
 src: .*\.cpp
 @
