@@ -113,6 +113,10 @@ $$-x = n - x$$
 Natural computations prior to finding the modular residual present an issue
 we resolve by performing these computations in a much larger ring.
 
+\begin{definition}
+The {\em size} of a finite ring $R$, written $|R|$, is the number of values of the underlying set.
+\end{definition}
+
 \subsection{Representation}
 \begin{lemma} The C data types
 \begin{minted}{C++}
@@ -121,7 +125,7 @@ uint8_t uint16_t uint32_t uint64_t
 with C builtin operations for addition, subtraction, negation, and multiplication
 are the rings
 \(\mathbb{N}_{2^8}\ \mathbb{N}_{2^{16}}\ \mathbb{N}_{2^{32}}\ \mathbb{N}_{2^{64}} \)
-respectively, with the usual comp[arison operations, unsigned integer division,
+respectively, with the usual comparison operations, unsigned integer division,
 and unsigned integer modulus.
 \end{lemma}
 
@@ -136,19 +140,14 @@ $2^{32}$.
 
 \section{Ring Products}
 \begin{definition}
-Let $R_i$ for $i$ in $\mathbb{N}_n$ be a tuple of $n$ rings, then the
+Let $R_i$ for $i$ in $\mathbb{N}_n$ be a tuple of $n$ finite rings, then the
 {\em tensor product} of the rings, denoted by
 $$R_0 \otimes R_1 \otimes ... \otimes R_{n-1}$$
 is a ring with values tuples of corresponding elements, operations
 defined componentwise, comparisons defined by the usual lexicographic
 ordering, and iterators sequencing through values in the defined order.
 \end{definition}
-The size of the ring is the product or the ring sizes.
-
-\begin{definition}
-A ring is compact linear if it is a natural ring, a product
-of compact linear rings, or a sum of compact linear rings.
-\end{definition}
+The size of the ring is the product of the ring sizes.
 
 \begin{theorem} {\em Compact Linear Product Representation}.
 A compact linear product can be represented by a single value
@@ -156,7 +155,10 @@ $0..{N-1}$ where $N$ is the product of the sizes of the rings.
 The encoding of a value $(v_0, v_1, ... ,v_{n-1})$ is given by
 $$v_0 * r_0 + v_1 * r_1 + ... + r_{n-1} * v_{n-1}$$
 where $r_{n-1}=1$ and $r_k$ for $k$ in $0..n-2$ is the product of the sizes of the rings
-$R_j$ for $j>k$.
+$R_j$ for $j>k$:
+$$r_k = \prod_{j=k+1}^{n-1} |R_j|$$
+where the empty product is 1. That is, the product of the sizes of the rings
+to the {\em right} of ring $R_k$ in the ring product formula.
 
 The projection $p_k$ of the $k'th$ ring is given by $$v / r_k \mod |R_k|$$
 where $|R|$ is the size of the ring $R$.
@@ -176,9 +178,13 @@ by the injection function that constructed the ring.
 A compact linear sum can be represented by a single value
 $0..{N-1}$ where $N$ is the sum of the sizes of the rings.
 The injection of a value $v_i$ of ring $R_i$ into the sum is given by
-$$v_i + s_j$$
+$$v_i + s_i$$
 where $s_{n-1}=0$ and $r_k$ for $k$ in $0..n-2$ is the sum of the sizes of the rings
 $R_j$ for $j>k$.
+$$s_k = \sum{j=k+1}^{n-1} |R_j|$$
+where the empty sum is 0. That is, the sum of the sizes of the rings
+to the {\em right} of ring $R_k$ in the ring sum formula.
+
 
 Decoding the sum is achieved as follows. Starting with $i=0$, if $v >= s_i$,
 then the injection was for the value $v_i = v - s_i$ of the ring $R_i$, otherwise
@@ -186,86 +192,44 @@ increment $i$ and try again. Since for $i=n-1$, the rightmost ring, $v>=0$ is
 true for all possible $v$, the iteration must terminate.
 \end{theorem}
 
-\subsection{Size function}
-We define the \verb$size$ of a type as follows, using the usual \verb$|.|$ notation:
+\section{Compact Linear Types}
+\begin{definition}
+A ring is compact linear if it is a natural ring, a product
+of compact linear rings, or a sum of compact linear rings.
+\end{definition}
 
-\begin{align*}
-|\mathbb{N_n}| &= n\\
-|\oplus_{i=0}^{n-1} R_i| &= \sum_i|X_i|\\
-|\otimes_{i=0}^{n-1} r_i| &= \prod_i|X_i|\\
-\end{align*}
+Every value of a compact linear type can
+be uniquely represented by a natural number in the range $0..n-1$ inclusive,
+where $n$ is the size of the underlying set.
 
-This just says the size of a sum is the sum of the sizes of its components,
-and the size of a product is the product of the sizes of its components.
-Note that by the convention for nullary terms, the size of the empty sum is 0  
-whilst the size of the empty product 1.
-
-\section{IGNORE}
-\begin{theorem}
-Computations involving addition, subtraction, negation and multiplication 
-in a small region close to zero produce the same results
-as if they were done with the integers.
-\end{theorem}
-This means, to perform calculations for a ring $\mathbb{N}_n$ we can use
-a ring $\mathbb{N}_m$ provided $m$ is sufficiently greater than $n$:
-the result holds for division of positive values but fails for negative ones.
-
-We need to check multiplication makes sense for negative values. The requirement is
-that if we multiply a negative by positive value than take the modular
-residual, we get the same result as taking the modular residual first
-then multiplying, and similarly for two negative values.
-
-For the first case when $k$ is negative
-\begin{align*}
-((k + n) \mod n)j &= (k + n)j&\rm{since\ } k+n<n\\
-  &= kj+nj &{\rm distributivity}\\
-  &= kj \mod n &{\rm since\ }nj \mod n = 0
-\end{align*}
-
-and the second case
-\begin{align*}
-((k+n) &\mod n)((j+n) \mod n) \mod n \\
-&= (k+n)(j+n)\mod n&\rm{\ since\ } k+n < n{\ and \ }j+n<n\\
- &=(kj + kn + jn + n^2)\mod n\\
- &= kj \mod n
-\end{align*}
-Note the result holds only when the product of the absolute
-values of $j$ and $k$ are small, in particular the product
-is less than $n$.
-
-For example in $\mathbb{N}_{16}$ we have $2*3 = (-2)*(-3)=14*13=182\mod 16 = 6$.
-
-A bound for the naturalness of a multiplication is that the operands of
-the product are less than $\sqrt{n}$. If $n$ is a power of 2, this just means
-the operands have half the number of bits in their representation.
-
+We now discuss some crucial results. 
+\begin{definition}
+An {\em associator} is a transform that adds of removes balances
+parentheses from a sum or product formula.
+\end{definition}
 
 \begin{definition}
-$$ \mathbb{N} = \lim_{n->\infty}\mathbb{N}n$$
+A {\em unit} transform is a transform that adds or removes one or more
+void rings $N_0$ from a ring sum, or unit rings $N_1$ from
+a ring product.
 \end{definition}
-That is, we define the integers are the limit of a sequence of larger and larger rings.
-As $n$ gets bigger, a larger region about 0 will behave like the natural numbers.
 
-Let $\mathbb{D}$ be q distributive category with two specified families of functors
-$\sum_n$ for sums and $\prod_n$ for products indexed by the ring $\mathbb{N_n}$ where
-the nullary sum is the empty object {\em void} also written 0, nullary product
-is a {\em unit} object, also written 1, 
-the 1-ary sum of an object $X$ is the identity $1_X$ viewed as an injection,
-and the 1-ary product $X$ is the identity $1_X$ viewed as projection.
+\begin{definition}
+A {\em natural transform} is an operation which changes the type
+of a ring without changing the representation.
+\end{definition}
 
-Define the {\em kernel} of the category $\mathbb{D}$ as the full subcategory
-$\mathbb{K}$ with only the objects generated by combinations of $\sum$ and $\prod$
-and let $\sum\restrict{\mathbb{K}}$ and 
-$\prod\restrict{\mathbb{K}}$  be the functor families restricted to $\mathbb{K}$.
+\begin{theorem}
+Associators and unit transforms are natural.
+\end{theorem}
 
-Then the kernels of all distributive categories with chosen sum and product
-functor families are isomorphic. Sum and product formation is neither associative
-nor symmetric, but they are associative and symmetric up to isomorphism.
+What this means is that you can safely coerce the type of a ring
+to any natural equivalent.
 
-\section{Theory}
-With just two type constructors for sums and products, we construct a value
-representation in the natural numbers. We first define some convenient 
-auxilliary functions with comprehensible semantics, because the essence
-of the raw formulas is emboddied in superscripts and subscript details
-and the meaning would soon be lost.
+\begin{theorem}
+{\em Linearisation} All the values of any compact linear type of size $n$
+can be scanned in the same order as a scan of $N_n$.
+\end{theorem}
+
+You just iterate through the representation!
 \end{document}
