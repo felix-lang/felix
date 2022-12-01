@@ -5,6 +5,22 @@
 using Nat = ::std::uint64_t;
 constexpr Nat maxrep = Nat(uint32_t(-1));
 
+// Types specifying operations
+namespace helper {
+  template<class T>
+  struct add { static T op(T x, T y) { return x.add(y); }};
+  template<class T>
+  struct sub { static T op(T x, T y) { return x.sub(y); }};
+  template<class T>
+  struct mul { static T op(T x, T y) { return x.mul(y); }};
+  template<class T>
+  struct div { static T op(T x, T y) { return x.div(y); }};
+  template<class T>
+  struct mod { static T op(T x, T y) { return x.mod(y); }};
+  template<class T>
+  struct neg { static T op(T x) { return x.neg(); }};
+}
+
 template<Nat n> requires (n <= maxrep)
 struct N {
   Nat rep;  // probably should be const ..
@@ -22,14 +38,14 @@ struct N {
   N& operator=(N const&&) = default;
 
   // number of values
-  static constexpr Nat size() { return n; }
+  static consteval Nat size() { return n; }
 
   // operations, note modulo performed by constructor
   constexpr N add(N x) const { return rep + x.rep; }
   constexpr N neg() const { return n - rep; }
   constexpr N sub(N x) const { return rep - x.rep + n; }
   constexpr N mul(N x) const { return rep * x.rep; }
-  constexpr N quot(N x) const { return rep / x.rep; }
+  constexpr N div (N x) const { return rep / x.rep; }
   constexpr N mod(N x) const { return rep % x.rep; }
 
   // comparisons
@@ -60,7 +76,7 @@ template<Nat n> requires (n <= maxrep)
 constexpr N<n> operator * (N<n> x, N<n> y) { return x.mul(y); }
 
 template<Nat n> requires (n <= maxrep) 
-constexpr N<n> operator / (N<n> x, N<n> y) { return x.quot(y); }
+constexpr N<n> operator / (N<n> x, N<n> y) { return x.div (y); }
 
 template<Nat n> requires (n <= maxrep) 
 constexpr N<n> operator % (N<n> x, N<n> y) { return x.mod(y); }
@@ -96,7 +112,7 @@ constexpr N<n> pred (N<n> x) { return x.pred(); }
 
 //---------------------------------------
 // products
-template<class ...Args> 
+template<class...> 
 struct Product;
 
 namespace helper {
@@ -155,33 +171,26 @@ namespace helper {
     static Nat prj(Nat x) { return x % T::size();} 
   };
 
-  // addition
-  template <class ...T>
-  struct add {
+  //binary operators 
+  template <template<class> class op, class ...T>
+  struct binop{
     static Nat fold(Nat, Nat, Nat);
   };
 
-  template<class H>
-  struct add<H> {
-    static Nat fold(Nat acc, Nat x, Nat y) { 
-      return acc + 
-        (
-          (x % H::size()) + 
-          (y % H::size())
-        ) % H::size () 
-      ;
-    }
+  template<template<class> class op>
+  struct binop<op> {
+    static Nat fold(Nat acc, Nat x, Nat y) { return acc; }
   };
 
-  template<class H, class ...T>
-  struct add<H,T...> {
+  template<template<class> class op, class H, class ...T>
+  struct binop<op,H,T...> {
     static Nat fold(Nat acc, Nat x, Nat y) { 
-      return acc + 
-        (
-          (x / Product<T...>::size() % H::size()) + 
-          (y / Product<T...>::size() % H::size())
-        ) % H::size() * Product<T...>::size() +
-        add<T...>::fold(acc, x,y);
+      Nat LHS = x / Product<T...>::size() % H::size();
+      Nat RHS = y / Product<T...>::size() % H::size();
+      H R = op<H>::op(H{LHS}, H{RHS});
+      Nat Rscaled = R.rep * Product<T...>::size();
+      Nat Nuacc = acc + Rscaled;
+      return binop<op,T...>::fold(Nuacc, x,y);
     }
   };
 
@@ -214,9 +223,15 @@ using Unit = Product<>;
 
 template<>
 struct Product<> {
-  static constexpr Nat size() { return 1; }
+  static consteval Nat size() { return 1; }
   constexpr Product() {}
+
   Product add(Product x) const { return Product(); } 
+  Product sub(Product x) const { return Product(); } 
+  Product mul(Product x) const { return Product(); } 
+  Product div(Product x) const { return Product(); } 
+  Product mod(Product x) const { return Product(); } 
+
   friend ::std::ostream& operator << (::std::ostream& o, Product x) { 
     return o << "{}";
   }
@@ -227,12 +242,23 @@ struct Product<> {
 
 template<class T> // requires T to be a compact linear type
 struct Product<T> {
-  static constexpr Nat size() { return T::size(); }
+  static consteval Nat size() { return T::size(); }
+
   Nat const rep;
+  Product(Nat x) : rep(x) {} // should be private ... 
+
   constexpr Product(T rep_) : rep(rep_.rep) {}
-  T add(T x) const { return (rep + x.rep) % T::size() ; } 
+
+  Product add(Product x) { return helper::binop<helper::add,T>::fold(0,rep, x.rep); }
+  Product sub(Product x) { return helper::binop<helper::sub,T>::fold(0,rep, x.rep); }
+  Product mul(Product x) { return helper::binop<helper::mul,T>::fold(0,rep, x.rep); }
+  Product div(Product x) { return helper::binop<helper::div,T>::fold(0,rep, x.rep); }
+  Product mod(Product x) { return helper::binop<helper::mod,T>::fold(0,rep, x.rep); }
+
   friend ::std::ostream& operator << (::std::ostream& o, Product x) { 
-    return o << "{" << x << "}";
+    o << "{";
+    helper::out<T>::put(o,x.rep);
+    return o << "}";
   }
 };
 
@@ -240,7 +266,7 @@ struct Product<T> {
 
 template<class H, class ...T>
 struct Product<H, T...> {
-  static constexpr Nat size() { return H::size() * Product<T...>::size(); }
+  static consteval Nat size() { return H::size() * Product<T...>::size(); }
   Nat const rep; // should be private
   Product(Nat x) : rep(x) {} // should be private ... 
 
@@ -248,7 +274,11 @@ struct Product<H, T...> {
     rep((head.rep % H::size())* Product<T...>::size() + Product<T...>(tail...).rep) 
   {}
 
-  Product add(Product x) { return helper::add<H,T...>::fold(0,rep, x.rep); }
+  Product add(Product x) { return helper::binop<helper::add,H,T...>::fold(0,rep, x.rep); }
+  Product sub(Product x) { return helper::binop<helper::sub,H,T...>::fold(0,rep, x.rep); }
+  Product mul(Product x) { return helper::binop<helper::mul,H,T...>::fold(0,rep, x.rep); }
+  Product div(Product x) { return helper::binop<helper::div,H,T...>::fold(0,rep, x.rep); }
+  Product mod(Product x) { return helper::binop<helper::mod,H,T...>::fold(0,rep, x.rep); }
 
   friend ::std::ostream& operator << (::std::ostream& o, Product x) { 
     o << "{";
@@ -302,8 +332,24 @@ int main() {
 
   // OK lets get messy!!!
 
- auto messy = Product/*<P32, P32>*/ {x32_21, x32_21};
- ::std::cout << messy << ::std::endl;
- ::std::cout << messy.add(messy) << ::std::endl;
- 
+  auto messy = Product/*<P32, P32>*/ {x32_21, x32_21};
+  ::std::cout <<"x=  "<< messy << ::std::endl;
+  ::std::cout <<"x+x="<< messy.add(messy) << ::std::endl;
+  ::std::cout <<"x-x="<< messy.sub(messy) << ::std::endl;
+  ::std::cout <<"x*x="<< messy.mul(messy) << ::std::endl;
+  ::std::cout <<"x/x="<< messy.div(messy) << ::std::endl;
+  ::std::cout <<"x%x="<< messy.mod(messy) << ::std::endl;
+
+  // unary case
+  auto unitary = Product { N<3>{2} };
+  auto xx = projection<0, Product<N<3>>>::prj (unitary);
+  ::std::cout << xx << ::std::endl;
+  ::std::cout << unitary << ::std::endl;
+  ::std::cout << unitary.add(unitary) << ::std::endl;
+
+  // nullary case 
+  auto nullary =Product{}; 
+  ::std::cout << nullary << ::std::endl;
+  ::std::cout << nullary.add(nullary) << ::std::endl;
+
 }
