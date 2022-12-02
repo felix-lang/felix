@@ -2,10 +2,47 @@
 #include <iostream>
 #include <tuple>
 
+// SYNOPSIS
+//
+// We define data structures which form finite commuitative rings with 
+//
+// * addition, negation, subtraction and multiplication as usual
+// * integer division and modulus
+// * total ordering
+// * single machine word representation
+//
+// We start with N<n> which is a subrange of integers 0..n-1
+//
+// We then define products (tuples) with arithmetic componentwise
+// and lexicographical total ordering and provide projection functions
+// to extract components,
+//
+// and sums (variants) with injection functions to construct them
+// decoding a sum can be expensive: a reference linear decoding
+// is provided and for small sums constant time decoding can
+// be done with an array the size of the sum
+//
+// Total ordering is defined lexicographically as for products
+//
+// Arithmetic is defined as if the rings with packed next to each other,
+// For example N<n> + N<m> is treated as if it were N<n+m>.
+//
+// clang bugs!!
+
+// consteval strangely fails calling size() in succ and pred everywhere for no good reason at all
+// it works everywhere else
+#define consteval constexpr
+
+// default spaceship operator<=> doesn't work in clang 
+// so we're forced to hand define all 6 comparisons every time
+
 using Nat = ::std::uint64_t;
 constexpr Nat maxrep = Nat(uint32_t(-1));
 
-// Types specifying operations
+// These templates map a template with a name X to a call of a method named X
+// This is required to pass the operation as a template template argument
+// so as to avoid any run time overhead in higher order polymorphic functions
+
 namespace helper {
   template<class T>
   struct add { static T op(T x, T y) { return x.add(y); }};
@@ -21,9 +58,38 @@ namespace helper {
   struct neg { static T op(T x) { return x.neg(); }};
 }
 
+// The most basic rings N<n> are subranges of the natural
+// numbers (unsigned integers) from 0 to n-1
+// All the operations are purely functional.
+// The representation is uint64_t and the value of n is constrained
+// to be at most the maximum value of uint32_t to ensure multiplication
+// does not overflow
+//
+// FIXME: N<0> and N<1> are special cases and should be
+// handled specially
+//
+// N0 is the empty range, it has no values, and so no
+// operations requiring values are permitted: it has size 0
+//
+// N1 has only one value, namely 0, and so as an optimisation
+// does not require a representation
+//
+// Addition, subtraction and multiplication are well defined
+// However division and modulus necessarily fail for all RHS values
+// since the only value is 0 so these should throw a division by zero
+// exception!
+//
+// For all n, division and modulus by zero also fail
+// These should throw division by zero exception,
+// At present, we rely on the standard division by zero exception to be thrown
+//
+
+
 template<Nat n> requires (n <= maxrep)
-struct N {
+class N {
   Nat rep;  // probably should be const ..
+public:
+  Nat get() const { return rep; }
 
   // default constructor
   N() : rep(0) {}
@@ -57,7 +123,7 @@ struct N {
   constexpr bool ne( N x) const { return x.rep != rep; }
 
   // iterators
-  constexpr N succ () const { return (rep + 1) % size(); }
+  constexpr N succ () const { return rep + 1; }
   constexpr N pred () const { return rep + n - 1; }
 
   // oputput
@@ -68,10 +134,347 @@ struct N {
 template<Nat n> 
 struct ring_iterator {
   N<n> v;
+  bool ended;
+
+  ring_iterator() : v{0}, ended(false) {}
+  ring_iterator(int) : v{0}, ended(true) {}
+
   N<n> operator*(){ return v; }
-  void operator++() { v = v.succ(); }
+  void operator++() { v = v.succ(); ended = v==N<n>{0}; }
+  friend int operator <=>(ring_iterator<n>,ring_iterator<n>)=default;
+
+  static ring_iterator begin() { return ring_iterator(); }
+  static ring_iterator end() { return ring_iterator(N<n>::size()); }
+
+
+  struct all {
+     all() {}
+     ring_iterator begin() { return ring_iterator::begin(); }
+     ring_iterator end() { return ring_iterator::end(); }
+  };
+
+};
+//---------------------------------------
+// products
+template<class...> 
+struct Product;
+
+// Sums
+template<class...>
+struct Sum;
+
+namespace helper {
+  // PROJECTIONS
+  template <Nat j, class ...T>
+  struct pack_prj;
+
+  // recursive case
+  template<Nat j, class H, class ...T> 
+  struct pack_prj <j,H,T...> {
+    static Nat prj( Nat x) { 
+      if (j == 0) return x / Product<T...>::size() % Product<H>::size();
+      else return pack_prj<j - 1, T...>::prj(x);
+    }
+  };
+
+  template<Nat j>
+  struct pack_prj<j> {
+    static Nat prj(Nat x) { throw "Invalid projection index"; } 
+  };
+
+  // INJECTIONS
+  template <Nat j, class ...T>
+  struct pack_inj;
+
+  // recursive case
+  template<Nat j, class H, class ...T> 
+  struct pack_inj <j,H,T...> {
+    static Nat inj( Nat x) { 
+      if (j == 0) return x + Sum<T...>::size();
+      else return pack_inj<j - 1, T...>::inj(x);
+    }
+  };
+
+  template<Nat j>
+  struct pack_inj<j> {
+    static Nat inj(Nat x) { throw "Invalid injection index"; } 
+  };
+
+  template<Nat j, class ...T>
+  struct caseno;
+
+  template<Nat j, class H, class ...T>
+  struct caseno<j, H, T...> {
+    static Nat idx(Nat x) {
+      if(x >= Sum<T...>::size()) return j;
+      else return caseno<j + 1, T...>::idx(x);
+    }
+  };
+
+  template<Nat j, class...>
+  struct caseno {
+    static Nat idx(Nat x) { throw "Impossible caseno runout"; }
+  };
+
+
+  template<Nat j, class ...T>
+  struct caseval;
+
+  template<Nat j, class H, class ...T>
+  struct caseval<j, H, T...> {
+    static Nat val(Nat x) {
+      if(x >= Sum<T...>::size()) return x - Sum<T...>::size();
+      else return caseval<j + 1, T...>::val(x);
+    }
+  };
+
+  template<Nat j, class...>
+  struct caseval {
+    static Nat val(Nat x) { throw "Impossible caseval runout"; }
+  };
+
+
+  //Unary operators 
+  template <template<class> class op, class ...T>
+  struct unop{
+    static Nat mfold(Nat, Nat);
+    static Nat afold(Nat, Nat);
+  };
+
+  template<template<class> class op>
+  struct unop<op> {
+    static Nat mfold(Nat acc, Nat x) { return acc; }
+    static Nat afold(Nat acc, Nat x) { return acc; }
+  };
+
+  template<template<class> class op, class H, class ...T>
+  struct unop<op,H,T...> {
+    static Nat mfold(Nat acc, Nat x) { 
+      Nat LHS = x / Product<T...>::size() % H::size();
+      H R = op<H>::op(H{LHS});
+      Nat Rscaled = R.get() * Product<T...>::size();
+      Nat Nuacc = acc + Rscaled;
+      return unop<op,T...>::mfold(Nuacc, x);
+    }
+    static Nat afold(Nat acc, Nat x) { 
+      Nat LHS = x - Sum<T...>::size() % H::size();
+      H R = op<H>::op(H{LHS});
+      Nat Rscaled = R.get() + Sum<T...>::size();
+      Nat Nuacc = acc + Rscaled;
+      return unop<op,T...>::afold(Nuacc, x);
+    }
+  };
+
+  //binary operators 
+  template <template<class> class op, class ...T>
+  struct binop{
+    static Nat mfold(Nat, Nat, Nat);
+    static Nat afold(Nat, Nat, Nat);
+  };
+
+  template<template<class> class op>
+  struct binop<op> {
+    static Nat mfold(Nat acc, Nat x, Nat y) { return acc; }
+    static Nat afold(Nat acc, Nat x, Nat y) { return acc; }
+  };
+
+  template<template<class> class op, class H, class ...T>
+  struct binop<op,H,T...> {
+    static Nat mfold(Nat acc, Nat x, Nat y) { 
+      Nat LHS = x / Product<T...>::size() % H::size();
+      Nat RHS = y / Product<T...>::size() % H::size();
+      H R = op<H>::op(H{LHS}, H{RHS});
+      Nat Rscaled = R.get() * Product<T...>::size();
+      Nat Nuacc = acc + Rscaled;
+      return binop<op,T...>::mfold(Nuacc, x,y);
+    }
+    static Nat afold(Nat acc, Nat x, Nat y) { 
+      Nat LHS = x - Sum<T...>::size() % H::size();
+      Nat RHS = y - Sum<T...>::size() % H::size();
+      H R = op<H>::op(H{LHS}, H{RHS});
+      Nat Rscaled = R.get() + Sum<T...>::size();
+      Nat Nuacc = acc + Rscaled;
+      return binop<op,T...>::afold(Nuacc, x,y);
+    }
+
+  };
+
+  // output
+  template <class ...T>
+  struct out {
+    static ::std::ostream& put(::std::ostream&, Nat x);
+  };
+
+  template<class H>
+  struct out<H> {
+    static ::std::ostream& put(::std::ostream &o, Nat x) { 
+      return o << H(x % H::size());
+    }
+  };
+
+  template<class H, class ...T>
+  struct out<H,T...> {
+    static ::std::ostream& put(::std::ostream& o, Nat x) { 
+      o << H(x / Product<T...>::size() % H::size()) << ", ";
+      return out<T...>::put (o,x);
+    }
+  };
+}
+
+// Cartesian Product
+// 
+// Products of rings are rings with compponent wise arithmetic
+//
+
+// Nullary case: type with one value, namely 0 so no representation is required
+using Unit = Product<>;
+
+// Unit is isomorphic to N<1>
+// So we might think about conversions .. however the behavour is the same.
+// 
+
+template<>
+struct Product<> {
+  static consteval Nat size() { return 1; }
+  constexpr Product() {}
+  Nat get() const { return 0; }
+
+  Product add(Product x) const { return Product(); } 
+  Product sub(Product x) const { return Product(); } 
+  Product mul(Product x) const { return Product(); } 
+  Product div(Product x) const { return Product(); } 
+  Product mod(Product x) const { return Product(); } 
+  Product neg() const { return Product(); } 
+  
+  Product succ() const { return Product(); }
+  Product pred() const { return Product(); }
+
+  friend ::std::ostream& operator << (::std::ostream& o, Product x) { 
+    return o << "{}";
+  }
+};
+
+// Recursion
+
+template<class H, class ...T>
+class Product<H, T...> {
+  Nat rep; // should be private
+public:
+  static consteval Nat size() { return H::size() * Product<T...>::size(); }
+  Nat get() const { return rep; }
+
+  Product(Nat x) : rep(x) {} // should be private ... 
+
+  constexpr Product(H head, T ...tail) : 
+    rep((head.get() % H::size())* Product<T...>::size() + Product<T...>(tail...).get()) 
+  {}
+
+  Product add(Product x) const { return helper::binop<helper::add,H,T...>::mfold(0,rep, x.rep); }
+  Product sub(Product x) const { return helper::binop<helper::sub,H,T...>::mfold(0,rep, x.rep); }
+  Product mul(Product x) const { return helper::binop<helper::mul,H,T...>::mfold(0,rep, x.rep); }
+  Product div(Product x) const { return helper::binop<helper::div,H,T...>::mfold(0,rep, x.rep); }
+  Product mod(Product x) const { return helper::binop<helper::mod,H,T...>::mfold(0,rep, x.rep); }
+  Product neg() const { return helper::unop<helper::neg,H,T...>::mfold(0,rep); }
+
+  Product succ() const { Nat x = size(); return Product((rep + 1) % x); }
+  Product pred() const { return Product((rep + size() - 1) % size()); }
+
+  // comparisons
+  constexpr bool eq(Product x) const { return x.rep == rep; }
+  constexpr bool lt(Product x) const { return x.rep < rep; }
+  constexpr bool le(Product x) const { return x.rep <= rep; }
+  constexpr bool ge(Product x) const { return x.rep >= rep; }
+  constexpr bool gt(Product x) const { return x.rep > rep; }
+  constexpr bool ne(Product x) const { return x.rep != rep; }
+
+
+  friend ::std::ostream& operator << (::std::ostream& o, Product x) { 
+    o << "{";
+    helper::out<H,T...>::put(o,x.rep);
+    return o << "}";
+  }
+};
+
+
+template<>
+struct Sum<> {
+  static consteval Nat size() { return 0; }
+  constexpr Sum() {}
+};
+
+using Void = Sum<>;
+
+template<class H, class ...T>
+class Sum<H, T...> {
+  Nat rep; // should be private
+public:
+  static consteval Nat size() { return H::size() + Sum<T...>::size(); }
+  Nat get() const { return rep; }
+
+  Sum(Nat x) : rep(x) {} // should be private ... 
+
+  Nat caseno() const { return helper::caseno<0,H,T...>::idx(rep); }
+  Nat caseval() const { return helper::caseval<0,H,T...>::val(rep); }
+  
+  Sum add(Sum x) const { return helper::binop<helper::add,H,T...>::afold(0,rep, x.rep); }
+  Sum sub(Sum x) const { return helper::binop<helper::sub,H,T...>::afold(0,rep, x.rep); }
+  Sum mul(Sum x) const { return helper::binop<helper::mul,H,T...>::afold(0,rep, x.rep); }
+  Sum div(Sum x) const { return helper::binop<helper::div,H,T...>::afold(0,rep, x.rep); }
+  Sum mod(Sum x) const { return helper::binop<helper::mod,H,T...>::afold(0,rep, x.rep); }
+  Sum neg() const { return helper::unop<helper::neg,H,T...>::afold(0,rep); }
+
+  Sum succ() const { Nat x = size(); return Sum((rep + 1) % x); }
+  Sum pred() const { return Sum((rep + size() - 1) % size()); }
+
+  // comparisons
+  constexpr bool eq(Sum x) const { return x.rep == rep; }
+  constexpr bool lt(Sum x) const { return x.rep < rep; }
+  constexpr bool le(Sum x) const { return x.rep <= rep; }
+  constexpr bool ge(Sum x) const { return x.rep >= rep; }
+  constexpr bool gt(Sum x) const { return x.rep > rep; }
+  constexpr bool ne(Sum x) const { return x.rep != rep; }
+
+
+  friend ::std::ostream& operator << (::std::ostream& o, Sum x) { 
+    o << "<";
+    helper::out<H,T...>::put(o,x.rep);
+    return o << ">";
+  }
+};
+
+
+// deduction guide
+template<class H, class ...T>
+Product(H, T...) -> Product<H,T...>;
+
+// Projection
+template<Nat j, class ...T>
+struct projection;
+
+template<Nat j, class ...T>
+struct projection<j, Product<T...>> {
+  using P = Product<T...>;
+  using Dummy = ::std::tuple<T...>;
+  using PrjT = typename ::std::tuple_element<j,Dummy>::type;
+  static auto prj (P x) -> PrjT { return helper::pack_prj<j,T...>::prj(x.get()); }
+};
+
+// Injection 
+template<Nat j, class ...T>
+struct injection;
+
+template<Nat j, class ...T>
+struct injection<j, Sum<T...>> {
+  using S = Sum<T...>;
+  using Dummy = ::std::tuple<T...>;
+  using InjT = typename ::std::tuple_element<j,Dummy>::type;
+  static auto inj (InjT x) -> S { return helper::pack_inj<j,T...>::inj(x.get()); }
 };
  
+ 
+// ========================================================================= 
+// ATOMIC 
+
 // functional forms: operators
 template<Nat n> requires (n <= maxrep)
 constexpr N<n> operator + (N<n> x, N<n> y) { return x.add(y); }
@@ -117,234 +520,104 @@ constexpr N<n> succ (N<n> x) { return x.succ(); }
 template<Nat n> requires (n <= maxrep) 
 constexpr N<n> pred (N<n> x) { return x.pred(); }
 
-//---------------------------------------
-// products
-template<class...> 
-struct Product;
 
-namespace helper {
-  // Computations with parameter packs
-  template<Nat j, class ...T>
-  struct pack_divisor;
+// ========================================================================= 
+// PRODUCTS
 
-  // recurive case
-  template<Nat j, class H, class ...T>
-  struct pack_divisor<j, H, T...> {
-    static constexpr Nat d() { 
-      if (j == 0) return Product<T...>::size();
-      else return pack_divisor<j - 1, T...>::d();
-    }
-  };
+// functional forms: operators
+template<class ...Args>
+constexpr Product<Args...> operator + (Product<Args...> x, Product<Args...> y) { return x.add(y); }
 
-  // terminator case
-  template<Nat j>
-  struct pack_divisor<j> {
-    static constexpr Nat d() { return 1; }
-  };
+template<class ...Args>
+constexpr Product<Args...> operator - (Product<Args...> x, Product<Args...> y) { return x.sub(y); }
 
-  // Computations with parameter packs
-  template<Nat j, class ...T>
-  struct pack_modulus;
+template<class ...Args>
+constexpr Product<Args...> operator * (Product<Args...> x, Product<Args...> y) { return x.mul(y); }
 
-  // recursive case
-  template<Nat j, class H, class ...T>
-  struct pack_modulus<j, H, T...> {
-    static constexpr Nat m() { 
-      if (j == 0) return H::size();
-      else return pack_modulus<j - 1, T...>::m();
-    }
-  };
+template<class ...Args>
+constexpr Product<Args...> operator / (Product<Args...> x, Product<Args...> y) { return x.div (y); }
 
-  // error terminator case  (division by zero)
-  template<Nat j>
-  struct pack_modulus<j> {
-    static constexpr Nat m() { return 0; }
-  };
+template<class ...Args>
+constexpr Product<Args...> operator % (Product<Args...> x, Product<Args...> y) { return x.mod(y); }
 
-  template <Nat j, class ...T>
-  struct pack_prj;
+template<class ...Args>
+constexpr Product<Args...> operator - (Product<Args...> x) { return x.neg(); }
 
-  // recursive case
-  template<Nat j, class H, class ...T> 
-  struct pack_prj <j,H,T...> {
-    static Nat prj( Nat x) { 
-      if (j == 0) return x / Product<T...>::size() % Product<H>::size();
-      else return pack_prj<j - 1, T...>::prj(x);
-    }
-  };
+// functional forms: comparisons
+template<class ...Args>
+constexpr bool operator == (Product<Args...> x, Product<Args...> y) { return x.eq(y); }
 
-  template<Nat j, class T>
-  struct pack_prj<j,T> {
-    static Nat prj(Nat x) { return x % T::size();} 
-  };
+template<class ...Args>
+constexpr bool operator != (Product<Args...> x, Product<Args...> y) { return x.ne(y); }
 
-  //Unary operators 
-  template <template<class> class op, class ...T>
-  struct unop{
-    static Nat fold(Nat, Nat);
-  };
+template<class ...Args>
+constexpr bool operator <  (Product<Args...> x, Product<Args...> y) { return x.lt(y); }
 
-  template<template<class> class op>
-  struct unop<op> {
-    static Nat fold(Nat acc, Nat x) { return acc; }
-  };
+template<class ...Args>
+constexpr bool operator <= (Product<Args...> x, Product<Args...> y) { return x.le(y); }
 
-  template<template<class> class op, class H, class ...T>
-  struct unop<op,H,T...> {
-    static Nat fold(Nat acc, Nat x) { 
-      Nat LHS = x / Product<T...>::size() % H::size();
-      H R = op<H>::op(H{LHS});
-      Nat Rscaled = R.rep * Product<T...>::size();
-      Nat Nuacc = acc + Rscaled;
-      return unop<op,T...>::fold(Nuacc, x);
-    }
-  };
+template<class ...Args>
+constexpr bool operator >= (Product<Args...> x, Product<Args...> y) { return x.ge(y); }
 
-  //binary operators 
-  template <template<class> class op, class ...T>
-  struct binop{
-    static Nat fold(Nat, Nat, Nat);
-  };
+template<class ...Args>
+constexpr bool operator >  (Product<Args...> x, Product<Args...> y) { return x.gt(y); }
 
-  template<template<class> class op>
-  struct binop<op> {
-    static Nat fold(Nat acc, Nat x, Nat y) { return acc; }
-  };
+// functional forms: iterators
+template<class ...Args>
+constexpr Product<Args...> succ (Product<Args...> x) { return x.succ(); }
 
-  template<template<class> class op, class H, class ...T>
-  struct binop<op,H,T...> {
-    static Nat fold(Nat acc, Nat x, Nat y) { 
-      Nat LHS = x / Product<T...>::size() % H::size();
-      Nat RHS = y / Product<T...>::size() % H::size();
-      H R = op<H>::op(H{LHS}, H{RHS});
-      Nat Rscaled = R.rep * Product<T...>::size();
-      Nat Nuacc = acc + Rscaled;
-      return binop<op,T...>::fold(Nuacc, x,y);
-    }
-  };
-
-  // output
-  template <class ...T>
-  struct out {
-    static ::std::ostream& put(::std::ostream&, Nat x);
-  };
-
-  template<class H>
-  struct out<H> {
-    static ::std::ostream& put(::std::ostream &o, Nat x) { 
-      return o << H(x % H::size());
-    }
-  };
-
-  template<class H, class ...T>
-  struct out<H,T...> {
-    static ::std::ostream& put(::std::ostream& o, Nat x) { 
-      o << H(x / Product<T...>::size() % H::size()) << ", ";
-      return out<T...>::put (o,x);
-    }
-  };
-}
-
-// Product
-
-// Nullary case: type with one value, namely 0 so no representation is required
-using Unit = Product<>;
-
-template<>
-struct Product<> {
-  static consteval Nat size() { return 1; }
-  constexpr Product() {}
-
-  Product add(Product x) const { return Product(); } 
-  Product sub(Product x) const { return Product(); } 
-  Product mul(Product x) const { return Product(); } 
-  Product div(Product x) const { return Product(); } 
-  Product mod(Product x) const { return Product(); } 
-  Product neg() const { return Product(); } 
-  
-  Product succ() const { return Product(); }
-  Product pred() const { return Product(); }
-
-  friend ::std::ostream& operator << (::std::ostream& o, Product x) { 
-    return o << "{}";
-  }
-};
+template<class ...Args>
+constexpr Product<Args...> pred (Product<Args...> x) { return x.pred(); }
 
 
-// Unary case
+// ========================================================================= 
+// SUMS  
+ 
+// functional forms: operators
+template<class ...Args>
+constexpr Sum<Args...> operator + (Sum<Args...> x, Sum<Args...> y) { return x.add(y); }
 
-template<class T> // requires T to be a compact linear type
-struct Product<T> {
-  static constexpr Nat size() { return T::size(); }
+template<class ...Args>
+constexpr Sum<Args...> operator - (Sum<Args...> x, Sum<Args...> y) { return x.sub(y); }
 
-  Nat const rep;
-  Product(Nat x) : rep(x) {} // should be private ... 
+template<class ...Args>
+constexpr Sum<Args...> operator * (Sum<Args...> x, Sum<Args...> y) { return x.mul(y); }
 
-  constexpr Product(T rep_) : rep(rep_.rep) {}
+template<class ...Args>
+constexpr Sum<Args...> operator / (Sum<Args...> x, Sum<Args...> y) { return x.div (y); }
 
-  Product add(Product x) const { return helper::binop<helper::add,T>::fold(0,rep, x.rep); }
-  Product sub(Product x) const { return helper::binop<helper::sub,T>::fold(0,rep, x.rep); }
-  Product mul(Product x) const { return helper::binop<helper::mul,T>::fold(0,rep, x.rep); }
-  Product div(Product x) const { return helper::binop<helper::div,T>::fold(0,rep, x.rep); }
-  Product mod(Product x) const { return helper::binop<helper::mod,T>::fold(0,rep, x.rep); }
-  Product neg() const { return helper::unop<helper::neg,T>::fold(0,rep); }
+template<class ...Args>
+constexpr Sum<Args...> operator % (Sum<Args...> x, Sum<Args...> y) { return x.mod(y); }
 
-  Product succ() const { return Product((rep + 1) % size()); }
-  Product pred() const { return Product((rep + size() - 1) % size()); }
+template<class ...Args>
+constexpr Sum<Args...> operator - (Sum<Args...> x) { return x.neg(); }
 
-  friend ::std::ostream& operator << (::std::ostream& o, Product x) { 
-    o << "{";
-    helper::out<T>::put(o,x.rep);
-    return o << "}";
-  }
-};
+// functional forms: comparisons
+template<class ...Args>
+constexpr bool operator == (Sum<Args...> x, Sum<Args...> y) { return x.eq(y); }
 
-// Recursion
+template<class ...Args>
+constexpr bool operator != (Sum<Args...> x, Sum<Args...> y) { return x.ne(y); }
 
-template<class H, class ...T>
-struct Product<H, T...> {
-  static constexpr Nat size() { return H::size() * Product<T...>::size(); }
-  Nat const rep; // should be private
-  Product(Nat x) : rep(x) {} // should be private ... 
+template<class ...Args>
+constexpr bool operator <  (Sum<Args...> x, Sum<Args...> y) { return x.lt(y); }
 
-  constexpr Product(H head, T ...tail) : 
-    rep((head.rep % H::size())* Product<T...>::size() + Product<T...>(tail...).rep) 
-  {}
+template<class ...Args>
+constexpr bool operator <= (Sum<Args...> x, Sum<Args...> y) { return x.le(y); }
 
-  Product add(Product x) const { return helper::binop<helper::add,H,T...>::fold(0,rep, x.rep); }
-  Product sub(Product x) const { return helper::binop<helper::sub,H,T...>::fold(0,rep, x.rep); }
-  Product mul(Product x) const { return helper::binop<helper::mul,H,T...>::fold(0,rep, x.rep); }
-  Product div(Product x) const { return helper::binop<helper::div,H,T...>::fold(0,rep, x.rep); }
-  Product mod(Product x) const { return helper::binop<helper::mod,H,T...>::fold(0,rep, x.rep); }
-  Product neg() const { return helper::unop<helper::neg,H,T...>::fold(0,rep); }
+template<class ...Args>
+constexpr bool operator >= (Sum<Args...> x, Sum<Args...> y) { return x.ge(y); }
 
-  Product succ() const { return Product((rep + 1) % size()); }
-  Product pred() const { return Product((rep + size() - 1) % size()); }
+template<class ...Args>
+constexpr bool operator >  (Sum<Args...> x, Sum<Args...> y) { return x.gt(y); }
 
-  friend ::std::ostream& operator << (::std::ostream& o, Product x) { 
-    o << "{";
-    helper::out<H,T...>::put(o,x.rep);
-    return o << "}";
-  }
-};
+// functional forms: iterators
+template<class ...Args>
+constexpr Sum<Args...> succ (Sum<Args...> x) { return x.succ(); }
 
-// deduction guide
-template<class H, class ...T>
-Product(H, T...) -> Product<H,T...>;
-
-
-// Projection
-template<Nat j, class T>
-struct projection;
-
-template<Nat j, class ...T>
-struct projection<j, Product<T...>> {
-  using P = Product<T...>;
-  using Dummy = ::std::tuple<T...>;
-  using PrjT = typename ::std::tuple_element<j,Dummy>::type;
-  static PrjT prj (P x) { return helper::pack_prj<j,T...>::prj(x.rep); }
-};
-
+template<class ...Args>
+constexpr Sum<Args...> pred (Sum<Args...> x) { return x.pred(); }
+// ========================================================================= 
 
 int main() {
   ::std::cout << "Hello world" << ::std::endl;
@@ -382,6 +655,21 @@ int main() {
   ::std::cout <<"x/x="<< messy.div(messy) << ::std::endl;
   ::std::cout <<"x%x="<< messy.mod(messy) << ::std::endl;
 
+  ::std::cout <<"-x= "<< (-messy) << ::std::endl;
+  ::std::cout <<"x+x="<< (messy + messy) << ::std::endl;
+  ::std::cout <<"x-x="<< (messy - messy) << ::std::endl;
+  ::std::cout <<"x*x="<< (messy * messy) << ::std::endl;
+  ::std::cout <<"x/x="<< (messy / messy) << ::std::endl;
+  ::std::cout <<"x%x="<< (messy % messy) << ::std::endl;
+
+
+  ::std::cout <<"x==x="<< (messy == messy) << ::std::endl;
+  ::std::cout <<"x!=x="<< (messy != messy) << ::std::endl;
+  ::std::cout <<"x<x="<< (messy < messy) << ::std::endl;
+  ::std::cout <<"x<=x="<< (messy <= messy) << ::std::endl;
+  ::std::cout <<"x>x="<< (messy > messy) << ::std::endl;
+  ::std::cout <<"x>=x="<< (messy >= messy) << ::std::endl;
+
   // unary case
   auto unitary = Product { N<3>{2} };
   auto xx = projection<0, Product<N<3>>>::prj (unitary);
@@ -393,4 +681,18 @@ int main() {
   auto nullary =Product{}; 
   ::std::cout << nullary << ::std::endl;
   ::std::cout << nullary.add(nullary) << ::std::endl;
+
+  for (auto i = ring_iterator<5>::begin(); i != ring_iterator<5>::end(); ++i)
+    ::std::cout << *i << ::std::endl
+  ;
+
+  for (auto i : ring_iterator<5>::all())
+    ::std::cout << i << ::std::endl
+  ;
+  auto c1_1 = injection<1,Sum<N<3>,N<2>>>::inj(1); // case 1, value 1:2, rep = 1
+  auto c0_1 = injection<0,Sum<N<3>,N<2>>>::inj(1); // case 0, value 1:4, rep = 3
+  
+  ::std::cout << "c1_1.rep=" << c1_1.get() << ", caseno = " << c1_1.caseno() << ", caseval=" << c1_1.caseval() << ::std::endl;
+  ::std::cout << "c0_1.rep=" << c0_1.get() << ", caseno = " << c0_1.caseno() <<  ", caseval=" << c0_1.caseval() << ::std::endl;
+
 }
