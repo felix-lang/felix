@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <iostream>
 #include <tuple>
+#include <string>
 
 // SYNOPSIS
 //
@@ -31,6 +32,7 @@
 
 // consteval strangely fails calling size() in succ and pred everywhere for no good reason at all
 // it works everywhere else
+//https://stackoverflow.com/questions/63364918/clang-says-call-to-void-consteval-function-is-not-a-constant-expression
 #define consteval constexpr
 
 // default spaceship operator<=> doesn't work in clang 
@@ -89,6 +91,8 @@ template<Nat n> requires (n <= maxrep)
 class N {
   Nat rep;  // probably should be const ..
 public:
+  static ::std::string type_name() { return "N<"+::std::to_string(n)+">"; }
+
   Nat get() const { return rep; }
 
   // default constructor
@@ -129,6 +133,8 @@ public:
   // oputput
   friend constexpr ::std::ostream &
     operator<<(::std::ostream &o, N x) { return o << x.rep << ":" << n; }
+
+  ::std::string repr() const { return type_name() + "{" + ::std::to_string (get()) + "}"; }
 };
 
 template<Nat n> 
@@ -299,11 +305,53 @@ namespace helper {
 
   };
 
-  // output
+  // output for type name lists
   template <class ...T>
-  struct out {
-    static ::std::ostream& put(::std::ostream&, Nat x);
+  struct tname;
+
+  template<class H>
+  struct tname<H> {
+    static ::std::string tnam () { return H::type_name(); }
   };
+
+  template<class H, class ...T>
+  struct tname<H,T...> {
+    static ::std::string tnam() { return H::type_name()+ ", " + tname<T...>::tnam(); }
+  };
+
+  template<class ...>
+  struct repr;
+
+   template<class H>
+   struct repr<H> {
+     static ::std::string prepr(Nat x) { return H{x % H::size()}.repr(); }
+   };
+
+   template<class H, class ...T>
+   struct repr<H,T...> {
+     static ::std::string prepr(Nat x) {
+       return  H{x / Product<T...>::size() % H::size()}.repr() + "," + repr<T...>::prepr(x);  }
+   };
+
+  template<int cur, class...>
+  struct sumarg;
+
+  template<int cur> 
+  struct sumarg<cur> { 
+    static ::std::string arg(int,Nat) { throw "impossible"; }
+  };
+
+  template<int cur, class H, class ...T>
+  struct sumarg<cur,H,T...> {
+    static ::std::string arg(int req, Nat rep) {
+      if(cur == req) return H{rep - Sum<T...>::size()}.repr();
+      else return sumarg<cur + 1, T...>::arg(req, rep);
+    }
+  };
+
+  // output for products
+  template <class ...T>
+  struct out;
 
   template<class H>
   struct out<H> {
@@ -337,6 +385,8 @@ template<>
 struct Product<> {
   static consteval Nat size() { return 1; }
   constexpr Product() {}
+  static ::std::string type_name() { return "Product<>"; }
+
   Nat get() const { return 0; }
 
   Product add(Product x) const { return Product(); } 
@@ -361,6 +411,8 @@ class Product<H, T...> {
   Nat rep; // should be private
 public:
   static consteval Nat size() { return H::size() * Product<T...>::size(); }
+  static ::std::string type_name() { return "Product<"+helper::tname<H,T...>::tnam() +">"; }
+
   Nat get() const { return rep; }
 
   Product(Nat x) : rep(x) {} // should be private ... 
@@ -376,7 +428,7 @@ public:
   Product mod(Product x) const { return helper::binop<helper::mod,H,T...>::mfold(0,rep, x.rep); }
   Product neg() const { return helper::unop<helper::neg,H,T...>::mfold(0,rep); }
 
-  Product succ() const { Nat x = size(); return Product((rep + 1) % x); }
+  Product succ() const { return Product((rep + 1) % size()); }
   Product pred() const { return Product((rep + size() - 1) % size()); }
 
   // comparisons
@@ -393,6 +445,7 @@ public:
     helper::out<H,T...>::put(o,x.rep);
     return o << "}";
   }
+  ::std::string repr() const { return "Product{" + helper::repr<H,T...>::prepr(rep) + "}"; }
 };
 
 
@@ -409,6 +462,8 @@ class Sum<H, T...> {
   Nat rep; // should be private
 public:
   static consteval Nat size() { return H::size() + Sum<T...>::size(); }
+  static ::std::string type_name() { return "Sum<"+helper::tname<H,T...>::tnam() +">"; }
+
   Nat get() const { return rep; }
 
   Sum(Nat x) : rep(x) {} // should be private ... 
@@ -439,6 +494,15 @@ public:
     o << "<";
     helper::out<H,T...>::put(o,x.rep);
     return o << ">";
+  }
+
+  // NOTE: it's impossible to write the code to show the correctly typed argument
+  // because that needs a *runtime* switch over the caseno.
+  // we CAN show the representation though.. there's a constructor for it
+  // but although it's public at the moment, it should be private
+  ::std::string repr() const { return "injection<" +
+    ::std::to_string (caseno()) + ", " + type_name() + 
+    ">::inj{"+helper::sumarg<0,H,T...>::arg(caseno(), rep)+"}";
   }
 };
 
@@ -622,8 +686,10 @@ constexpr Sum<Args...> pred (Sum<Args...> x) { return x.pred(); }
 int main() {
   ::std::cout << "Hello world" << ::std::endl;
   N<16> x{9};
+  ::std::cout << "x Type name = " << x.type_name() << ::std::endl; 
+  ::std::cout << "x repr = " << x.repr() << ::std::endl; 
   ::std::cout << x << ", " << x + x << ::std::endl;
- 
+
   // product
   N<3> x3_2{2};
   N<2> x2_1{1};
@@ -631,6 +697,8 @@ int main() {
 
   P32 x32_21{x3_2,x2_1};
   ::std::cout << "x32_21="<< x32_21 << ::std::endl;
+  ::std::cout << "x32_21::type_name="<< x32_21.type_name() << ::std::endl;
+  ::std::cout << "x32_21::repr ="<< x32_21.repr() << ::std::endl;
 
   // apply projections
   N<3> c0 = projection<0,P32>::prj(x32_21);
@@ -689,10 +757,22 @@ int main() {
   for (auto i : ring_iterator<5>::all())
     ::std::cout << i << ::std::endl
   ;
-  auto c1_1 = injection<1,Sum<N<3>,N<2>>>::inj(1); // case 1, value 1:2, rep = 1
-  auto c0_1 = injection<0,Sum<N<3>,N<2>>>::inj(1); // case 0, value 1:4, rep = 3
+
+  using S32 = Sum<N<3>,N<2>>;
+  auto c1_1 = injection<1,S32>::inj(1); // case 1, value 1:2, rep = 1
+  auto c0_1 = injection<0,S32>::inj(1); // case 0, value 1:3, rep = 3
+  ::std::cout << "c1_1 repr = " << c1_1.repr() << ::std::endl;
   
   ::std::cout << "c1_1.rep=" << c1_1.get() << ", caseno = " << c1_1.caseno() << ", caseval=" << c1_1.caseval() << ::std::endl;
   ::std::cout << "c0_1.rep=" << c0_1.get() << ", caseno = " << c0_1.caseno() <<  ", caseval=" << c0_1.caseval() << ::std::endl;
+
+  // nested
+  using S32_32 = Sum<S32, S32>;
+  auto c111 = injection<1, S32_32>::inj(c1_1);
+  auto c011 = injection<0, S32_32>::inj(c1_1);
+  ::std::cout << "c111.rep=" << c111.get() << ", caseno = " << c111.caseno() << ", caseval=" << c111.caseval() << ::std::endl;
+  ::std::cout << "c011.rep=" << c011.get() << ", caseno = " << c011.caseno() << ", caseval=" << c011.caseval() << ::std::endl;
+  ::std::cout << "c111 repr = " << c111.repr() << ::std::endl;
+  ::std::cout << "c011 repr = " << c011.repr() << ::std::endl;
 
 }
