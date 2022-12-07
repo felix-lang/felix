@@ -129,6 +129,7 @@ public:
   // iterators
   constexpr N succ () const { return rep + 1; }
   constexpr N pred () const { return rep + n - 1; }
+  consteval static N zero() { return 0; }
 
   // oputput
   friend constexpr ::std::ostream &
@@ -137,20 +138,20 @@ public:
   ::std::string repr() const { return type_name() + "{" + ::std::to_string (get()) + "}"; }
 };
 
-template<Nat n> 
+template<class T> 
 struct ring_iterator {
-  N<n> v;
+  T v;
   bool ended;
 
-  ring_iterator() : v{0}, ended(false) {}
-  ring_iterator(int) : v{0}, ended(true) {}
+  ring_iterator() : v{T::zero()}, ended(false) {}
+  ring_iterator(int) : v{T::zero()}, ended(true) {} // dummy parameter
 
-  N<n> operator*(){ return v; }
-  void operator++() { v = v.succ(); ended = v==N<n>{0}; }
-  friend int operator <=>(ring_iterator<n>,ring_iterator<n>)=default;
+  T operator*(){ return v; }
+  void operator++() { v = v.succ(); ended = v==T::zero(); }
+  friend int operator <=>(ring_iterator<T>,ring_iterator<T>)=default;
 
   static ring_iterator begin() { return ring_iterator(); }
-  static ring_iterator end() { return ring_iterator(N<n>::size()); }
+  static ring_iterator end() { return ring_iterator(0); }
 
 
   struct all {
@@ -158,8 +159,8 @@ struct ring_iterator {
      ring_iterator begin() { return ring_iterator::begin(); }
      ring_iterator end() { return ring_iterator::end(); }
   };
-
 };
+
 //---------------------------------------
 // products
 template<class...> 
@@ -367,6 +368,16 @@ namespace helper {
       return out<T...>::put (o,x);
     }
   };
+
+  template<class Base>
+  struct ainit {
+    consteval static Nat init(Base head, Base tail...) {
+      return head.get() * sizeof(tail) * Base::size() + init(tail);
+    }
+    consteval static Nat init() { return 0; }
+  };
+
+
 }
 
 // Cartesian Product
@@ -398,6 +409,7 @@ struct Product<> {
   
   Product succ() const { return Product(); }
   Product pred() const { return Product(); }
+  Product zero() const { return Product(); }
 
   friend ::std::ostream& operator << (::std::ostream& o, Product x) { 
     return o << "{}";
@@ -430,6 +442,7 @@ public:
 
   Product succ() const { return Product((rep + 1) % size()); }
   Product pred() const { return Product((rep + size() - 1) % size()); }
+  consteval static Product zero() { return 0; }
 
   // comparisons
   constexpr bool eq(Product x) const { return x.rep == rep; }
@@ -480,6 +493,7 @@ public:
 
   Sum succ() const { Nat x = size(); return Sum((rep + 1) % x); }
   Sum pred() const { return Sum((rep + size() - 1) % size()); }
+  consteval static Sum zero() { return 0; }
 
   // comparisons
   constexpr bool eq(Sum x) const { return x.rep == rep; }
@@ -535,6 +549,43 @@ struct injection<j, Sum<T...>> {
   static auto inj (InjT x) -> S { return helper::pack_inj<j,T...>::inj(x.get()); }
 };
  
+
+// standard array
+template<class Base, class Index> // index must be compact linear type
+class Array {
+  Base data[Index::size()];
+public:
+  Base get(Index i) const { return data[i.get()]; }
+  void set (Index i, Base v) { data[i.get()] = v; }
+  consteval static Nat size() { return Index::size(); }
+};
+
+template<class Base, class Index>
+struct array_projection {
+  using A = Array<Base, Index>;
+  static auto aprj (A a, Index i) -> A { return a.get(i); }
+};
+
+// Compact array
+template<class Base, class Index> // index must be compact linear type
+class CompactArray {
+  Nat rep;
+public:
+  CompactArray (Base v...) { 
+    static_assert (sizeof(v) == Index::size());
+    rep = helper::ainit<Base>::init(v);
+  }
+  Base get(Index i) const { return rep / (Base::size() * i.get()) % Base::size(); }
+  consteval static Nat size() { return Index::size() * Base::size(); }
+};
+
+// Standard Array Projection
+template<class Base, class Index>
+struct compact_array_projection {
+  using A = CompactArray<Base, Index>;
+  static auto aprj (A a, Index i) -> A { return a.get(i); }
+};
+
  
 // ========================================================================= 
 // ATOMIC 
@@ -750,11 +801,11 @@ int main() {
   ::std::cout << nullary << ::std::endl;
   ::std::cout << nullary.add(nullary) << ::std::endl;
 
-  for (auto i = ring_iterator<5>::begin(); i != ring_iterator<5>::end(); ++i)
+  for (auto i = ring_iterator<N<5>>::begin(); i != ring_iterator<N<5>>::end(); ++i)
     ::std::cout << *i << ::std::endl
   ;
 
-  for (auto i : ring_iterator<5>::all())
+  for (auto i : ring_iterator<N<5>>::all())
     ::std::cout << i << ::std::endl
   ;
 
@@ -775,4 +826,26 @@ int main() {
   ::std::cout << "c111 repr = " << c111.repr() << ::std::endl;
   ::std::cout << "c011 repr = " << c011.repr() << ::std::endl;
 
+  Array<int, N<3>> a;
+  a.set(N<3>{0},0);
+  a.set(N<3>{1},1);
+  a.set(N<3>{2},2);
+  for (auto i : ring_iterator<N<3>>::all()) 
+    ::std::cout << a.get(i) << " ";
+  ::std::cout << ::std::endl;
+
+  Array<int, P32> p;
+  auto v = 0;
+
+  for (auto i : ring_iterator<N<3>>::all()) 
+  for (auto j : ring_iterator<N<2>>::all()) 
+  {
+    p.set(Product{i,j}, v);
+    ++v;
+  } 
+  for (auto i : ring_iterator<P32>::all()) 
+    ::std::cout << p.get(i);
+  ::std::cout << ::std::endl;
+ 
+  auto ca = CompactArray<N<2>,N<3>>{N<2>{1},N<2>{1},N<2>{0}}; 
 }
