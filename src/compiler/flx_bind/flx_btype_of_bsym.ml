@@ -29,7 +29,9 @@ let btype_of_bsym state bsym_table sr bt bid bsym =
   | BBDCL_label _ -> btyp_label ()
   | BBDCL_invalid -> assert false
   | BBDCL_type_function _ -> assert false
-  | BBDCL_type_alias _ -> assert false
+  | BBDCL_type_alias _ ->
+    clierrx "[flx_bind/flx_btype_of_bsym.ml:33: E106a] " (Flx_bsym.sr bsym) ("Use entity as if variable: typedef " ^ Flx_bsym.id bsym)
+ 
   | BBDCL_module -> 
     clierrx "[flx_bind/flx_lookup.ml:1854: E106] " (Flx_bsym.sr bsym) ("Attempt to find type of module or library name " ^ Flx_bsym.id bsym)
 
