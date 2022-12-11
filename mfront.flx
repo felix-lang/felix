@@ -1,0 +1,423 @@
+include "std/control/chips";
+
+chip loader(filename: string) 
+  connector io
+    pin out : %> string
+{
+  var f = load(filename);
+  var lines = split(f,char "\n");
+  for line in lines do
+    write (io.out, line);
+  done
+}
+
+chip comment_stripper
+  connector io
+    pin inp: %< string
+    pin out: %> string
+{
+  while true do
+    var s = read(io.inp);
+    for (var i=0; i< s.len.int; ++i;) 
+      if s.[i] == char "#" goto endline;
+  endline:>
+    write (io.out, s.[0 .. i - 1]);
+  done
+}
+
+enum lstate { Spc, Dig, Alph };
+
+fun lex(inp: string) : list[string] {
+  // state machine
+  var state = Spc;
+  var i = 0;
+  var toks = Empty[string];
+  var tok = "";
+
+  // add token to output list (in reverse order) and clear token
+  proc emit() { if tok != "" do toks = Cons (tok, toks); tok = ""; done }
+
+  // scan the whole string
+  var n = inp.len.int;
+  var ch = inp.[0];
+  while i < n do
+   // character under consideration
+
+   // routine to add it to token
+   proc addch() { tok = tok + ch; ++i; ch = inp.[i]; }
+
+   // routine to ignore a character
+   proc skipch() { ++i; ch = inp.[i]; }
+
+   // routine to start a new token
+   proc newtoken() { emit; state = Spc; }
+
+   // switch on the automaton state
+    match state with
+      // processing spaces
+      | Spc => 
+        if ch.isblank do skipch;
+        elif ch.isdigit do
+          emit;
+          addch;
+          state = Dig;
+        elif ch.isidstart do
+          emit;
+          addch;
+          state = Alph;
+        elif ch == char "." do
+          emit;
+          addch;
+          newtoken;
+        elif ch in "()+-*/%^|&" do
+          emit;
+          addch;
+          newtoken;
+        elif ch in "<>=!" do
+          emit;
+          var op2 = inp.[i to i+2];
+          if op2 in ("!=","==","<<",">>",">=","<=") perform
+            addch;
+          addch;
+          newtoken;
+        else
+          println$ "Unknown character " + ch;
+          System::exit(1);
+        done
+
+      // processing a digit sequence
+      | Dig =>
+        if ch.isdigit do
+          addch;
+        else
+         newtoken;
+        done
+
+     // Processing an identifier
+    | Alph =>
+      if ch.iscidcont do
+        addch;
+      else
+        newtoken;
+      done
+    endmatch;
+  done
+   // finalise any current token
+  emit;
+
+   // return the token list
+  return toks.rev;
+}
+
+// recursive descent expression parser
+variant expr = 
+  | Binop of string * expr * expr
+  | Unop of string * expr 
+  | Const of string // integer constant
+  | Ident of string // variable name
+  | Error
+;
+instance Str[expr] {
+  fun str: expr -> string =
+  | Binop (op, l, r) => "(" + l.str + ") " + op + " (" + r.str + ")"
+  | Unop (op, l) => op + "(" + l.str + ")"
+  | Const s => s
+  | Ident s => s
+  | Error => "ERROR"
+  ;
+}
+
+var binop_map = strdict[string]();
+var unop_map = strdict[string]();
+
+binop_map.add "+" " u32unchecked_add\n";
+binop_map.add "-" " u32unchecked_sub\n";
+binop_map.add "*" " u32unchecked_mul\n";
+binop_map.add "/" " u32unchecked_div\n";
+binop_map.add "%" " u32unchecked_mod\n";
+
+binop_map.add "&" " u32unchecked_and\n";
+binop_map.add "|" " u32unchecked_or\n";
+binop_map.add "^" " u32unchecked_xor\n";
+
+binop_map.add "<<" " u32unchecked_shl\n";
+binop_map.add ">>" " u32unchecked_shr\n";
+
+binop_map.add ">" " u32unchecked_gt\n";
+binop_map.add "<" " u32unchecked_lt\n";
+binop_map.add "<=" " u32unchecked_le\n";
+binop_map.add ">=" " u32unchecked_ge\n";
+binop_map.add "==" " u32unchecked_eq\n";
+binop_map.add "!=" " u32unchecked_neq\n";
+
+unop_map.add "-" " u32unchecked_neg\n";
+unop_map.add "!" " u32unchecked_not\n";
+
+fun postfix: expr -> string = 
+  | Const s => " push."+s+"\n"
+  | Ident s => "# load."+s+"\n"
+  | Error => "ERROR\n"
+
+  | Binop (op, a, b) =>
+    let op = match binop_map.get op with
+    | None => "# Can't find '" + op "' in operator map\n"
+    | Some x => x
+    in
+    postfix a + postfix b + op
+
+  | Unop (op, a) =>
+    let op = match unop_map.get op with
+    | None => "; Can't find '" + op "' in operator map\n"
+    | Some x => x
+    in
+    postfix a  + op
+;
+
+typedef toks = list[string];
+typedef pstate = expr * toks;
+
+proc fail(e: string) {
+  println$ "Parse Error: " + e;
+  System::exit(1);
+}
+
+fun parse_atom (inp: toks)  : pstate {
+  match inp with
+  | Empty => 
+    fail "Expected atom got End of Line";
+  | Cons (head, tail) =>
+    match head with
+    | "(" =>
+       var node, rest = parse_expr tail;
+       match rest with
+       | Empty => fail "Expected ) parsing atom got Eno of Line";
+       | Cons (head, tail) => 
+         match head with
+         | ")" =>
+           return node, tail; // success
+         | _ => fail ("Expected ) got " + head)  ;
+         endmatch;
+       endmatch;
+     | x when (x.0).iscidstart =>
+       return Ident x, tail;
+     | x when (x.0).isdigit =>
+       return Const x, tail;
+     | x => fail ("Unexpected Symbol " + x + " parsing " + inp.str);
+     endmatch;
+  endmatch;
+}
+    
+// repeated prefix ops not supported (eg - - 1 is not allowed)
+fun parse_prefixop (inp: toks) : pstate {
+//println$ "Parsing prefixop " + inp.str;
+  match inp with
+  | Empty => 
+    fail "Expected prefix expr got End of Lin";
+  | Cons(op, tail) => 
+    if not (op in ("-","!")) do
+      return parse_atom inp;
+    else
+      var a, rest = parse_atom tail;
+      return (Unop (op,a), rest);
+    done
+  endmatch;
+}
+
+
+fun parse_factor(inp: toks) : pstate {
+  match inp with
+  | Empty =>
+    fail "Expected factor got End of Line";
+  | _ =>
+    var tail = inp;
+    def var left, tail = parse_prefixop tail; 
+    while true do
+      match tail with
+      | Empty =>
+        return left, tail;
+
+      | Cons(op, tail2) =>
+        if not (op in ("*", "/", "%")) do 
+          return left, tail;
+        else 
+          def var right, tail = parse_prefixop tail2;
+          left = Binop (op, left, right); // reduce
+        done
+      endmatch;
+    done
+  endmatch;
+}
+fun parse_term (inp: toks) : pstate {
+  match inp with
+  | Empty =>
+    fail "Expected term got End of Line";
+  | _ =>
+    var tail = inp;
+    def var left, tail = parse_factor tail; 
+    while true do
+      match tail with
+      | Empty =>
+        return left, tail;
+
+      | Cons(op, tail2) =>
+        if not (op in ("+", "-")) do 
+          return left, tail;
+        else 
+          def var right, tail = parse_factor tail2;
+          left = Binop (op, left, right); // reduce
+        done
+      endmatch;
+    done
+  endmatch;
+}
+fun parse_shift (inp: toks) : pstate {
+//println$ "parse_shift";
+  var left, tail = parse_term inp;
+  match tail with
+  | Empty => return left, tail;
+  | Cons(op, tail2) =>
+    if not (op in ("<<",">>")) do
+      return left, tail;
+    else
+      var right, tail3 = parse_term tail2;
+      return Binop(op, left, right), tail3;
+    done
+  endmatch;
+}
+fun parse_bitand (inp: toks) : pstate {
+//println$ "parse_bitand";
+  match inp with
+  | Empty =>
+    fail "Expected bitand expr got End of Line";
+  | _ =>
+    var tail = inp;
+    def var left, tail = parse_shift tail; 
+    while true do
+      match tail with
+      | Empty =>
+        return left, tail;
+
+      | Cons(op, tail2) =>
+        if not (op == "&") do 
+          return left, tail;
+        else 
+          def var right, tail = parse_shift tail2;
+          left = Binop (op, left, right); // reduce
+        done
+      endmatch;
+    done
+  endmatch;
+}
+fun parse_bitxor (inp: toks) : pstate {
+//println$ "parse_bitxor";
+  match inp with
+  | Empty =>
+    fail "Expected  bitxor expr got End of Line";
+  | _ =>
+    var tail = inp;
+    def var left, tail = parse_bitand tail; 
+    while true do
+      match tail with
+      | Empty =>
+        return left, tail;
+
+      | Cons(op, tail2) =>
+        if not (op == "^") do 
+          return left, tail;
+        else 
+          def var right, tail = parse_bitand tail2;
+          left = Binop (op, left, right); // reduce
+        done
+      endmatch;
+    done
+  endmatch;
+}
+
+fun parse_bitor (inp: toks) : pstate {
+//println$ "parse_bitor";
+  match inp with
+  | Empty =>
+    fail "Expected bitor expr got End of Line";
+  | _ =>
+    var tail = inp;
+    def var left, tail = parse_bitxor tail; 
+    while true do
+      match tail with
+      | Empty =>
+        return left, tail;
+
+      | Cons(op, tail2) =>
+        if not (op == "|") do 
+          return left, tail;
+        else 
+          def var right, tail = parse_bitxor tail2;
+          left = Binop (op, left, right); // reduce
+        done
+      endmatch;
+    done
+  endmatch;
+}
+fun parse_comparison (inp: toks) : pstate {
+//println$ "parse_comparison";
+  var left, tail = parse_bitor inp;
+  match tail with
+  | Empty => return left, tail;
+  | Cons(op, tail2) =>
+    if not (op in ("<",">","==","<=", "=>", "!=")) do
+      return left, tail;
+    else
+      var right, tail3 = parse_bitor tail2;
+      return Binop(op, left, right), tail3;
+    done
+  endmatch;
+}
+fun parse_expr (inp: toks) : pstate {
+//println$ "parse_expr";
+  return parse_comparison inp;
+}
+
+chip printer 
+  connector io
+    pin inp : %< string
+{
+  var counter = 0;
+  var indent = 0;
+  while true do
+    ++counter;
+    var line = read(io.inp);
+    //println$ counter.str + ": " + line;
+    var toks = line.lex;
+    match toks with
+    | Cons (head, tail) => 
+      if head in ("else", "end")  if indent > 0 perform --indent;
+      if head == "eval" do
+        //println$ "EVAL ********************************";
+//println$ "tokens = " + tail.str;
+        var e,rest = parse_expr tail;
+        println$ "# eval[inp] " + cat " " toks;
+        println$ "# eval[parsed] "  e.str;
+        println$ e.postfix;
+      else
+        println$ "  " * indent + cat "" toks; 
+      done
+     
+    | _ => ;
+    endmatch;
+    match toks with
+    | Cons (head, tail) => 
+      if head in ("begin", "proc", "if", "else", "while", "repeat") perform ++indent;
+    | _ => ;
+    endmatch;
+  done
+}
+
+
+proc run(filename:string) {
+  device source = loader (filename);
+  circuit 
+    connect source.out, comment_stripper.inp
+    connect comment_stripper.out, printer.inp
+  endcircuit
+}
+
+run(System::argv 1);
