@@ -7,10 +7,10 @@ import sys
 
 import fbuild.fnmatch
 import fbuild.glob
-try:
-  collectionsIterable = collections.Iterable
-except:
-  collectionsIterable = collections.abc.Iterable
+#try:
+#  collectionsIterable = collections.Iterable
+#except:
+#  collectionsIterable = collections.abc.Iterable
 
 # ------------------------------------------------------------------------------
 
@@ -531,7 +531,7 @@ class Path(str):
         for pattern in patterns:
             if \
                     not isinstance(pattern, str) and \
-                    isinstance(pattern, collectionsIterable):
+                    isinstance(pattern, collections.abc.Iterable):
                 paths = Path.igloball(*pattern)
             else:
                 paths = Path.glob(pattern, **kwargs)
