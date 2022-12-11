@@ -155,7 +155,7 @@ unop_map.add "!" " u32unchecked_not\n";
 
 fun postfix: expr -> string = 
   | Const s => " push."+s+"\n"
-  | Ident s => "# load."+s+"\n"
+  | Ident s => "# push.loc."+s+"\n"
   | Error => "ERROR\n"
 
   | Binop (op, a, b) =>
