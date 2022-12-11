@@ -153,6 +153,28 @@ binop_map.add "!=" " u32unchecked_neq\n";
 unop_map.add "-" " u32unchecked_neg\n";
 unop_map.add "!" " u32unchecked_not\n";
 
+struct syminfo {
+  loc : int;
+  typ : string;
+  mut : bool;
+}
+
+struct symbol_table {
+  counter : int;
+  table: strdict[syminfo];
+}
+
+proc add(tab: &symbol_table) (key:string) (mut:bool) (typ:string) {
+  if tab->table.haskey key do
+    println$ "Duplicate symbol " + key;
+    System::exit(1);
+  else
+   var dat = syminfo (tab->counter, typ, mut);
+   tab->table.add key dat;
+   post_incr(tab.counter);
+  done
+} 
+ 
 fun postfix: expr -> string = 
   | Const s => " push."+s+"\n"
   | Ident s => "# push.loc."+s+"\n"
@@ -382,6 +404,7 @@ chip printer
 {
   var counter = 0;
   var indent = 0;
+  var symtab = symbol_table(0, strdict[syminfo]());
   while true do
     ++counter;
     var line = read(io.inp);
@@ -391,12 +414,34 @@ chip printer
     | Cons (head, tail) => 
       if head in ("else", "end")  if indent > 0 perform --indent;
       if head == "eval" do
-        //println$ "EVAL ********************************";
-//println$ "tokens = " + tail.str;
         var e,rest = parse_expr tail;
         println$ "# eval[inp] " + cat " " toks;
         println$ "# eval[parsed] "  e.str;
         println$ e.postfix;
+      elif head == "let" do
+        var h = head;
+        var t = tail;
+        proc advance() {
+          match t with 
+          | Cons(h1,t1) => h=h1; t = t1; 
+          | _ => fail ("Incomplete let statement in:\n" + line);
+          endmatch;
+        }
+        advance;
+        var mut = false;
+        if h == "mut" do
+          mut = true;
+          advance;
+        done
+        var name = h; // check it's an identifier!
+        advance;
+        if h == "=" do
+          advance;
+        else
+          fail("Variable decl requires = symbol");
+        done
+        symtab&.add name mut "u32";
+        println$ "Added variable '" + name +"' to symbol table";
       else
         println$ "  " * indent + cat "" toks; 
       done
