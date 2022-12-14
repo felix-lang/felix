@@ -130,28 +130,28 @@ instance Str[expr] {
 var binop_map = strdict[string]();
 var unop_map = strdict[string]();
 
-binop_map.add "+" "u32unchecked_add\n";
-binop_map.add "-" "u32unchecked_sub\n";
-binop_map.add "*" "u32unchecked_mul\n";
-binop_map.add "/" "u32unchecked_div\n";
-binop_map.add "%" "u32unchecked_mod\n";
+binop_map.add "+" "u32unchecked_add # +\n";
+binop_map.add "-" "u32unchecked_sub # -\n";
+binop_map.add "*" "u32unchecked_mul # *\n";
+binop_map.add "/" "u32unchecked_div # /\n";
+binop_map.add "%" "u32unchecked_mod # %\n";
 
-binop_map.add "&" "u32unchecked_and\n";
-binop_map.add "|" "u32unchecked_or\n";
-binop_map.add "^" "u32unchecked_xor\n";
+binop_map.add "&" "u32unchecked_and # and\n";
+binop_map.add "|" "u32unchecked_or # or \n";
+binop_map.add "^" "u32unchecked_xor # xor\n";
 
-binop_map.add "<<" "u32unchecked_shl\n";
-binop_map.add ">>" "u32unchecked_shr\n";
+binop_map.add "<<" "u32unchecked_shl # <<\n";
+binop_map.add ">>" "u32unchecked_shr # >>\n";
 
-binop_map.add ">" "u32unchecked_gt\n";
-binop_map.add "<" "u32unchecked_lt\n";
-binop_map.add "<=" "u32unchecked_le\n";
-binop_map.add ">=" "u32unchecked_ge\n";
-binop_map.add "==" "u32unchecked_eq\n";
-binop_map.add "!=" "u32unchecked_neq\n";
+binop_map.add ">" "u32unchecked_gt # >\n";
+binop_map.add "<" "u32unchecked_lt # <\n";
+binop_map.add "<=" "u32unchecked_le # <=\n";
+binop_map.add ">=" "u32unchecked_ge # >=\n";
+binop_map.add "==" "u32unchecked_eq # ==\n";
+binop_map.add "!=" "u32unchecked_neq # !=\n";
 
-unop_map.add "-" "u32unchecked_neg\n";
-unop_map.add "!" "u32unchecked_not\n";
+unop_map.add "-" "u32unchecked_neg # neg\n";
+unop_map.add "!" "u32unchecked_not # not\n";
 
 struct syminfo_t {
   loc : int;
@@ -189,8 +189,8 @@ fun get_address (tab: &symbol_table_t) (key:string) : int {
 fun postfix (ps: &symbol_table_t) (e:expr) (indent: int) : string =>
   let fun pf(e:expr):string => postfix ps e indent in
   match e with
-  | Const s => "  " * indent + "push."+s+" # constant\n"
-  | Ident s => let a = ps.get_address s in "  " * indent + "push.local."+a.str+" # get " + s+"\n"
+  | Const s => "  " * indent + "push."+s+" # "+s+"\n"
+  | Ident s => let a = ps.get_address s in "  " * indent + "push.local."+a.str+" # <-" + s+"\n"
   | Error => "ERROR\n"
 
   | Binop (op, a, b) =>
@@ -414,6 +414,7 @@ fun parse_expr (inp: toks_t) : pstate_t {
 variant ifparity_t = 
   | ifblock of int
   | elseblock of int
+  | whileblock
 ;
 
 chip stmt
@@ -498,7 +499,27 @@ chip stmt
         if not sym.mut do
           fail("Write to immutable variable " + name);
         done
-        prln$ "  " * indent + "pop.local." + sym.loc.str + "# assign " + name;
+        prln$ "  " * indent + "pop.local." + sym.loc.str + "# " + name + "<-";
+
+      elif h == "while" do
+        chainmatch t with
+        | [".","true"] => 
+          prln$ "  " * indent + "while.true # Miden"; // miden while.true
+        ormatch unbox t.rev with
+        | Cons ("{", tail) => 
+          t = tail.rev;
+          // evaluate condition
+          e,rest = parse_expr t;
+          pr$ symtab&.postfix e indent;
+          prln("  " * indent + "while.true # Rust while");
+          ifelsestack = Cons(whileblock,ifelsestack);
+          // NOTE: at the end, a leading if indents already
+          // this currently applies to both miden "if" and a Rust "if"
+          // HACK!!!!
+          //++indent;
+        | _ => fail ("while requires trailing {");
+        endmatch;
+      
 
 /* NOTE on if/else stuff
 
@@ -568,6 +589,10 @@ chip stmt
               prln$ "  " * indent + "end # Rust endif";
               --nest;
             done 
+          | Cons(whileblock,stk) =>
+            --indent;
+            ifelsestack = stk; // terminate while block (no matching else)
+            prln$ "  " * indent + "end # Rust endwhile";
           endmatch;
 
         | "else" => // switch nearest enclosing if to else
