@@ -31,11 +31,11 @@ fun lex(inp: string) : list[string] {
   // state machine
   var state = Spc;
   var i = 0;
-  var toks = Empty[string];
+  var tokens = Empty[string];
   var tok = "";
 
   // add token to output list (in reverse order) and clear token
-  proc emit() { if tok != "" do toks = Cons (tok, toks); tok = ""; done }
+  proc emit() { if tok != "" do tokens = Cons (tok, tokens); tok = ""; done }
 
   // scan the whole string
   var n = inp.len.int;
@@ -69,7 +69,7 @@ fun lex(inp: string) : list[string] {
           emit;
           addch;
           newtoken;
-        elif ch in "()+-*/%^|&" do
+        elif ch in "()+-*/%^|&{}" do
           emit;
           addch;
           newtoken;
@@ -106,7 +106,7 @@ fun lex(inp: string) : list[string] {
   emit;
 
    // return the token list
-  return toks.rev;
+  return tokens.rev;
 }
 
 // recursive descent expression parser
@@ -130,80 +130,93 @@ instance Str[expr] {
 var binop_map = strdict[string]();
 var unop_map = strdict[string]();
 
-binop_map.add "+" " u32unchecked_add\n";
-binop_map.add "-" " u32unchecked_sub\n";
-binop_map.add "*" " u32unchecked_mul\n";
-binop_map.add "/" " u32unchecked_div\n";
-binop_map.add "%" " u32unchecked_mod\n";
+binop_map.add "+" "u32unchecked_add\n";
+binop_map.add "-" "u32unchecked_sub\n";
+binop_map.add "*" "u32unchecked_mul\n";
+binop_map.add "/" "u32unchecked_div\n";
+binop_map.add "%" "u32unchecked_mod\n";
 
-binop_map.add "&" " u32unchecked_and\n";
-binop_map.add "|" " u32unchecked_or\n";
-binop_map.add "^" " u32unchecked_xor\n";
+binop_map.add "&" "u32unchecked_and\n";
+binop_map.add "|" "u32unchecked_or\n";
+binop_map.add "^" "u32unchecked_xor\n";
 
-binop_map.add "<<" " u32unchecked_shl\n";
-binop_map.add ">>" " u32unchecked_shr\n";
+binop_map.add "<<" "u32unchecked_shl\n";
+binop_map.add ">>" "u32unchecked_shr\n";
 
-binop_map.add ">" " u32unchecked_gt\n";
-binop_map.add "<" " u32unchecked_lt\n";
-binop_map.add "<=" " u32unchecked_le\n";
-binop_map.add ">=" " u32unchecked_ge\n";
-binop_map.add "==" " u32unchecked_eq\n";
-binop_map.add "!=" " u32unchecked_neq\n";
+binop_map.add ">" "u32unchecked_gt\n";
+binop_map.add "<" "u32unchecked_lt\n";
+binop_map.add "<=" "u32unchecked_le\n";
+binop_map.add ">=" "u32unchecked_ge\n";
+binop_map.add "==" "u32unchecked_eq\n";
+binop_map.add "!=" "u32unchecked_neq\n";
 
-unop_map.add "-" " u32unchecked_neg\n";
-unop_map.add "!" " u32unchecked_not\n";
+unop_map.add "-" "u32unchecked_neg\n";
+unop_map.add "!" "u32unchecked_not\n";
 
-struct syminfo {
+struct syminfo_t {
   loc : int;
   typ : string;
   mut : bool;
 }
 
-struct symbol_table {
+struct symbol_table_t {
   counter : int;
-  table: strdict[syminfo];
+  table: strdict[syminfo_t];
 }
 
-proc add(tab: &symbol_table) (key:string) (mut:bool) (typ:string) {
+proc add(tab: &symbol_table_t) (key:string) (mut:bool) (typ:string) {
   if tab->table.haskey key do
     println$ "Duplicate symbol " + key;
     System::exit(1);
   else
-   var dat = syminfo (tab->counter, typ, mut);
+   var dat = syminfo_t (tab->counter, typ, mut);
    tab->table.add key dat;
    post_incr(tab.counter);
   done
 } 
- 
-fun postfix: expr -> string = 
-  | Const s => " push."+s+"\n"
-  | Ident s => "# push.loc."+s+"\n"
+
+fun get_info (tab: &symbol_table_t) (key:string) : syminfo_t {
+  match tab->table.get key with
+  | Some info => return info;
+  | None => fail("Fetch from or store to undefined variable " + key);
+  endmatch;
+}
+
+fun get_address (tab: &symbol_table_t) (key:string) : int {
+  return (get_info tab key).loc;
+}
+
+fun postfix (ps: &symbol_table_t) (e:expr) (indent: int) : string =>
+  let fun pf(e:expr):string => postfix ps e indent in
+  match e with
+  | Const s => "  " * indent + "push."+s+" # constant\n"
+  | Ident s => let a = ps.get_address s in "  " * indent + "push.local."+a.str+" # get " + s+"\n"
   | Error => "ERROR\n"
 
   | Binop (op, a, b) =>
     let op = match binop_map.get op with
     | None => "# Can't find '" + op "' in operator map\n"
-    | Some x => x
+    | Some x => "  " * indent + x
     in
-    postfix a + postfix b + op
+    pf a + pf b + op
 
   | Unop (op, a) =>
     let op = match unop_map.get op with
-    | None => "; Can't find '" + op "' in operator map\n"
-    | Some x => x
+    | None => "# Can't find '" + op "' in operator map\n"
+    | Some x => "  " * indent + x
     in
-    postfix a  + op
+    pf a  + op
 ;
 
-typedef toks = list[string];
-typedef pstate = expr * toks;
+typedef toks_t = list[string];
+typedef pstate_t = expr * toks_t;
 
 proc fail(e: string) {
   println$ "Parse Error: " + e;
   System::exit(1);
 }
 
-fun parse_atom (inp: toks)  : pstate {
+fun parse_atom (inp: toks_t)  : pstate_t {
   match inp with
   | Empty => 
     fail "Expected atom got End of Line";
@@ -230,7 +243,7 @@ fun parse_atom (inp: toks)  : pstate {
 }
     
 // repeated prefix ops not supported (eg - - 1 is not allowed)
-fun parse_prefixop (inp: toks) : pstate {
+fun parse_prefixop (inp: toks_t) : pstate_t {
 //println$ "Parsing prefixop " + inp.str;
   match inp with
   | Empty => 
@@ -246,7 +259,7 @@ fun parse_prefixop (inp: toks) : pstate {
 }
 
 
-fun parse_factor(inp: toks) : pstate {
+fun parse_factor(inp: toks_t) : pstate_t {
   match inp with
   | Empty =>
     fail "Expected factor got End of Line";
@@ -269,7 +282,7 @@ fun parse_factor(inp: toks) : pstate {
     done
   endmatch;
 }
-fun parse_term (inp: toks) : pstate {
+fun parse_term (inp: toks_t) : pstate_t {
   match inp with
   | Empty =>
     fail "Expected term got End of Line";
@@ -292,7 +305,7 @@ fun parse_term (inp: toks) : pstate {
     done
   endmatch;
 }
-fun parse_shift (inp: toks) : pstate {
+fun parse_shift (inp: toks_t) : pstate_t {
 //println$ "parse_shift";
   var left, tail = parse_term inp;
   match tail with
@@ -306,7 +319,7 @@ fun parse_shift (inp: toks) : pstate {
     done
   endmatch;
 }
-fun parse_bitand (inp: toks) : pstate {
+fun parse_bitand (inp: toks_t) : pstate_t {
 //println$ "parse_bitand";
   match inp with
   | Empty =>
@@ -330,7 +343,7 @@ fun parse_bitand (inp: toks) : pstate {
     done
   endmatch;
 }
-fun parse_bitxor (inp: toks) : pstate {
+fun parse_bitxor (inp: toks_t) : pstate_t {
 //println$ "parse_bitxor";
   match inp with
   | Empty =>
@@ -355,7 +368,7 @@ fun parse_bitxor (inp: toks) : pstate {
   endmatch;
 }
 
-fun parse_bitor (inp: toks) : pstate {
+fun parse_bitor (inp: toks_t) : pstate_t {
 //println$ "parse_bitor";
   match inp with
   | Empty =>
@@ -379,7 +392,7 @@ fun parse_bitor (inp: toks) : pstate {
     done
   endmatch;
 }
-fun parse_comparison (inp: toks) : pstate {
+fun parse_comparison (inp: toks_t) : pstate_t {
 //println$ "parse_comparison";
   var left, tail = parse_bitor inp;
   match tail with
@@ -393,40 +406,67 @@ fun parse_comparison (inp: toks) : pstate {
     done
   endmatch;
 }
-fun parse_expr (inp: toks) : pstate {
+fun parse_expr (inp: toks_t) : pstate_t {
 //println$ "parse_expr";
   return parse_comparison inp;
 }
 
-chip printer 
+variant ifparity_t = 
+  | ifblock of int
+  | elseblock of int
+;
+
+chip stmt
   connector io
     pin inp : %< string
+    pin out : %> string
 {
+  proc pr(s:string) { write (io.out, s); }
+  proc prln(s:string) { write (io.out, s + "\n"); }
+
   var counter = 0;
   var indent = 0;
-  var symtab = symbol_table(0, strdict[syminfo]());
+  var ifelsestack = Empty[ifparity_t];
+
+  var h: string;
+  var t: toks_t;
+  proc advance() {
+    match t with 
+    | Cons(h1,t1) => h=h1; t = t1; 
+    | _ => h = "";
+    endmatch;
+  }
+  fun lookahead () =>
+    match t with 
+    | Cons(h1,t1) => h1
+    | _ => ""
+  ;
+
+  var symtab = symbol_table_t(0, strdict[syminfo_t]());
+
+
   while true do
     ++counter;
     var line = read(io.inp);
-    //println$ counter.str + ": " + line;
-    var toks = line.lex;
-    match toks with
+    //prln$ counter.str + ": " + line;
+    var tokens = line.lex;
+    match tokens with
     | Cons (head, tail) => 
-      if head in ("else", "end")  if indent > 0 perform --indent;
-      if head == "eval" do
-        var e,rest = parse_expr tail;
-        println$ "# eval[inp] " + cat " " toks;
-        println$ "# eval[parsed] "  e.str;
-        println$ e.postfix;
-      elif head == "let" do
-        var h = head;
-        var t = tail;
-        proc advance() {
-          match t with 
-          | Cons(h1,t1) => h=h1; t = t1; 
-          | _ => fail ("Incomplete let statement in:\n" + line);
-          endmatch;
-        }
+      h = head;
+      t = tail;
+      
+      if h in ("else", "end")  if indent > 0 perform --indent;
+
+      // eval
+      if h == "eval" do
+        var e,rest = parse_expr t;
+        prln$ "  " * indent + "# " + line;
+        //prln$ "# eval[parsed] "  e.str;
+        pr$ symtab&.postfix e indent;
+
+      // let
+      elif h == "let" do
+        prln$  "  " * indent + "# " + line;
         advance;
         var mut = false;
         if h == "mut" do
@@ -435,24 +475,178 @@ chip printer
         done
         var name = h; // check it's an identifier!
         advance;
-        if h == "=" do
-          advance;
-        else
+        if h != "=" do
           fail("Variable decl requires = symbol");
         done
         symtab&.add name mut "u32";
-        println$ "Added variable '" + name +"' to symbol table";
+        //prln$ "# Added variable '" + name +"' to symbol table";
+        var e2,rest2 = parse_expr t;
+        //prln$ "# eval[inp] " + cat " " tokens;
+        //prln$ "# eval[parsed] " +  e2.str;
+        pr$ symtab&.postfix e2 indent;
+        prln$ "  " * indent + "local." + symtab&.get_address name;
+
+        // assignment (requires "assign" binder)
+
+      elif #lookahead == "=" do
+        prln$ " # " + line;
+        name = h;
+        advance;
+        e,rest = parse_expr t;
+        pr$ symtab&.postfix e indent;
+        var sym = symtab&.get_info name;
+        if not sym.mut do
+          fail("Write to immutable variable " + name);
+        done
+        prln$ "  " * indent + "pop.local." + sym.loc.str;
+
+/* NOTE on if/else stuff
+
+   There is a problem maintaining the state as follows:
+
+   In the "Rust" input we have the syntax
+
+   } else if expr {
+
+  which leaves the input in "if" mode, which can be
+  terminated by a single "}", a "} else {" or another "} else if expr {"
+
+  The action is to pop, swap from "if" to "else" of do nothing, respectively
+  So } else if { allows chaining tests like "elif" would.
+
+  However the output syntax has no elif equivalent. So we have to do
+  an else, start a new block, evaluate the condition, and then do an if.true.
+
+  So a chain "walks to the right" indentwise with every elif chain step.
+  When we finally get a plain else, and it is terminated, we have tgo
+  dedent to line up with the opening "if" and emit enough "end" to do that.
+
+  So the stack entry for "if" needs a count >= 1 to keep track of how
+  many "end" have to be emitted and, the count needs to be transfered
+  to the else constuctor too, when the if is terminated by an else.
+  An "elif" just increments the count.
+*/
+      // begin an Rust if block
+      elif h == "if" do
+        chainmatch t with
+        | [".","true"] => 
+          prln$ "  " * indent + "if.true # Miden"; // miden if.true
+        ormatch unbox t.rev with
+        | Cons ("{", tail) => 
+          t = tail.rev;
+          // evaluate condition
+          e,rest = parse_expr t;
+          pr$ symtab&.postfix e indent;
+          prln("  " * indent + "if.true # Rust");
+          ifelsestack = Cons(ifblock 1,ifelsestack);
+          // NOTE: at the end, a leading if indents already
+          // this currently applies to both miden "if" and a Rust "if"
+          // HACK!!!!
+          //++indent;
+        | _ => fail ("if requires trailing {");
+        endmatch;
+      // end an if or else block and maybe start a new if
+      elif h == "}" do
+        advance;
+        match h with
+        | "" => // terminate ifelse block
+          match ifelsestack with
+          | Empty => fail("Unmatched }");
+          | Cons(ifblock n,stk) =>
+            ifelsestack = stk; // terminate ifelse block (no matching else)
+            var nest = n; 
+            while nest > 0 do
+              --indent;
+              prln$ "  " * indent + "end #endif";
+              --nest;
+            done 
+          | Cons(elseblock n,stk) =>
+            ifelsestack = stk; // terminate ifelse block else
+            nest = n;
+            while nest > 0 do
+              --indent;
+              prln$ "  " * indent + "end #Rust endif";
+              --nest;
+            done 
+          endmatch;
+
+        | "else" => // switch nearest enclosing if to else
+          advance;
+          match h with
+          | "{" => // final else block
+            match ifelsestack with
+            | Empty => fail("Unmatched else ");
+            | Cons(elseblock n,stk) => fail("Unmatched else");
+            | Cons(ifblock n,stk) =>
+              ifelsestack = Cons (elseblock n, stk);
+              --indent;
+              prln$ "  " * indent + "else #Rust";
+              ++indent;
+            endmatch;
+ 
+          | "if" => // chained if
+            match ifelsestack with
+            | Empty => fail("Unmatched else ");
+            | Cons(elseblock n,stk) => fail("Unmatched else if");
+            | Cons(ifblock n,stk) =>
+              ifelsestack = Cons (ifblock (n+1), stk);
+              --indent;
+              prln$ "  " * indent + "else #Rust else if";
+              ++indent;
+              // evaluate condition
+              e,rest = parse_expr t;
+              pr$ symtab&.postfix e indent;
+              prln("  " * indent + "if.true #Rust else if");
+              ++indent;
+            endmatch; // ifelse
+          endmatch; // else 
+        endmatch; // leading } symbol
       else
-        println$ "  " * indent + cat "" toks; 
+        prln$ "  " * indent + cat "" tokens; 
       done
      
     | _ => ;
     endmatch;
-    match toks with
+    match tokens with
     | Cons (head, tail) => 
       if head in ("begin", "proc", "if", "else", "while", "repeat") perform ++indent;
     | _ => ;
     endmatch;
+  done
+}
+
+// NOTE: tabs comments to column 35
+chip printer  
+  connector io
+    pin inp : %< string
+{
+  var x = "";
+  while true do
+    var s = read io.inp;
+    x += s;
+    var xs = split(x,"\n");
+    var n = xs.len.int - 1;
+    for(var i = 0; i<n; ++i;) do
+      var line = head xs;
+      xs = tail xs;
+      match find(line, char "#") with
+      | None => ;
+      | Some k =>
+        var l = line.[to k];
+        var r = line.[k to];
+        if l.len.int > 32 do
+          l= l+ " ";
+        else
+          l = (l.rstrip + " " * 35).[0 to 35];
+        done
+        if r.len.int > 0 do
+          line = l + r;
+        else
+          line = l;
+        done
+      endmatch;
+      println line;
+    done
   done
 }
 
@@ -461,7 +655,8 @@ proc run(filename:string) {
   device source = loader (filename);
   circuit 
     connect source.out, comment_stripper.inp
-    connect comment_stripper.out, printer.inp
+    connect comment_stripper.out, stmt.inp
+    connect stmt.out, printer.inp
   endcircuit
 }
 
