@@ -484,7 +484,7 @@ chip stmt
         //prln$ "# eval[inp] " + cat " " tokens;
         //prln$ "# eval[parsed] " +  e2.str;
         pr$ symtab&.postfix e2 indent;
-        prln$ "  " * indent + "local." + symtab&.get_address name;
+        prln$ "  " * indent + "pop.local." + symtab&.get_address name +"# init " + name;
 
         // assignment (requires "assign" binder)
 
@@ -498,7 +498,7 @@ chip stmt
         if not sym.mut do
           fail("Write to immutable variable " + name);
         done
-        prln$ "  " * indent + "pop.local." + sym.loc.str;
+        prln$ "  " * indent + "pop.local." + sym.loc.str + "# assign " + name;
 
 /* NOTE on if/else stuff
 
@@ -537,7 +537,7 @@ chip stmt
           // evaluate condition
           e,rest = parse_expr t;
           pr$ symtab&.postfix e indent;
-          prln("  " * indent + "if.true # Rust");
+          prln("  " * indent + "if.true # Rust if");
           ifelsestack = Cons(ifblock 1,ifelsestack);
           // NOTE: at the end, a leading if indents already
           // this currently applies to both miden "if" and a Rust "if"
@@ -557,7 +557,7 @@ chip stmt
             var nest = n; 
             while nest > 0 do
               --indent;
-              prln$ "  " * indent + "end #endif";
+              prln$ "  " * indent + "end # Rust endif";
               --nest;
             done 
           | Cons(elseblock n,stk) =>
@@ -565,7 +565,7 @@ chip stmt
             nest = n;
             while nest > 0 do
               --indent;
-              prln$ "  " * indent + "end #Rust endif";
+              prln$ "  " * indent + "end # Rust endif";
               --nest;
             done 
           endmatch;
@@ -580,7 +580,7 @@ chip stmt
             | Cons(ifblock n,stk) =>
               ifelsestack = Cons (elseblock n, stk);
               --indent;
-              prln$ "  " * indent + "else #Rust";
+              prln$ "  " * indent + "else # Rust else";
               ++indent;
             endmatch;
  
@@ -591,12 +591,12 @@ chip stmt
             | Cons(ifblock n,stk) =>
               ifelsestack = Cons (ifblock (n+1), stk);
               --indent;
-              prln$ "  " * indent + "else #Rust else if";
+              prln$ "  " * indent + "else # Rust else if";
               ++indent;
               // evaluate condition
               e,rest = parse_expr t;
               pr$ symtab&.postfix e indent;
-              prln("  " * indent + "if.true #Rust else if");
+              prln("  " * indent + "if.true # Rust else if");
               ++indent;
             endmatch; // ifelse
           endmatch; // else 
@@ -647,6 +647,7 @@ chip printer
       endmatch;
       println line;
     done
+    x = head xs;
   done
 }
 
