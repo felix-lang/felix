@@ -1,19 +1,19 @@
 class symbol {
   struct syminfo_t {
-    loc : int;
-    typ : string;
-    mut : bool;
+    loc : int;      // storage location in miden memory
+    typ : string;   // type (unused at the moment)
+    mut : bool;     // if the variable is mutable
   }
 
   struct symbol_table_t {
-    counter : int;
-    table: strdict[syminfo_t];
+    counter : int;                // first unused miden memory location
+    table: strdict[syminfo_t];    // dictionary mapping string key to symbol info
   }
 
+  // add a new symbol
   proc add(tab: &symbol_table_t) (key:string) (mut:bool) (typ:string) {
     if tab->table.haskey key do
-      println$ "Duplicate symbol " + key;
-      System::exit(1);
+      fail$ "Duplicate symbol " + key;
     else
      var dat = syminfo_t (tab->counter, typ, mut);
      tab->table.add key dat;
@@ -21,6 +21,8 @@ class symbol {
     done
   } 
 
+  // get the information about a specified symbol
+  // aborts program if it doesn't exist
   fun get_info (tab: &symbol_table_t) (key:string) : syminfo_t {
     match tab->table.get key with
     | Some info => return info;
@@ -28,6 +30,7 @@ class symbol {
     endmatch;
   }
 
+  // shortcut to just get the address in miden memory of a variable 
   fun get_address (tab: &symbol_table_t) (key:string) : int {
     return (get_info tab key).loc;
   }

@@ -248,24 +248,24 @@ class expr_parser {
 class expr_emit {
   open expr_sym;
 
-  fun postfix (ps: &symbol::symbol_table_t) (e:expr) (indent: int) : string =>
-    let fun pf(e:expr):string => postfix ps e indent in
+  fun postfix (ps: &symbol::symbol_table_t) (e:expr) : string =>
+    let fun pf(e:expr):string => postfix ps e in
     match e with
-    | Const s => "  " * indent + "push."+s+" # "+s+"\n"
-    | Ident s => let a = ps.symbol::get_address s in "  " * indent + "push.local."+a.str+" # <-" + s+"\n"
+    | Const s => "push."+s+" # "+s+"\n"
+    | Ident s => let a = ps.symbol::get_address s in "push.local."+a.str+" # <-" + s+"\n"
     | Error => "ERROR\n"
 
     | Binop (op, a, b) =>
       let op = match binop_map.get op with
       | None => "# Can't find '" + op "' in operator map\n"
-      | Some x => "  " * indent + x
+      | Some x => x
       in
       pf a + pf b + op
 
     | Unop (op, a) =>
       let op = match unop_map.get op with
       | None => "# Can't find '" + op "' in operator map\n"
-      | Some x => "  " * indent + x
+      | Some x => x
       in
       pf a  + op
   ;

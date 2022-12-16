@@ -1,64 +1,79 @@
 class lexer {
   typedef toks_t = list[string];
 
-  enum lstate { Spc, Dig, Alph };
+
+  // the lexer is an interpeted finite state machine
+  // it translates a single line into a list of significant lexemes
+
+  // we need three states at the moment
+  enum lstate { 
+    Spc,   // skipping spaces
+    Dig,   // accumulating digits
+    Alph   // accumuling alphnumeric 
+  }
 
   fun lex(inp: string) : list[string] {
     // state machine
-    var state = Spc;
-    var i = 0;
-    var tokens = Empty[string];
-    var tok = "";
+    var state = Spc;              // machine state
+    var i = 0;                    // index into input string
+    var tokens = Empty[string];   // current list of tokens to return
+    var tok = "";                 // current token being accumulated
 
     // add token to output list (in reverse order) and clear token
     proc emit() { if tok != "" do tokens = Cons (tok, tokens); tok = ""; done }
 
+    var n = inp.len.int;          // index of one past the end of the string
+    var ch = inp.[0];             // current token
+
     // scan the whole string
-    var n = inp.len.int;
-    var ch = inp.[0];
     while i < n do
-     // character under consideration
 
-     // routine to add it to token
-     proc addch() { tok = tok + ch; ++i; ch = inp.[i]; }
+      // routine to accumulate character and advance to nest
+      proc addch() { tok = tok + ch; ++i; ch = inp.[i]; }
 
-     // routine to ignore a character
-     proc skipch() { ++i; ch = inp.[i]; }
+      // routine to skip character and advance to next
+      proc skipch() { ++i; ch = inp.[i]; }
 
-     // routine to start a new token
-     proc newtoken() { emit; state = Spc; }
+      // routine to start a new token
+      proc newtoken() { emit; state = Spc; }
 
-     // switch on the automaton state
+      // switch on the automaton state
       match state with
         // processing spaces
-        | Spc => 
-          if ch.isblank do skipch;
-          elif ch.isdigit do
-            emit;
-            addch;
-            state = Dig;
-          elif ch.isidstart do
-            emit;
-            addch;
-            state = Alph;
-          elif ch == char "." do
+        | Spc =>                       // we're processing spaces
+          if ch.isblank do skipch;     // got another one so skip it
+
+          elif ch.isdigit do           // got a digit
+            emit;                      // emit any residual token
+            addch;                     // collect digit
+            state = Dig;               // switch to digit accumulation state
+
+          elif ch.isidstart do         // got the start of an identifier
+            emit;                      // emit residual token
+            addch;                     // collect letter
+            state = Alph;              // switch to letter accumulation state
+
+          elif ch == char "." do       // a "." is a single toke
+            emit;                      // enit any residual token
+            addch;                     // accumulate the character
+            newtoken;                  // and immediately emit it and goto space skipping state
+
+          elif ch in "()+-*/%^|&{}" do // single character tokens
             emit;
             addch;
             newtoken;
-          elif ch in "()+-*/%^|&{}" do
+
+          elif ch in "<>=!" do         // possibly 2 character token start
             emit;
-            addch;
-            newtoken;
-          elif ch in "<>=!" do
-            emit;
-            var op2 = inp.[i to i+2];
+            var op2 = inp.[i to i+2];  // lookahead
+
+            // gather either 1 or 2 characters depending on lookahead
             if op2 in ("!=","==","<<",">>",">=","<=") perform
               addch;
             addch;
             newtoken;
-          else
-            println$ "Unknown character " + ch;
-            System::exit(1);
+          else                         // ERROR
+            fail$ "Unknown character " + ch;
           done
 
         // processing a digit sequence
@@ -81,7 +96,7 @@ class lexer {
      // finalise any current token
     emit;
 
-     // return the token list
+     // return the token list, don't forget to reverse it
     return tokens.rev;
   }
 }

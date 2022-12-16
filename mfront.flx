@@ -58,7 +58,6 @@ class stmt_parser {
     proc prln(s:string) { write (io.out, s + "\n"); }
 
     var counter = 0;
-    var indent = 0;
     var ifelsestack = Empty[ifparity_t];
     var label_counter = 2; // the first user label must be 2
     var max_lab = (0,0); // error tracking: label index, line used
@@ -89,7 +88,6 @@ class stmt_parser {
         h = head;
         t = tail;
         
-        if h in ("else", "end")  if indent > 0 perform --indent;
         if h == "SWITCH" do
           prln$ "push.1 # begin switch  with PC = 1";
           prln$ "pop.mem.0  # PC is memory location 0";
@@ -98,7 +96,6 @@ class stmt_parser {
           prln$ "push.mem.0 # load PC";
           prln$ "u32unchecked_add.1      # increment by 1";
           prln$ "pop.mem.0  # save PC";
-          ++indent;
         elif h == "GOTO" do
           advance;
           checkint(h); // check the next token is an integer
@@ -116,19 +113,15 @@ class stmt_parser {
           if labval != label_counter 
             perform fail ("Invalid label counter " + h ", should be " + label_counter.str);
           ++label_counter; 
-          --indent;
           prln$ "# LABEL " + h;
           if switch_counter > 2 perform
             prln$ "else # end case " + (switch_counter - 1).str;
           prln$ "u32checked_eq."+h+ " # check if PC is for this case";
           prln$ "if.true # start code for this case";
-          ++indent;
           ++switch_counter; // count the number of 'end' we need at the switch end
         elif h == "BREAK" do
-          --indent;
           prln$ "push.0 # 0";
           prln$ "pop.mem.0 # ->PC";
-          ++indent;
 
         elif h == "ENDSWITCH" do
           if max_lab.0 > switch_counter perform
@@ -138,7 +131,6 @@ class stmt_parser {
             prln$ "end # switch case "+switch_counter.str;
             --switch_counter;
           done
-          --indent;
           prln$ "push.mem.0 #load PC";
           prln$ "dup";
           prln$ "u32checked_eq.0"; // test for break
@@ -150,13 +142,13 @@ class stmt_parser {
         // eval
         elif h == "eval" do
           var e,rest = expr_parser::parse_expr t;
-          prln$ "  " * indent + "# " + line;
+          prln$ "# " + line;
           //prln$ "# eval[parsed] "  e.str;
-          pr$ symtab&.expr_emit::postfix e indent;
+          pr$ symtab&.expr_emit::postfix e;
 
         // let
         elif h == "let" do
-          prln$  "  " * indent + "# " + line;
+          prln$  "# " + line;
           advance;
           var mut = false;
           if h == "mut" do
@@ -173,8 +165,8 @@ class stmt_parser {
           var e2,rest2 = expr_parser::parse_expr t;
           //prln$ "# eval[inp] " + cat " " tokens;
           //prln$ "# eval[parsed] " +  e2.str;
-          pr$ symtab&.expr_emit::postfix e2 indent;
-          prln$ "  " * indent + "pop.local." + symtab&.get_address name +"# init " + name;
+          pr$ symtab&.expr_emit::postfix e2 ;
+          prln$ "pop.local." + symtab&.get_address name +"# init " + name;
 
           // assignment (requires "assign" binder)
 
@@ -183,29 +175,25 @@ class stmt_parser {
           name = h;
           advance;
           e,rest = expr_parser::parse_expr t;
-          pr$ symtab&.expr_emit::postfix e indent;
+          pr$ symtab&.expr_emit::postfix e ;
           var sym = symtab&.get_info name;
           if not sym.mut do
             fail("Write to immutable variable " + name);
           done
-          prln$ "  " * indent + "pop.local." + sym.loc.str + "# " + name + "<-";
+          prln$ "pop.local." + sym.loc.str + "# " + name + "<-";
 
         elif h == "while" do
           chainmatch t with
           | [".","true"] => 
-            prln$ "  " * indent + "while.true # Miden"; // miden while.true
+            prln$ "while.true # Miden"; // miden while.true
           ormatch unbox t.rev with
           | Cons ("{", tail) => 
             t = tail.rev;
             // evaluate condition
             e,rest = expr_parser::parse_expr t;
-            pr$ symtab&.expr_emit::postfix e indent;
-            prln("  " * indent + "while.true # Rust while");
+            pr$ symtab&.expr_emit::postfix e ;
+            prln("while.true # Rust while");
             ifelsestack = Cons(whileblock,ifelsestack);
-            // NOTE: at the end, a leading if indents already
-            // this currently applies to both miden "if" and a Rust "if"
-            // HACK!!!!
-            //++indent;
           | _ => fail ("while requires trailing {");
           endmatch;
         
@@ -240,19 +228,15 @@ class stmt_parser {
         elif h == "if" do
           chainmatch t with
           | [".","true"] => 
-            prln$ "  " * indent + "if.true # Miden"; // miden if.true
+            prln$ "if.true # Miden"; // miden if.true
           ormatch unbox t.rev with
           | Cons ("{", tail) => 
             t = tail.rev;
             // evaluate condition
             e,rest = expr_parser::parse_expr t;
-            pr$ symtab&.expr_emit::postfix e indent;
-            prln("  " * indent + "if.true # Rust if");
+            pr$ symtab&.expr_emit::postfix e ;
+            prln("if.true # Rust if");
             ifelsestack = Cons(ifblock 1,ifelsestack);
-            // NOTE: at the end, a leading if indents already
-            // this currently applies to both miden "if" and a Rust "if"
-            // HACK!!!!
-            //++indent;
           | _ => fail ("if requires trailing {");
           endmatch;
         // end an if or else block and maybe start a new if
@@ -266,22 +250,19 @@ class stmt_parser {
               ifelsestack = stk; // terminate ifelse block (no matching else)
               var nest = n; 
               while nest > 0 do
-                --indent;
-                prln$ "  " * indent + "end # Rust endif";
+                prln$ "end # Rust endif";
                 --nest;
               done 
             | Cons(elseblock n,stk) =>
               ifelsestack = stk; // terminate ifelse block else
               nest = n;
               while nest > 0 do
-                --indent;
-                prln$ "  " * indent + "end # Rust endif";
+                prln$ "end # Rust endif";
                 --nest;
               done 
             | Cons(whileblock,stk) =>
-              --indent;
               ifelsestack = stk; // terminate while block (no matching else)
-              prln$ "  " * indent + "end # Rust endwhile";
+              prln$ "end # Rust endwhile";
             endmatch;
 
           | "else" => // switch nearest enclosing if to else
@@ -293,9 +274,7 @@ class stmt_parser {
               | Cons(elseblock n,stk) => fail("Unmatched else");
               | Cons(ifblock n,stk) =>
                 ifelsestack = Cons (elseblock n, stk);
-                --indent;
-                prln$ "  " * indent + "else # Rust else";
-                ++indent;
+                prln$ "else # Rust else";
               endmatch;
    
             | "if" => // chained if
@@ -304,26 +283,18 @@ class stmt_parser {
               | Cons(elseblock n,stk) => fail("Unmatched else if");
               | Cons(ifblock n,stk) =>
                 ifelsestack = Cons (ifblock (n+1), stk);
-                --indent;
-                prln$ "  " * indent + "else # Rust else if";
-                ++indent;
+                prln$ "else # Rust else if";
                 // evaluate condition
                 e,rest = expr_parser::parse_expr t;
-                pr$ symtab&.expr_emit::postfix e indent;
-                prln("  " * indent + "if.true # Rust else if");
-                ++indent;
+                pr$ symtab&.expr_emit::postfix e ;
+                prln("if.true # Rust else if");
               endmatch; // ifelse
             endmatch; // else 
           endmatch; // leading } symbol
         else
-          prln$ "  " * indent + cat "" tokens; 
+          prln$ cat "" tokens; 
         done
        
-      | _ => ;
-      endmatch;
-      match tokens with
-      | Cons (head, tail) => 
-        if head in ("begin", "proc", "if", "else", "while", "repeat") perform ++indent;
       | _ => ;
       endmatch;
     done
@@ -335,7 +306,29 @@ chip printer
   connector io
     pin inp : %< string
 {
+  fun align_comments(line:string):string {
+    match find(line, char "#") with
+    | None => var out = line;
+    | Some k =>
+      var l = line.[to k];
+      var r = line.[k to];
+      if l.len.int > 32 do
+        l= l+ " ";
+      else
+        l = (l.rstrip + " " * 35).[0 to 35];
+      done
+      if r.len.int > 0 do
+        out = l + r;
+      else
+        out = l;
+      done
+    endmatch;
+    return out;
+  }
+
   var x = "";
+  var indent = 0;
+
   while true do
     var s = read io.inp;
     x += s;
@@ -344,23 +337,11 @@ chip printer
     for(var i = 0; i<n; ++i;) do
       var line = head xs;
       xs = tail xs;
-      match find(line, char "#") with
-      | None => ;
-      | Some k =>
-        var l = line.[to k];
-        var r = line.[k to];
-        if l.len.int > 32 do
-          l= l+ " ";
-        else
-          l = (l.rstrip + " " * 35).[0 to 35];
-        done
-        if r.len.int > 0 do
-          line = l + r;
-        else
-          line = l;
-        done
-      endmatch;
-      println line;
+      if startswith line "end" or startswith line "else" perform --indent;
+      var indented_line = "  " * indent + line;
+      var outline = align_comments indented_line;
+      if startswith line "while.true" or startswith line "if.true" or startswith line "else" perform ++indent; 
+      println$ outline;
     done
     x = head xs;
   done
