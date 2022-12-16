@@ -1,0 +1,198 @@
+
+
+fun parse_atom (inp: toks_t)  : pstate_t {
+  match inp with
+  | Empty => 
+    fail "Expected atom got End of Line";
+  | Cons (head, tail) =>
+    match head with
+    | "(" =>
+       var node, rest = parse_expr tail;
+       match rest with
+       | Empty => fail "Expected ) parsing atom got Eno of Line";
+       | Cons (head, tail) => 
+         match head with
+         | ")" =>
+           return node, tail; // success
+         | _ => fail ("Expected ) got " + head)  ;
+         endmatch;
+       endmatch;
+     | x when (x.0).iscidstart =>
+       return Ident x, tail;
+     | x when (x.0).isdigit =>
+       return Const x, tail;
+     | x => fail ("Unexpected Symbol " + x + " parsing " + inp.str);
+     endmatch;
+  endmatch;
+}
+    
+// repeated prefix ops not supported (eg - - 1 is not allowed)
+fun parse_prefixop (inp: toks_t) : pstate_t {
+//println$ "Parsing prefixop " + inp.str;
+  match inp with
+  | Empty => 
+    fail "Expected prefix expr got End of Lin";
+  | Cons(op, tail) => 
+    if not (op in ("-","!")) do
+      return parse_atom inp;
+    else
+      var a, rest = parse_atom tail;
+      return (Unop (op,a), rest);
+    done
+  endmatch;
+}
+
+
+fun parse_factor(inp: toks_t) : pstate_t {
+  match inp with
+  | Empty =>
+    fail "Expected factor got End of Line";
+  | _ =>
+    var tail = inp;
+    def var left, tail = parse_prefixop tail; 
+    while true do
+      match tail with
+      | Empty =>
+        return left, tail;
+
+      | Cons(op, tail2) =>
+        if not (op in ("*", "/", "%")) do 
+          return left, tail;
+        else 
+          def var right, tail = parse_prefixop tail2;
+          left = Binop (op, left, right); // reduce
+        done
+      endmatch;
+    done
+  endmatch;
+}
+fun parse_term (inp: toks_t) : pstate_t {
+  match inp with
+  | Empty =>
+    fail "Expected term got End of Line";
+  | _ =>
+    var tail = inp;
+    def var left, tail = parse_factor tail; 
+    while true do
+      match tail with
+      | Empty =>
+        return left, tail;
+
+      | Cons(op, tail2) =>
+        if not (op in ("+", "-")) do 
+          return left, tail;
+        else 
+          def var right, tail = parse_factor tail2;
+          left = Binop (op, left, right); // reduce
+        done
+      endmatch;
+    done
+  endmatch;
+}
+fun parse_shift (inp: toks_t) : pstate_t {
+//println$ "parse_shift";
+  var left, tail = parse_term inp;
+  match tail with
+  | Empty => return left, tail;
+  | Cons(op, tail2) =>
+    if not (op in ("<<",">>")) do
+      return left, tail;
+    else
+      var right, tail3 = parse_term tail2;
+      return Binop(op, left, right), tail3;
+    done
+  endmatch;
+}
+fun parse_bitand (inp: toks_t) : pstate_t {
+//println$ "parse_bitand";
+  match inp with
+  | Empty =>
+    fail "Expected bitand expr got End of Line";
+  | _ =>
+    var tail = inp;
+    def var left, tail = parse_shift tail; 
+    while true do
+      match tail with
+      | Empty =>
+        return left, tail;
+
+      | Cons(op, tail2) =>
+        if not (op == "&") do 
+          return left, tail;
+        else 
+          def var right, tail = parse_shift tail2;
+          left = Binop (op, left, right); // reduce
+        done
+      endmatch;
+    done
+  endmatch;
+}
+fun parse_bitxor (inp: toks_t) : pstate_t {
+//println$ "parse_bitxor";
+  match inp with
+  | Empty =>
+    fail "Expected  bitxor expr got End of Line";
+  | _ =>
+    var tail = inp;
+    def var left, tail = parse_bitand tail; 
+    while true do
+      match tail with
+      | Empty =>
+        return left, tail;
+
+      | Cons(op, tail2) =>
+        if not (op == "^") do 
+          return left, tail;
+        else 
+          def var right, tail = parse_bitand tail2;
+          left = Binop (op, left, right); // reduce
+        done
+      endmatch;
+    done
+  endmatch;
+}
+
+fun parse_bitor (inp: toks_t) : pstate_t {
+//println$ "parse_bitor";
+  match inp with
+  | Empty =>
+    fail "Expected bitor expr got End of Line";
+  | _ =>
+    var tail = inp;
+    def var left, tail = parse_bitxor tail; 
+    while true do
+      match tail with
+      | Empty =>
+        return left, tail;
+
+      | Cons(op, tail2) =>
+        if not (op == "|") do 
+          return left, tail;
+        else 
+          def var right, tail = parse_bitxor tail2;
+          left = Binop (op, left, right); // reduce
+        done
+      endmatch;
+    done
+  endmatch;
+}
+fun parse_comparison (inp: toks_t) : pstate_t {
+//println$ "parse_comparison";
+  var left, tail = parse_bitor inp;
+  match tail with
+  | Empty => return left, tail;
+  | Cons(op, tail2) =>
+    if not (op in ("<",">","==","<=", "=>", "!=")) do
+      return left, tail;
+    else
+      var right, tail3 = parse_bitor tail2;
+      return Binop(op, left, right), tail3;
+    done
+  endmatch;
+}
+fun parse_expr (inp: toks_t) : pstate_t {
+//println$ "parse_expr";
+  return parse_comparison inp;
+}
+
+

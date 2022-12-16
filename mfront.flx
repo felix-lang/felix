@@ -1,4 +1,7 @@
 include "std/control/chips";
+include "./mfront_lexer";
+include "./mfront_symtab";
+include "./mfront_expr";
 
 chip loader(filename: string) 
   connector io
@@ -24,91 +27,6 @@ chip comment_stripper
     write (io.out, s.[0 .. i - 1]);
   done
 }
-
-enum lstate { Spc, Dig, Alph };
-
-fun lex(inp: string) : list[string] {
-  // state machine
-  var state = Spc;
-  var i = 0;
-  var tokens = Empty[string];
-  var tok = "";
-
-  // add token to output list (in reverse order) and clear token
-  proc emit() { if tok != "" do tokens = Cons (tok, tokens); tok = ""; done }
-
-  // scan the whole string
-  var n = inp.len.int;
-  var ch = inp.[0];
-  while i < n do
-   // character under consideration
-
-   // routine to add it to token
-   proc addch() { tok = tok + ch; ++i; ch = inp.[i]; }
-
-   // routine to ignore a character
-   proc skipch() { ++i; ch = inp.[i]; }
-
-   // routine to start a new token
-   proc newtoken() { emit; state = Spc; }
-
-   // switch on the automaton state
-    match state with
-      // processing spaces
-      | Spc => 
-        if ch.isblank do skipch;
-        elif ch.isdigit do
-          emit;
-          addch;
-          state = Dig;
-        elif ch.isidstart do
-          emit;
-          addch;
-          state = Alph;
-        elif ch == char "." do
-          emit;
-          addch;
-          newtoken;
-        elif ch in "()+-*/%^|&{}" do
-          emit;
-          addch;
-          newtoken;
-        elif ch in "<>=!" do
-          emit;
-          var op2 = inp.[i to i+2];
-          if op2 in ("!=","==","<<",">>",">=","<=") perform
-            addch;
-          addch;
-          newtoken;
-        else
-          println$ "Unknown character " + ch;
-          System::exit(1);
-        done
-
-      // processing a digit sequence
-      | Dig =>
-        if ch.isdigit do
-          addch;
-        else
-         newtoken;
-        done
-
-     // Processing an identifier
-    | Alph =>
-      if ch.iscidcont do
-        addch;
-      else
-        newtoken;
-      done
-    endmatch;
-  done
-   // finalise any current token
-  emit;
-
-   // return the token list
-  return tokens.rev;
-}
-
 // recursive descent expression parser
 variant expr = 
   | Binop of string * expr * expr
@@ -153,39 +71,6 @@ binop_map.add "!=" "u32unchecked_neq # !=\n";
 unop_map.add "-" "u32unchecked_neg # neg\n";
 unop_map.add "!" "u32unchecked_not # not\n";
 
-struct syminfo_t {
-  loc : int;
-  typ : string;
-  mut : bool;
-}
-
-struct symbol_table_t {
-  counter : int;
-  table: strdict[syminfo_t];
-}
-
-proc add(tab: &symbol_table_t) (key:string) (mut:bool) (typ:string) {
-  if tab->table.haskey key do
-    println$ "Duplicate symbol " + key;
-    System::exit(1);
-  else
-   var dat = syminfo_t (tab->counter, typ, mut);
-   tab->table.add key dat;
-   post_incr(tab.counter);
-  done
-} 
-
-fun get_info (tab: &symbol_table_t) (key:string) : syminfo_t {
-  match tab->table.get key with
-  | Some info => return info;
-  | None => fail("Fetch from or store to undefined variable " + key);
-  endmatch;
-}
-
-fun get_address (tab: &symbol_table_t) (key:string) : int {
-  return (get_info tab key).loc;
-}
-
 fun postfix (ps: &symbol_table_t) (e:expr) (indent: int) : string =>
   let fun pf(e:expr):string => postfix ps e indent in
   match e with
@@ -215,200 +100,11 @@ proc fail(e: string) {
   println$ "Parse Error: " + e;
   System::exit(1);
 }
-
-fun parse_atom (inp: toks_t)  : pstate_t {
-  match inp with
-  | Empty => 
-    fail "Expected atom got End of Line";
-  | Cons (head, tail) =>
-    match head with
-    | "(" =>
-       var node, rest = parse_expr tail;
-       match rest with
-       | Empty => fail "Expected ) parsing atom got Eno of Line";
-       | Cons (head, tail) => 
-         match head with
-         | ")" =>
-           return node, tail; // success
-         | _ => fail ("Expected ) got " + head)  ;
-         endmatch;
-       endmatch;
-     | x when (x.0).iscidstart =>
-       return Ident x, tail;
-     | x when (x.0).isdigit =>
-       return Const x, tail;
-     | x => fail ("Unexpected Symbol " + x + " parsing " + inp.str);
-     endmatch;
-  endmatch;
-}
-    
-// repeated prefix ops not supported (eg - - 1 is not allowed)
-fun parse_prefixop (inp: toks_t) : pstate_t {
-//println$ "Parsing prefixop " + inp.str;
-  match inp with
-  | Empty => 
-    fail "Expected prefix expr got End of Lin";
-  | Cons(op, tail) => 
-    if not (op in ("-","!")) do
-      return parse_atom inp;
-    else
-      var a, rest = parse_atom tail;
-      return (Unop (op,a), rest);
-    done
-  endmatch;
-}
-
-
-fun parse_factor(inp: toks_t) : pstate_t {
-  match inp with
-  | Empty =>
-    fail "Expected factor got End of Line";
-  | _ =>
-    var tail = inp;
-    def var left, tail = parse_prefixop tail; 
-    while true do
-      match tail with
-      | Empty =>
-        return left, tail;
-
-      | Cons(op, tail2) =>
-        if not (op in ("*", "/", "%")) do 
-          return left, tail;
-        else 
-          def var right, tail = parse_prefixop tail2;
-          left = Binop (op, left, right); // reduce
-        done
-      endmatch;
-    done
-  endmatch;
-}
-fun parse_term (inp: toks_t) : pstate_t {
-  match inp with
-  | Empty =>
-    fail "Expected term got End of Line";
-  | _ =>
-    var tail = inp;
-    def var left, tail = parse_factor tail; 
-    while true do
-      match tail with
-      | Empty =>
-        return left, tail;
-
-      | Cons(op, tail2) =>
-        if not (op in ("+", "-")) do 
-          return left, tail;
-        else 
-          def var right, tail = parse_factor tail2;
-          left = Binop (op, left, right); // reduce
-        done
-      endmatch;
-    done
-  endmatch;
-}
-fun parse_shift (inp: toks_t) : pstate_t {
-//println$ "parse_shift";
-  var left, tail = parse_term inp;
-  match tail with
-  | Empty => return left, tail;
-  | Cons(op, tail2) =>
-    if not (op in ("<<",">>")) do
-      return left, tail;
-    else
-      var right, tail3 = parse_term tail2;
-      return Binop(op, left, right), tail3;
-    done
-  endmatch;
-}
-fun parse_bitand (inp: toks_t) : pstate_t {
-//println$ "parse_bitand";
-  match inp with
-  | Empty =>
-    fail "Expected bitand expr got End of Line";
-  | _ =>
-    var tail = inp;
-    def var left, tail = parse_shift tail; 
-    while true do
-      match tail with
-      | Empty =>
-        return left, tail;
-
-      | Cons(op, tail2) =>
-        if not (op == "&") do 
-          return left, tail;
-        else 
-          def var right, tail = parse_shift tail2;
-          left = Binop (op, left, right); // reduce
-        done
-      endmatch;
-    done
-  endmatch;
-}
-fun parse_bitxor (inp: toks_t) : pstate_t {
-//println$ "parse_bitxor";
-  match inp with
-  | Empty =>
-    fail "Expected  bitxor expr got End of Line";
-  | _ =>
-    var tail = inp;
-    def var left, tail = parse_bitand tail; 
-    while true do
-      match tail with
-      | Empty =>
-        return left, tail;
-
-      | Cons(op, tail2) =>
-        if not (op == "^") do 
-          return left, tail;
-        else 
-          def var right, tail = parse_bitand tail2;
-          left = Binop (op, left, right); // reduce
-        done
-      endmatch;
-    done
-  endmatch;
-}
-
-fun parse_bitor (inp: toks_t) : pstate_t {
-//println$ "parse_bitor";
-  match inp with
-  | Empty =>
-    fail "Expected bitor expr got End of Line";
-  | _ =>
-    var tail = inp;
-    def var left, tail = parse_bitxor tail; 
-    while true do
-      match tail with
-      | Empty =>
-        return left, tail;
-
-      | Cons(op, tail2) =>
-        if not (op == "|") do 
-          return left, tail;
-        else 
-          def var right, tail = parse_bitxor tail2;
-          left = Binop (op, left, right); // reduce
-        done
-      endmatch;
-    done
-  endmatch;
-}
-fun parse_comparison (inp: toks_t) : pstate_t {
-//println$ "parse_comparison";
-  var left, tail = parse_bitor inp;
-  match tail with
-  | Empty => return left, tail;
-  | Cons(op, tail2) =>
-    if not (op in ("<",">","==","<=", "=>", "!=")) do
-      return left, tail;
-    else
-      var right, tail3 = parse_bitor tail2;
-      return Binop(op, left, right), tail3;
-    done
-  endmatch;
-}
-fun parse_expr (inp: toks_t) : pstate_t {
-//println$ "parse_expr";
-  return parse_comparison inp;
+proc checkint(x:string) {
+  for ch in x do
+    if not isdigit(ch) perform
+      fail("GOTO target must be integer, got " + x);
+  done
 }
 
 variant ifparity_t = 
@@ -428,7 +124,8 @@ chip stmt
   var counter = 0;
   var indent = 0;
   var ifelsestack = Empty[ifparity_t];
-
+  var label_counter = 2; // the first user label must be 2
+  var max_lab = (0,0); // error tracking: label index, line used
   var h: string;
   var t: toks_t;
   proc advance() {
@@ -445,7 +142,7 @@ chip stmt
 
   var symtab = symbol_table_t(0, strdict[syminfo_t]());
 
-
+  var switch_counter = 1;
   while true do
     ++counter;
     var line = read(io.inp);
@@ -457,9 +154,65 @@ chip stmt
       t = tail;
       
       if h in ("else", "end")  if indent > 0 perform --indent;
+      if h == "SWITCH" do
+        prln$ "push.1 # begin switch  with PC = 1";
+        prln$ "pop.mem.0  # PC is memory location 0";
+        prln$ "push.1 # make loop start";
+        prln$ "while.true # begin the SWITCH";
+        prln$ "push.mem.0 # load PC";
+        prln$ "u32unchecked_add.1      # increment by 1";
+        prln$ "pop.mem.0  # save PC";
+        ++indent;
+      elif h == "GOTO" do
+        advance;
+        checkint(h); // check the next token is an integer
+        var labval = int h;
+        if labval > max_lab.0 perform
+          max_lab = labval, counter;
+        prln$ "# GOTO " + h;
+        prln$ "push."+h+" # jump address"; 
+        prln$ "pop.mem.0  # set PC to " + h;
+        prln$ "# -------";
+      elif h == "LABEL" do
+        advance;
+        checkint(h); // check the next token is an integer
+        labval = int h;
+        if labval != label_counter 
+          perform fail ("Invalid label counter " + h ", should be " + label_counter.str);
+        ++label_counter; 
+        --indent;
+        prln$ "# LABEL " + h;
+        if switch_counter > 2 perform
+          prln$ "else # end case " + (switch_counter - 1).str;
+        prln$ "u32checked_eq."+h+ " # check if PC is for this case";
+        prln$ "if.true # start code for this case";
+        ++indent;
+        ++switch_counter; // count the number of 'end' we need at the switch end
+      elif h == "BREAK" do
+        --indent;
+        prln$ "push.0 # 0";
+        prln$ "pop.mem.0 # ->PC";
+        ++indent;
 
+      elif h == "ENDSWITCH" do
+        if max_lab.0 > switch_counter perform
+          fail("Jump to non existent label " + max_lab.0.str + " line " + max_lab.1.str);
+        var end_case = switch_counter;
+        while switch_counter > 1 do
+          prln$ "end # switch case "+switch_counter.str;
+          --switch_counter;
+        done
+        --indent;
+        prln$ "push.mem.0 #load PC";
+        prln$ "dup";
+        prln$ "u32checked_eq.0"; // test for break
+        prln$ "swap";
+        prln$ "u32checked_eq." + end_case.str; // test for fall through
+        prln$ "u32checked_and";
+        prln$ "end #while loop";
+        prln$ "# PROGRAM EXIT";
       // eval
-      if h == "eval" do
+      elif h == "eval" do
         var e,rest = parse_expr t;
         prln$ "  " * indent + "# " + line;
         //prln$ "# eval[parsed] "  e.str;

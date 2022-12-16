@@ -1,0 +1,86 @@
+
+enum lstate { Spc, Dig, Alph };
+
+fun lex(inp: string) : list[string] {
+  // state machine
+  var state = Spc;
+  var i = 0;
+  var tokens = Empty[string];
+  var tok = "";
+
+  // add token to output list (in reverse order) and clear token
+  proc emit() { if tok != "" do tokens = Cons (tok, tokens); tok = ""; done }
+
+  // scan the whole string
+  var n = inp.len.int;
+  var ch = inp.[0];
+  while i < n do
+   // character under consideration
+
+   // routine to add it to token
+   proc addch() { tok = tok + ch; ++i; ch = inp.[i]; }
+
+   // routine to ignore a character
+   proc skipch() { ++i; ch = inp.[i]; }
+
+   // routine to start a new token
+   proc newtoken() { emit; state = Spc; }
+
+   // switch on the automaton state
+    match state with
+      // processing spaces
+      | Spc => 
+        if ch.isblank do skipch;
+        elif ch.isdigit do
+          emit;
+          addch;
+          state = Dig;
+        elif ch.isidstart do
+          emit;
+          addch;
+          state = Alph;
+        elif ch == char "." do
+          emit;
+          addch;
+          newtoken;
+        elif ch in "()+-*/%^|&{}" do
+          emit;
+          addch;
+          newtoken;
+        elif ch in "<>=!" do
+          emit;
+          var op2 = inp.[i to i+2];
+          if op2 in ("!=","==","<<",">>",">=","<=") perform
+            addch;
+          addch;
+          newtoken;
+        else
+          println$ "Unknown character " + ch;
+          System::exit(1);
+        done
+
+      // processing a digit sequence
+      | Dig =>
+        if ch.isdigit do
+          addch;
+        else
+         newtoken;
+        done
+
+     // Processing an identifier
+    | Alph =>
+      if ch.iscidcont do
+        addch;
+      else
+        newtoken;
+      done
+    endmatch;
+  done
+   // finalise any current token
+  emit;
+
+   // return the token list
+  return tokens.rev;
+}
+
+
