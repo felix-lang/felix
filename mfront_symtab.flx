@@ -1,35 +1,35 @@
+class symbol {
+  struct syminfo_t {
+    loc : int;
+    typ : string;
+    mut : bool;
+  }
 
-struct syminfo_t {
-  loc : int;
-  typ : string;
-  mut : bool;
+  struct symbol_table_t {
+    counter : int;
+    table: strdict[syminfo_t];
+  }
+
+  proc add(tab: &symbol_table_t) (key:string) (mut:bool) (typ:string) {
+    if tab->table.haskey key do
+      println$ "Duplicate symbol " + key;
+      System::exit(1);
+    else
+     var dat = syminfo_t (tab->counter, typ, mut);
+     tab->table.add key dat;
+     post_incr(tab.counter);
+    done
+  } 
+
+  fun get_info (tab: &symbol_table_t) (key:string) : syminfo_t {
+    match tab->table.get key with
+    | Some info => return info;
+    | None => fail("Fetch from or store to undefined variable " + key);
+    endmatch;
+  }
+
+  fun get_address (tab: &symbol_table_t) (key:string) : int {
+    return (get_info tab key).loc;
+  }
 }
-
-struct symbol_table_t {
-  counter : int;
-  table: strdict[syminfo_t];
-}
-
-proc add(tab: &symbol_table_t) (key:string) (mut:bool) (typ:string) {
-  if tab->table.haskey key do
-    println$ "Duplicate symbol " + key;
-    System::exit(1);
-  else
-   var dat = syminfo_t (tab->counter, typ, mut);
-   tab->table.add key dat;
-   post_incr(tab.counter);
-  done
-} 
-
-fun get_info (tab: &symbol_table_t) (key:string) : syminfo_t {
-  match tab->table.get key with
-  | Some info => return info;
-  | None => fail("Fetch from or store to undefined variable " + key);
-  endmatch;
-}
-
-fun get_address (tab: &symbol_table_t) (key:string) : int {
-  return (get_info tab key).loc;
-}
-
 

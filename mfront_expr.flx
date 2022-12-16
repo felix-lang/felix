@@ -1,198 +1,273 @@
+class expr_sym {
+  // recursive descent expression parser
+  variant expr = 
+    | Binop of string * expr * expr
+    | Unop of string * expr 
+    | Const of string // integer constant
+    | Ident of string // variable name
+    | Error
+  ;
+  instance Str[expr] {
+    fun str: expr -> string =
+    | Binop (op, l, r) => "(" + l.str + ") " + op + " (" + r.str + ")"
+    | Unop (op, l) => op + "(" + l.str + ")"
+    | Const s => s
+    | Ident s => s
+    | Error => "ERROR"
+    ;
+  }
 
+  var binop_map = strdict[string]();
+  var unop_map = strdict[string]();
 
-fun parse_atom (inp: toks_t)  : pstate_t {
-  match inp with
-  | Empty => 
-    fail "Expected atom got End of Line";
-  | Cons (head, tail) =>
-    match head with
-    | "(" =>
-       var node, rest = parse_expr tail;
-       match rest with
-       | Empty => fail "Expected ) parsing atom got Eno of Line";
-       | Cons (head, tail) => 
-         match head with
-         | ")" =>
-           return node, tail; // success
-         | _ => fail ("Expected ) got " + head)  ;
+  binop_map.add "+" "u32unchecked_add # +\n";
+  binop_map.add "-" "u32unchecked_sub # -\n";
+  binop_map.add "*" "u32unchecked_mul # *\n";
+  binop_map.add "/" "u32unchecked_div # /\n";
+  binop_map.add "%" "u32unchecked_mod # %\n";
+
+  binop_map.add "&" "u32unchecked_and # and\n";
+  binop_map.add "|" "u32unchecked_or # or \n";
+  binop_map.add "^" "u32unchecked_xor # xor\n";
+
+  binop_map.add "<<" "u32unchecked_shl # <<\n";
+  binop_map.add ">>" "u32unchecked_shr # >>\n";
+
+  binop_map.add ">" "u32unchecked_gt # >\n";
+  binop_map.add "<" "u32unchecked_lt # <\n";
+  binop_map.add "<=" "u32unchecked_le # <=\n";
+  binop_map.add ">=" "u32unchecked_ge # >=\n";
+  binop_map.add "==" "u32unchecked_eq # ==\n";
+  binop_map.add "!=" "u32unchecked_neq # !=\n";
+
+  unop_map.add "-" "u32unchecked_neg # neg\n";
+  unop_map.add "!" "u32unchecked_not # not\n";
+}
+
+class expr_parser {
+  open expr_sym;
+  open lexer;
+  typedef pstate_t = expr * lexer::toks_t;
+
+  fun parse_atom (inp: toks_t)  : pstate_t {
+    match inp with
+    | Empty => 
+      fail "Expected atom got End of Line";
+    | Cons (head, tail) =>
+      match head with
+      | "(" =>
+         var node, rest = parse_expr tail;
+         match rest with
+         | Empty => fail "Expected ) parsing atom got Eno of Line";
+         | Cons (head, tail) => 
+           match head with
+           | ")" =>
+             return node, tail; // success
+           | _ => fail ("Expected ) got " + head)  ;
+           endmatch;
          endmatch;
+       | x when (x.0).iscidstart =>
+         return Ident x, tail;
+       | x when (x.0).isdigit =>
+         return Const x, tail;
+       | x => fail ("Unexpected Symbol " + x + " parsing " + inp.str);
        endmatch;
-     | x when (x.0).iscidstart =>
-       return Ident x, tail;
-     | x when (x.0).isdigit =>
-       return Const x, tail;
-     | x => fail ("Unexpected Symbol " + x + " parsing " + inp.str);
-     endmatch;
-  endmatch;
-}
-    
-// repeated prefix ops not supported (eg - - 1 is not allowed)
-fun parse_prefixop (inp: toks_t) : pstate_t {
-//println$ "Parsing prefixop " + inp.str;
-  match inp with
-  | Empty => 
-    fail "Expected prefix expr got End of Lin";
-  | Cons(op, tail) => 
-    if not (op in ("-","!")) do
-      return parse_atom inp;
-    else
-      var a, rest = parse_atom tail;
-      return (Unop (op,a), rest);
-    done
-  endmatch;
-}
+    endmatch;
+  }
+      
+  // repeated prefix ops not supported (eg - - 1 is not allowed)
+  fun parse_prefixop (inp: toks_t) : pstate_t {
+  //println$ "Parsing prefixop " + inp.str;
+    match inp with
+    | Empty => 
+      fail "Expected prefix expr got End of Lin";
+    | Cons(op, tail) => 
+      if not (op in ("-","!")) do
+        return parse_atom inp;
+      else
+        var a, rest = parse_atom tail;
+        return (Unop (op,a), rest);
+      done
+    endmatch;
+  }
 
 
-fun parse_factor(inp: toks_t) : pstate_t {
-  match inp with
-  | Empty =>
-    fail "Expected factor got End of Line";
-  | _ =>
-    var tail = inp;
-    def var left, tail = parse_prefixop tail; 
-    while true do
-      match tail with
-      | Empty =>
-        return left, tail;
-
-      | Cons(op, tail2) =>
-        if not (op in ("*", "/", "%")) do 
+  fun parse_factor(inp: toks_t) : pstate_t {
+    match inp with
+    | Empty =>
+      fail "Expected factor got End of Line";
+    | _ =>
+      var tail = inp;
+      def var left, tail = parse_prefixop tail; 
+      while true do
+        match tail with
+        | Empty =>
           return left, tail;
-        else 
-          def var right, tail = parse_prefixop tail2;
-          left = Binop (op, left, right); // reduce
-        done
-      endmatch;
-    done
-  endmatch;
-}
-fun parse_term (inp: toks_t) : pstate_t {
-  match inp with
-  | Empty =>
-    fail "Expected term got End of Line";
-  | _ =>
-    var tail = inp;
-    def var left, tail = parse_factor tail; 
-    while true do
-      match tail with
-      | Empty =>
-        return left, tail;
 
-      | Cons(op, tail2) =>
-        if not (op in ("+", "-")) do 
+        | Cons(op, tail2) =>
+          if not (op in ("*", "/", "%")) do 
+            return left, tail;
+          else 
+            def var right, tail = parse_prefixop tail2;
+            left = Binop (op, left, right); // reduce
+          done
+        endmatch;
+      done
+    endmatch;
+  }
+  fun parse_term (inp: toks_t) : pstate_t {
+    match inp with
+    | Empty =>
+      fail "Expected term got End of Line";
+    | _ =>
+      var tail = inp;
+      def var left, tail = parse_factor tail; 
+      while true do
+        match tail with
+        | Empty =>
           return left, tail;
-        else 
-          def var right, tail = parse_factor tail2;
-          left = Binop (op, left, right); // reduce
-        done
-      endmatch;
-    done
-  endmatch;
-}
-fun parse_shift (inp: toks_t) : pstate_t {
-//println$ "parse_shift";
-  var left, tail = parse_term inp;
-  match tail with
-  | Empty => return left, tail;
-  | Cons(op, tail2) =>
-    if not (op in ("<<",">>")) do
-      return left, tail;
-    else
-      var right, tail3 = parse_term tail2;
-      return Binop(op, left, right), tail3;
-    done
-  endmatch;
-}
-fun parse_bitand (inp: toks_t) : pstate_t {
-//println$ "parse_bitand";
-  match inp with
-  | Empty =>
-    fail "Expected bitand expr got End of Line";
-  | _ =>
-    var tail = inp;
-    def var left, tail = parse_shift tail; 
-    while true do
-      match tail with
-      | Empty =>
+
+        | Cons(op, tail2) =>
+          if not (op in ("+", "-")) do 
+            return left, tail;
+          else 
+            def var right, tail = parse_factor tail2;
+            left = Binop (op, left, right); // reduce
+          done
+        endmatch;
+      done
+    endmatch;
+  }
+  fun parse_shift (inp: toks_t) : pstate_t {
+  //println$ "parse_shift";
+    var left, tail = parse_term inp;
+    match tail with
+    | Empty => return left, tail;
+    | Cons(op, tail2) =>
+      if not (op in ("<<",">>")) do
         return left, tail;
-
-      | Cons(op, tail2) =>
-        if not (op == "&") do 
+      else
+        var right, tail3 = parse_term tail2;
+        return Binop(op, left, right), tail3;
+      done
+    endmatch;
+  }
+  fun parse_bitand (inp: toks_t) : pstate_t {
+  //println$ "parse_bitand";
+    match inp with
+    | Empty =>
+      fail "Expected bitand expr got End of Line";
+    | _ =>
+      var tail = inp;
+      def var left, tail = parse_shift tail; 
+      while true do
+        match tail with
+        | Empty =>
           return left, tail;
-        else 
-          def var right, tail = parse_shift tail2;
-          left = Binop (op, left, right); // reduce
-        done
-      endmatch;
-    done
-  endmatch;
-}
-fun parse_bitxor (inp: toks_t) : pstate_t {
-//println$ "parse_bitxor";
-  match inp with
-  | Empty =>
-    fail "Expected  bitxor expr got End of Line";
-  | _ =>
-    var tail = inp;
-    def var left, tail = parse_bitand tail; 
-    while true do
-      match tail with
-      | Empty =>
+
+        | Cons(op, tail2) =>
+          if not (op == "&") do 
+            return left, tail;
+          else 
+            def var right, tail = parse_shift tail2;
+            left = Binop (op, left, right); // reduce
+          done
+        endmatch;
+      done
+    endmatch;
+  }
+  fun parse_bitxor (inp: toks_t) : pstate_t {
+  //println$ "parse_bitxor";
+    match inp with
+    | Empty =>
+      fail "Expected  bitxor expr got End of Line";
+    | _ =>
+      var tail = inp;
+      def var left, tail = parse_bitand tail; 
+      while true do
+        match tail with
+        | Empty =>
+          return left, tail;
+
+        | Cons(op, tail2) =>
+          if not (op == "^") do 
+            return left, tail;
+          else 
+            def var right, tail = parse_bitand tail2;
+            left = Binop (op, left, right); // reduce
+          done
+        endmatch;
+      done
+    endmatch;
+  }
+
+  fun parse_bitor (inp: toks_t) : pstate_t {
+  //println$ "parse_bitor";
+    match inp with
+    | Empty =>
+      fail "Expected bitor expr got End of Line";
+    | _ =>
+      var tail = inp;
+      def var left, tail = parse_bitxor tail; 
+      while true do
+        match tail with
+        | Empty =>
+          return left, tail;
+
+        | Cons(op, tail2) =>
+          if not (op == "|") do 
+            return left, tail;
+          else 
+            def var right, tail = parse_bitxor tail2;
+            left = Binop (op, left, right); // reduce
+          done
+        endmatch;
+      done
+    endmatch;
+  }
+  fun parse_comparison (inp: toks_t) : pstate_t {
+  //println$ "parse_comparison";
+    var left, tail = parse_bitor inp;
+    match tail with
+    | Empty => return left, tail;
+    | Cons(op, tail2) =>
+      if not (op in ("<",">","==","<=", "=>", "!=")) do
         return left, tail;
-
-      | Cons(op, tail2) =>
-        if not (op == "^") do 
-          return left, tail;
-        else 
-          def var right, tail = parse_bitand tail2;
-          left = Binop (op, left, right); // reduce
-        done
-      endmatch;
-    done
-  endmatch;
+      else
+        var right, tail3 = parse_bitor tail2;
+        return Binop(op, left, right), tail3;
+      done
+    endmatch;
+  }
+  fun parse_expr (inp: toks_t) : pstate_t {
+  //println$ "parse_expr";
+    return parse_comparison inp;
+  }
 }
 
-fun parse_bitor (inp: toks_t) : pstate_t {
-//println$ "parse_bitor";
-  match inp with
-  | Empty =>
-    fail "Expected bitor expr got End of Line";
-  | _ =>
-    var tail = inp;
-    def var left, tail = parse_bitxor tail; 
-    while true do
-      match tail with
-      | Empty =>
-        return left, tail;
+class expr_emit {
+  open expr_sym;
 
-      | Cons(op, tail2) =>
-        if not (op == "|") do 
-          return left, tail;
-        else 
-          def var right, tail = parse_bitxor tail2;
-          left = Binop (op, left, right); // reduce
-        done
-      endmatch;
-    done
-  endmatch;
-}
-fun parse_comparison (inp: toks_t) : pstate_t {
-//println$ "parse_comparison";
-  var left, tail = parse_bitor inp;
-  match tail with
-  | Empty => return left, tail;
-  | Cons(op, tail2) =>
-    if not (op in ("<",">","==","<=", "=>", "!=")) do
-      return left, tail;
-    else
-      var right, tail3 = parse_bitor tail2;
-      return Binop(op, left, right), tail3;
-    done
-  endmatch;
-}
-fun parse_expr (inp: toks_t) : pstate_t {
-//println$ "parse_expr";
-  return parse_comparison inp;
-}
+  fun postfix (ps: &symbol::symbol_table_t) (e:expr) (indent: int) : string =>
+    let fun pf(e:expr):string => postfix ps e indent in
+    match e with
+    | Const s => "  " * indent + "push."+s+" # "+s+"\n"
+    | Ident s => let a = ps.symbol::get_address s in "  " * indent + "push.local."+a.str+" # <-" + s+"\n"
+    | Error => "ERROR\n"
 
+    | Binop (op, a, b) =>
+      let op = match binop_map.get op with
+      | None => "# Can't find '" + op "' in operator map\n"
+      | Some x => "  " * indent + x
+      in
+      pf a + pf b + op
+
+    | Unop (op, a) =>
+      let op = match unop_map.get op with
+      | None => "# Can't find '" + op "' in operator map\n"
+      | Some x => "  " * indent + x
+      in
+      pf a  + op
+  ;
+}
 

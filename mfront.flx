@@ -27,74 +27,7 @@ chip comment_stripper
     write (io.out, s.[0 .. i - 1]);
   done
 }
-// recursive descent expression parser
-variant expr = 
-  | Binop of string * expr * expr
-  | Unop of string * expr 
-  | Const of string // integer constant
-  | Ident of string // variable name
-  | Error
-;
-instance Str[expr] {
-  fun str: expr -> string =
-  | Binop (op, l, r) => "(" + l.str + ") " + op + " (" + r.str + ")"
-  | Unop (op, l) => op + "(" + l.str + ")"
-  | Const s => s
-  | Ident s => s
-  | Error => "ERROR"
-  ;
-}
 
-var binop_map = strdict[string]();
-var unop_map = strdict[string]();
-
-binop_map.add "+" "u32unchecked_add # +\n";
-binop_map.add "-" "u32unchecked_sub # -\n";
-binop_map.add "*" "u32unchecked_mul # *\n";
-binop_map.add "/" "u32unchecked_div # /\n";
-binop_map.add "%" "u32unchecked_mod # %\n";
-
-binop_map.add "&" "u32unchecked_and # and\n";
-binop_map.add "|" "u32unchecked_or # or \n";
-binop_map.add "^" "u32unchecked_xor # xor\n";
-
-binop_map.add "<<" "u32unchecked_shl # <<\n";
-binop_map.add ">>" "u32unchecked_shr # >>\n";
-
-binop_map.add ">" "u32unchecked_gt # >\n";
-binop_map.add "<" "u32unchecked_lt # <\n";
-binop_map.add "<=" "u32unchecked_le # <=\n";
-binop_map.add ">=" "u32unchecked_ge # >=\n";
-binop_map.add "==" "u32unchecked_eq # ==\n";
-binop_map.add "!=" "u32unchecked_neq # !=\n";
-
-unop_map.add "-" "u32unchecked_neg # neg\n";
-unop_map.add "!" "u32unchecked_not # not\n";
-
-fun postfix (ps: &symbol_table_t) (e:expr) (indent: int) : string =>
-  let fun pf(e:expr):string => postfix ps e indent in
-  match e with
-  | Const s => "  " * indent + "push."+s+" # "+s+"\n"
-  | Ident s => let a = ps.get_address s in "  " * indent + "push.local."+a.str+" # <-" + s+"\n"
-  | Error => "ERROR\n"
-
-  | Binop (op, a, b) =>
-    let op = match binop_map.get op with
-    | None => "# Can't find '" + op "' in operator map\n"
-    | Some x => "  " * indent + x
-    in
-    pf a + pf b + op
-
-  | Unop (op, a) =>
-    let op = match unop_map.get op with
-    | None => "# Can't find '" + op "' in operator map\n"
-    | Some x => "  " * indent + x
-    in
-    pf a  + op
-;
-
-typedef toks_t = list[string];
-typedef pstate_t = expr * toks_t;
 
 proc fail(e: string) {
   println$ "Parse Error: " + e;
@@ -118,6 +51,7 @@ chip stmt
     pin inp : %< string
     pin out : %> string
 {
+  open symbol;
   proc pr(s:string) { write (io.out, s); }
   proc prln(s:string) { write (io.out, s + "\n"); }
 
@@ -127,7 +61,7 @@ chip stmt
   var label_counter = 2; // the first user label must be 2
   var max_lab = (0,0); // error tracking: label index, line used
   var h: string;
-  var t: toks_t;
+  var t: lexer::toks_t;
   proc advance() {
     match t with 
     | Cons(h1,t1) => h=h1; t = t1; 
@@ -147,7 +81,7 @@ chip stmt
     ++counter;
     var line = read(io.inp);
     //prln$ counter.str + ": " + line;
-    var tokens = line.lex;
+    var tokens = line.lexer::lex;
     match tokens with
     | Cons (head, tail) => 
       h = head;
@@ -213,10 +147,10 @@ chip stmt
         prln$ "# PROGRAM EXIT";
       // eval
       elif h == "eval" do
-        var e,rest = parse_expr t;
+        var e,rest = expr_parser::parse_expr t;
         prln$ "  " * indent + "# " + line;
         //prln$ "# eval[parsed] "  e.str;
-        pr$ symtab&.postfix e indent;
+        pr$ symtab&.expr_emit::postfix e indent;
 
       // let
       elif h == "let" do
@@ -234,10 +168,10 @@ chip stmt
         done
         symtab&.add name mut "u32";
         //prln$ "# Added variable '" + name +"' to symbol table";
-        var e2,rest2 = parse_expr t;
+        var e2,rest2 = expr_parser::parse_expr t;
         //prln$ "# eval[inp] " + cat " " tokens;
         //prln$ "# eval[parsed] " +  e2.str;
-        pr$ symtab&.postfix e2 indent;
+        pr$ symtab&.expr_emit::postfix e2 indent;
         prln$ "  " * indent + "pop.local." + symtab&.get_address name +"# init " + name;
 
         // assignment (requires "assign" binder)
@@ -246,8 +180,8 @@ chip stmt
         prln$ " # " + line;
         name = h;
         advance;
-        e,rest = parse_expr t;
-        pr$ symtab&.postfix e indent;
+        e,rest = expr_parser::parse_expr t;
+        pr$ symtab&.expr_emit::postfix e indent;
         var sym = symtab&.get_info name;
         if not sym.mut do
           fail("Write to immutable variable " + name);
@@ -262,8 +196,8 @@ chip stmt
         | Cons ("{", tail) => 
           t = tail.rev;
           // evaluate condition
-          e,rest = parse_expr t;
-          pr$ symtab&.postfix e indent;
+          e,rest = expr_parser::parse_expr t;
+          pr$ symtab&.expr_emit::postfix e indent;
           prln("  " * indent + "while.true # Rust while");
           ifelsestack = Cons(whileblock,ifelsestack);
           // NOTE: at the end, a leading if indents already
@@ -309,8 +243,8 @@ chip stmt
         | Cons ("{", tail) => 
           t = tail.rev;
           // evaluate condition
-          e,rest = parse_expr t;
-          pr$ symtab&.postfix e indent;
+          e,rest = expr_parser::parse_expr t;
+          pr$ symtab&.expr_emit::postfix e indent;
           prln("  " * indent + "if.true # Rust if");
           ifelsestack = Cons(ifblock 1,ifelsestack);
           // NOTE: at the end, a leading if indents already
@@ -372,8 +306,8 @@ chip stmt
               prln$ "  " * indent + "else # Rust else if";
               ++indent;
               // evaluate condition
-              e,rest = parse_expr t;
-              pr$ symtab&.postfix e indent;
+              e,rest = expr_parser::parse_expr t;
+              pr$ symtab&.expr_emit::postfix e indent;
               prln("  " * indent + "if.true # Rust else if");
               ++indent;
             endmatch; // ifelse
