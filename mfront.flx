@@ -61,6 +61,12 @@ class stmt_parser {
     var ifelsestack = Empty[ifparity_t];
     var label_counter = 2; // the first user label must be 2
     var max_lab = (0,0); // error tracking: label index, line used
+
+    // SWITCH nesting depth control
+    var pc_base_address = 1000;
+    var pc_nest = 0;
+    var pc_address : int;
+
     var h: string;
     var t: lexer::toks_t;
     proc advance() {
@@ -89,13 +95,15 @@ class stmt_parser {
         t = tail;
         
         if h == "SWITCH" do
+          ++pc_nest;
           prln$ "push.1 # begin switch  with PC = 1";
-          prln$ "pop.mem.0  # PC is memory location 0";
+          pc_address = pc_nest + pc_base_address;
+          prln$ "pop.mem."+ pc_address.str + " # PC"+pc_nest.str +" is memory location "+pc_address.str;
           prln$ "push.1 # make loop start";
           prln$ "while.true # begin the SWITCH";
-          prln$ "push.mem.0 # load PC";
+          prln$ "push.mem."+pc_address.str + " # load PC"+pc_nest.str;
           prln$ "u32unchecked_add.1      # increment by 1";
-          prln$ "pop.mem.0  # save PC";
+          prln$ "pop.mem."+pc_address.str + " # save PC"+pc_nest.str;
         elif h == "GOTO" do
           advance;
           checkint(h); // check the next token is an integer
@@ -104,7 +112,7 @@ class stmt_parser {
             max_lab = labval, counter;
           prln$ "# GOTO " + h;
           prln$ "push."+h+" # jump address"; 
-          prln$ "pop.mem.0  # set PC to " + h;
+          prln$ "pop.mem." + pc_address.str + " # set PC"+pc_nest.str + " to " + h;
           prln$ "# -------";
         elif h == "LABEL" do
           advance;
@@ -121,7 +129,7 @@ class stmt_parser {
           ++switch_counter; // count the number of 'end' we need at the switch end
         elif h == "BREAK" do
           prln$ "push.0 # 0";
-          prln$ "pop.mem.0 # ->PC";
+          prln$ "pop.mem."+pc_address.str + "# ->PC"+pc_nest.str;
 
         elif h == "ENDSWITCH" do
           if max_lab.0 > switch_counter perform
@@ -131,14 +139,16 @@ class stmt_parser {
             prln$ "end # switch case "+switch_counter.str;
             --switch_counter;
           done
-          prln$ "push.mem.0 #load PC";
+          prln$ "push.mem."+pc_address.str + " #load PC"+pc_nest.str;
           prln$ "dup";
           prln$ "u32checked_eq.0"; // test for break
           prln$ "swap";
           prln$ "u32checked_eq." + end_case.str; // test for fall through
           prln$ "u32checked_and";
           prln$ "end #while loop";
-          prln$ "# PROGRAM EXIT";
+          --pc_nest;
+          pc_address = pc_base_address + pc_nest;
+          prln$ "# SWITCH EXIT";
         // eval
         elif h == "eval" do
           var e,rest = expr_parser::parse_expr t;
