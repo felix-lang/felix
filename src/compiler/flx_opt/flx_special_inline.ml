@@ -21,12 +21,27 @@ open Flx_use
 open Flx_util
 open Flx_bid
 
-(* Returns and expression e in which subexpressions are replaced by variables,
+(* UNRAVEL an expression.
+
+  Returns an expression e in which subexpressions are replaced by variables,
   and the variables are initialised in the executable instructions,
   so the exe containing this expression, after replacement, has to run
   after the exes it returns.
 
   The exes returned are in reverse order. Called by Flx_inline_calls.
+
+
+  ISSUE: this routine leads to a screwup if an expression has type 'any'
+  which means it doesn't return. In this case the evaluation is assigned
+  to a variable, but the back end throws the initialisation out.
+  So the variable never gets set. This is fine, because if we escaped
+  any use of the variable won't happen, because the use has to happen
+  AFTER the initialisation (temporaly).
+
+  Unfortunately we seem to end up returning an *undefined* variable in the
+  generated C++, which has the type of the returning branch of a
+  conditional. It's NOT clear to me how the variable is considered used,
+  and is in the symbol table, but doesn't get defined.
 *)
 let special_inline syms uses bsym_table caller heavily_inline_bbdcl hic excludes sr e =
   let nth ls n = try List.nth ls n with _ -> 
@@ -297,7 +312,7 @@ print_endline ("New expr = " ^ sbe bsym_table e' ^ " type " ^ sbt bsym_table (sn
                     let rxs = hic revariable callee xs in
                     exes' := rev rxs @ !exes';
 (*
-print_endline ("new var type " ^ sbt bsym_table t);
+print_endline ("new var '"^urvid^"' type " ^ sbt bsym_table t);
 *)
                     bexpr_varname t (urv,[])
                 end

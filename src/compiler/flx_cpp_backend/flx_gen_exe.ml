@@ -824,6 +824,16 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       code
 
     | BEXE_fun_return (sr,e) ->
+
+      begin match e with
+      | BEXPR_varname _,BTYP_fix (0,_) ->
+        "  // elide return of variable of type any\n"
+
+      | BEXPR_coerce (  (BEXPR_varname _,BTYP_fix (0,_)),_),_ ->
+        "  // elide return of coerced variable of type any\n"
+
+      | _ ->
+
       let _,t = e in
       (if with_comments then
       "      //" ^ src_str ^ ": type "^tn t^"\n"
@@ -832,6 +842,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       begin match t with
       | BTYP_fix (0,_) -> "      "^ge sr e^"; // non-returning\n"
       | _ ->          "      return "^ge sr e^"; // "^tn t^ "\n"
+      end
       end
 
     | BEXE_nop (_,s) -> "      //Nop: " ^ s ^ "\n"
