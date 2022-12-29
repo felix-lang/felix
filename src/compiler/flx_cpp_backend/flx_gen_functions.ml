@@ -61,8 +61,9 @@ let gen_functions syms bsym_table (shapes: Flx_set.StringSet.t ref) shape_table 
     in
     match Flx_bsym.bbdcl bsym with
     | BBDCL_fun (props,vs,ps,ret,effects,_) ->
-      let is_proc = match ret with | BTYP_void | BTYP_fix (0,_) -> true | _ -> false in
-      let name = if is_proc then "PROCEDURE" else "FUNCTION" in
+      let is_proc = match ret with | BTYP_void -> true | _ -> false in
+      let is_escape = match ret with | BTYP_fix(0,_) -> true | _ -> false in
+      let name = (if is_escape then "ESCAPE " else "") ^ (if is_proc then "PROCEDURE" else "FUNCTION") in
       bcat s ("\n//------------------------------\n");
       let ft = btyp_effector (Flx_bparams.get_btype ps,effects,ret) in
       if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then begin

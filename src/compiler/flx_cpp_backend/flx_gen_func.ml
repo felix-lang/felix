@@ -146,7 +146,6 @@ let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =
   in
   let members = find_members syms bsym_table index ts in
   match ret with
-  | BTYP_fix (0,_)
   | BTYP_void ->
     let name = cpp_instance_name syms bsym_table index ts in
     let ctor = ctor_dcl name in

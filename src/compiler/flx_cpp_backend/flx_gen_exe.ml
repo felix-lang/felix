@@ -104,7 +104,6 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
   let our_display = get_display_list bsym_table this in
   let caller_name = Flx_bsym.id bsym in
   let kind = match Flx_bsym.bbdcl bsym with
-    | BBDCL_fun (_,_,_,BTYP_fix (0,_),_,_) -> Procedure
     | BBDCL_fun (_,_,_,BTYP_void,_,_) -> Procedure
     | BBDCL_fun (_,_,_,_,_,_) -> Function
     | _ -> failwith "Expected executable code to be in function or procedure"
@@ -157,9 +156,9 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
            otherwise pass 'this' as the caller 'return address'
            EXCEPT that stack calls don't pass a return address at all
         *)
-        let this = match kind with
+        let this = if is_ehandler then "" else match kind with
           | Function ->
-            if is_jump && not is_ehandler
+            if is_jump 
             then
               clierrx "[flx_cpp_backend/flx_gen_exe.ml:167: E300] " 
                 sr ("[gen_exe] can't jump inside function " ^ caller_name ^" to " ^ called_name ^ 
@@ -234,6 +233,14 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
             "      }\n"
 
           | Procedure ->
+            if is_ehandler then begin
+            let _,argt = a in
+              "      {\n" ^
+              subs ^
+              "      (FLX_NEWP(" ^ name ^ ")" ^ Flx_gen_display.strd the_display props ^ ")" ^
+              "\n      ->apply (" ^ args ^ ");\n" ^
+              "      }\n"
+            end else
             let call_string =
               "      return (FLX_NEWP(" ^ name ^ ")" ^ Flx_gen_display.strd the_display props ^ ")" ^
               "\n      ->call(" ^ args ^ ");\n"
@@ -593,7 +600,6 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
         | _ -> assert false
       in
       begin match Flx_bsym.bbdcl bsym with
-      | BBDCL_fun (props,vs,ps,BTYP_fix (0,_),effects,_)
       | BBDCL_fun (props,vs,ps,BTYP_void,effects,_) ->
         assert (mem `Stack_closure props);
         let a = match a with (a,t) -> a, tsub t in
@@ -756,6 +762,8 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       begin let _,t = p in match t with
       | BTYP_cfunction _ ->
         "    "^ge sr p ^ "("^ge sr a^");\n"
+      | BTYP_function (_, BTYP_fix (0,_)) ->
+        "    " ^ ge sr p ^ "->apply(" ^ ge sr a ^ ");//tail call ESCAPE FUN (BEXE_jump)\n"
       | _ ->
       (if with_comments then
       "      //"^ src_str ^ "\n"
@@ -832,6 +840,9 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       | BEXPR_coerce (  (BEXPR_varname _,BTYP_fix (0,_)),_),_ ->
         "  // elide return of coerced variable of type any\n"
 
+      | BEXPR_coerce (  (_,BTYP_fix (0,_)) as x,_),_ ->
+        "      "^ge sr x^"; // return ESCAPE non-returning\n"
+
       | _ ->
 
       let _,t = e in
@@ -884,6 +895,9 @@ print_endline ("BEXE_INIT, RHS type after tsub = " ^ Flx_btype.st t);
       | BEXPR_coerce (  (BEXPR_varname _,BTYP_fix (0,_)),_),_ ->
         "  // elide assignment of coerced variable of type any to LHS\n"
 
+      | BEXPR_coerce ( (_,BTYP_fix(0,_)) as x,_),_ ->
+        "    " ^ ge sr x ^ "; //init or assign expr coerced from type 'any' replaced by evaluation\n"
+
       | _ ->
       begin match t with
       | BTYP_tuple [] -> ""
@@ -902,7 +916,7 @@ print_endline ("BEXE_INIT, RHS type after tsub = " ^ Flx_btype.st t);
            So we need to treat the assignment as if it were a call to the RHS ..
            because it actually is.
         *)
-        ge sr e ^ "; //init or assign type 'any' replaced by evaluation\n"
+        "    " ^ ge sr e ^ "; //init or assign type 'any' replaced by evaluation\n"
 
       | _ ->
         let bsym =

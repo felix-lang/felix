@@ -390,9 +390,7 @@ let rec gen_type syms bsym_table (index,typ) =
     "typedef " ^ string_of_cdecl_type name cdt ^ ";\n"
 
 
-  | BTYP_linearfunction (a,BTYP_fix (0,_))
   | BTYP_linearfunction (a,BTYP_void) 
-  | BTYP_function (a,BTYP_fix (0,_))
   | BTYP_function (a,BTYP_void) ->
     descr ^
     let name = cn typ
@@ -412,6 +410,28 @@ let rec gen_type syms bsym_table (index,typ) =
     "  virtual "^name^" *clone()=0;\n"  ^
     "  virtual ::flx::rtl::con_t *resume()=0;\n"  ^
     "};\n"
+
+  (* ESCAPE FUNCTION *)
+  | BTYP_linearfunction (a,BTYP_fix (0,_))
+  | BTYP_function (a,BTYP_fix (0,_)) ->
+    (* print_endline ("Generating ESCAPE FUNCTION TYPE"); *)
+    "\n// ------ ESCAPE FUNCTION TYPE ------ "^
+    descr ^
+    let name = cn typ
+    and argtype = tn a
+    and rettype = "void"
+    and unitfun = a = btyp_tuple [] || a = btyp_void ()
+    in
+    "struct " ^ name ^ " {\n" ^
+    "  typedef " ^ rettype ^ " rettype;\n" ^
+    "  typedef " ^ (if unitfun then "void" else argtype) ^ " argtype;\n" ^
+    "  virtual "^rettype^" apply("^
+    (if unitfun then "" else argtype^" const &") ^
+    ")=0;\n"  ^
+    "  virtual "^name^" *clone()=0;\n"  ^
+    "  virtual ~"^name^"(){};\n" ^
+    "};\n"
+
 
   (* FUNCTION *)
   | BTYP_linearfunction (a,r)

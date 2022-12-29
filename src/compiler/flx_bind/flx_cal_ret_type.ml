@@ -156,6 +156,9 @@ print_endline "$$$$$Flx_cal_ret: about to unify calculated and registered return
 print_endline ("$$$$Return type = " ^ Flx_btype.st !ret_type);
 print_endline ("$$$$Return expression type = " ^ Flx_btype.st t);
 *)
+        match t with
+        | BTYP_fix(0,_) -> () (* doesn't contribute to unification *)
+        | _ ->
         if pvtype then
           () (* use the declared return type, let the coercion be inserted later *) 
         else 

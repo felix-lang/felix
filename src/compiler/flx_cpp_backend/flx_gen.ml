@@ -312,7 +312,6 @@ let gen_procedure_methods filename syms bsym_table
   );
   let cxx_name = cid_of_flxid (Flx_bsym.id bsym) in
   match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,bps,BTYP_fix (0,_),effects,exes)
   | BBDCL_fun (props,vs,bps,BTYP_void,effects,exes) ->
     if length ts <> length vs then
     failwith
@@ -482,7 +481,6 @@ let gen_execute_methods filename syms bsym_table
   let cxx_name = cid_of_flxid (Flx_bsym.id bsym) in
 
   begin match Flx_bsym.bbdcl bsym with
-  | BBDCL_fun (props,vs,(ps,traint),BTYP_fix (0,_),effects,_)
   | BBDCL_fun (props,vs,(ps,traint),BTYP_void,effects,_) ->
     bcat s ("//------------------------------\n");
     if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then
@@ -497,6 +495,23 @@ let gen_execute_methods filename syms bsym_table
       in
       bcat s call;
       bcat s2 ctor
+
+  | BBDCL_fun (props,vs,(ps,traint),BTYP_fix(0,_),effects,_) ->
+    (* print_endline ("GENERATING ESCAPE METHODS for " ^ bsym.id); *)
+    bcat s ("//--------- ESCAPE FUNCTION "^bsym.id ^" ---------------------\n");
+    if mem `Cfun props || mem `Pure props && not (mem `Heap_closure props) then
+      bcat s (
+        Flx_gen_cfunc.gen_C_function_body filename syms bsym_table shapes shape_table
+        label_info counter index ts (Flx_bsym.sr bsym) instance_no
+      )
+    else
+      let apply,ctor =
+        gen_function_methods filename syms bsym_table shapes shape_table
+        label_info counter index ts instance_no
+      in
+      bcat s2 ctor;
+      bcat s apply
+
 
   | BBDCL_fun (props,vs,(ps,traint),ret,effects,_) ->
     bcat s ("//------------------------------\n");
