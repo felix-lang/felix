@@ -617,41 +617,17 @@ print_endline ("Flx_bind_bexe: Function return value has MINIMISED type " ^ sbt 
 if funame="insert_unique'3_mf_3732" then
 print_endline ("Flx_bind_bexe: UNIFIYING explicit ret="  ^ sbt bsym_table state.ret_type ^ " and expr ret=" ^ sbt bsym_table t');
 *)
+    begin match t' with 
+    | BTYP_fix (0,_) ->
+      state.reachable <- false;
+      [(bexe_fun_return (sr,e))]
+    | _ ->
     let uresult = do_unify state bsym_table state.ret_type t' in
-(*
-if funame="insert_unique'3_mf_3732" then
-print_endline ("Flx_bind_bexe: UNIFICATION DONE, result= " ^ string_of_bool uresult);
-*)
     let rt = varmap_subst (Flx_lookup_state.get_varmap state.lookup_state) state.ret_type in
     let rt = Flx_beta.beta_reduce "flx_bind_bexe: EXE_fun_return" state.counter bsym_table sr rt in
     state.ret_type <- rt;
     if type_match bsym_table state.counter state.ret_type t' then
-(*
-    if match maybe_matches bsym_table state.counter [state.ret_type, t'] with Some _ -> true | _ -> false then
-*)
       [(bexe_fun_return (sr,(e',t')))]
-    (* else if t' = btyp_fix 0 (btyp_type 0) then begin *)
-    else if t' = btyp_fix 0 (Flx_kind.kind_type) then begin
-      print_endline "Converting return of 'any' type to procedure call";
-      state.reachable <- false;
-      [(bexe_fun_return (sr,(e',state.ret_type)))]
-(*
-      begin match e' with
-      | BEXPR_apply (f,a) -> [(bexe_jump (sr,f,a))]
-      | _ ->
-        clierrx "[flx_bind/flx_bind_bexe.ml:584: E29] " sr
-          (
-            "[bind_exe: fun_return ] return expression \n" ^
-            sbe bsym_table e ^
-            "\nof type 'any' must be application" 
-          )
-      end
-*)
-    end
-    (* coerce type of return value to specified function return type if
-       they're polymorphic variants, and the return value type
-       is a subtype of the specified function return type
-    *)
     else begin match unfold "bind_exe_v2" t', unfold "bind_exe_v1" state.ret_type with
     | BTYP_variant ts, BTYP_variant rs ->
       begin try List.iter (fun (name,t) ->
@@ -686,6 +662,7 @@ print_endline ("Flx_bind_bexe: UNIFICATION DONE, result= " ^ string_of_bool ures
         "\ndoes not agree with the function return type:\n" ^ 
         sbt bsym_table state.ret_type
       )
+    end
     end
 
   | EXE_yield e ->

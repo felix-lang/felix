@@ -54,6 +54,8 @@ let rec get_offsets' syms bsym_table typ : offset_kind_t list =
   let tname = cpp_typename syms bsym_table typ in
   let t' = unfold "flx_cal_type_offsets: get_offsets" typ in
   match t' with
+  | BTYP_fix(0,_) -> [] (* type any *)
+
   | BTYP_ellipsis -> assert false
   | BBOOL _ -> assert false
   | BTYP_typeop _ -> assert false
@@ -254,7 +256,9 @@ let rec get_offsets' syms bsym_table typ : offset_kind_t list =
   | BTYP_type_match _
   | BTYP_subtype_match _
   | BTYP_type_set_intersection _
-  | BTYP_type_set_union _ -> assert false
+  | BTYP_type_set_union _ -> 
+    print_endline ("Attempt to calculate offset of type " ^ Flx_btype.st t'); 
+    assert false
 
 let render_offset syms bsym_table new_table s =
   match s with 

@@ -32,9 +32,16 @@ let find_variable_indices syms bsym_table index =
   let children = Flx_bsym_table.find_children bsym_table index in
   BidSet.fold begin fun bid bids ->
     try match Flx_bsym_table.find_bbdcl bsym_table bid with
-      | BBDCL_val (_,_,(`Val | `Var | `Ref | `Once)) -> bid :: bids
+      | BBDCL_val (_,t,(`Val | `Var | `Ref | `Once)) -> 
+        begin match t with
+        | BTYP_void
+        | BTYP_fix (0,_) -> bids
+        | _ -> bid :: bids
+        end
       | _ -> bids
-    with Not_found -> bids
+    with Not_found -> 
+      assert false
+     (* bids *)
   end children []
 
 (*

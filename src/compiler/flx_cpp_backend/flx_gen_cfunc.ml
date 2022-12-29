@@ -179,7 +179,13 @@ let gen_C_function_body filename syms bsym_table
           in
           match Flx_bsym.bbdcl bsym with
           | BBDCL_val (vs,t,(`Val | `Var | `Once)) when not (List.mem bid params) ->
-              (bid, rt vs t) :: lst
+              let t = rt vs t in
+              begin match t with
+              | BTYP_void 
+              | BTYP_fix (0,_) -> lst 
+              | _ -> (bid, t) :: lst
+              end
+
           | BBDCL_val (vs,t,`Ref) when not (List.mem bid params) ->
               (bid, btyp_pointer (rt vs t)) :: lst
           | _ -> lst
@@ -301,7 +307,13 @@ let gen_C_procedure_body filename syms bsym_table
           in
           match Flx_bsym.bbdcl bsym with
           | BBDCL_val (vs,t,(`Val | `Var | `Once)) when not (mem bid params) ->
-              (bid, rt vs t) :: lst
+              let t = rt vs t in
+              begin match t with
+              | BTYP_void 
+              | BTYP_fix (0,_) -> lst 
+              | _ -> (bid, t) :: lst
+              end
+
           | BBDCL_val (vs,t,`Ref) when not (mem bid params) ->
               (bid, btyp_pointer (rt vs t)) :: lst
           | _ -> lst

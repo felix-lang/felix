@@ -831,7 +831,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
       (* HACK WARNING! *)
       begin match t with
       | BTYP_fix (0,_) -> "      "^ge sr e^"; // non-returning\n"
-      | _ ->          "      return "^ge sr e^";\n"
+      | _ ->          "      return "^ge sr e^"; // "^tn t^ "\n"
       end
 
     | BEXE_nop (_,s) -> "      //Nop: " ^ s ^ "\n"
@@ -861,8 +861,38 @@ print_endline ("BEXE_INIT, RHS type = " ^ Flx_btype.st t);
 (*
 print_endline ("BEXE_INIT, RHS type after tsub = " ^ Flx_btype.st t);
 *)
+
+      (* if the RHS is a variable, the side effect has already happend I hope, sp
+         it is safe to elide the assignment, since the variable carries no
+         information anyhow
+      *)
+      begin match e with
+      | BEXPR_varname _,BTYP_fix (0,_) ->
+        "  // elide assignment of variable of type any to LHS\n"
+
+      | BEXPR_coerce (  (BEXPR_varname _,BTYP_fix (0,_)),_),_ ->
+        "  // elide assignment of coerced variable of type any to LHS\n"
+
+      | _ ->
       begin match t with
       | BTYP_tuple [] -> ""
+
+      | BTYP_void -> assert false
+      | BTYP_fix (0,_) -> 
+        (* NOTE: this MAY NOT WORK. 
+           It WILL work if the RHS is a C binding.
+           If it's a 'function' or 'procedure' which is reduced to a C style
+           Felix function it should also work.
+
+           If it's a Felix function .. the apply() should work.
+           If it's a procedure it will NOT work, a procedure
+           has to be 'called' by a micro scheduler ...
+
+           So we need to treat the assignment as if it were a call to the RHS ..
+           because it actually is.
+        *)
+        ge sr e ^ "; //init or assign type 'any' replaced by evaluation\n"
+
       | _ ->
         let bsym =
           try Flx_bsym_table.find bsym_table v with Not_found ->
@@ -870,21 +900,6 @@ print_endline ("BEXE_INIT, RHS type after tsub = " ^ Flx_btype.st t);
         in
         begin match Flx_bsym.bbdcl bsym with
         | BBDCL_val (vs,vt,kind) ->
-(*
-print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
-print_endline ("init " ^ Flx_bsym.id bsym ^"< instno="^si instance_no^",this="^ si this^ ">:\nLHS type = "^
-      sbt bsym_table vt^ "\nRHS type = " ^ sbt bsym_table t ^ "\nLHS ts = " ^ catmap "," (sbt bsym_table) ts);
-*)
-
-(*
-            print_endline ("Trying to generate initialiser " ^ sbe bsym_table e ^ " type = " ^ Flx_btype.st t ^ " =? " ^ Flx_btype.st (snd e));
-            let initialiser = ge sr e in
-            print_endline ("Got initialiser");
-            let ref_ref = get_ref_ref syms bsym_table this v ts in
-            print_endline ("Got ref_ref");
-            let vtn = get_variable_typename syms bsym_table v [] in
-            print_endline ("Got variable type name"); 
-*)
 
             (if with_comments then "      //"^src_str^"\n" else "") ^
             "      " ^
@@ -899,6 +914,7 @@ print_endline ("init " ^ Flx_bsym.id bsym ^"< instno="^si instance_no^",this="^ 
             "; //init or assign\n"
           | _ -> assert false
         end
+      end
       end
 
     | BEXE_begin -> "      {\n"

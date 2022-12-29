@@ -1532,6 +1532,9 @@ print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " ===> " ^ s
 
 
     | BTYP_instancetype _,_ -> ce_atom ("reinterpret<"^tn dstt^">("^ge srce^")")
+
+    | BTYP_fix(0,_),_ -> ce_atom ( ge srce)
+
     | _ -> 
 print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " ===> " ^ sbt bsym_table dstt);
 print_endline ("Coercion uses reinterpret cast!");
