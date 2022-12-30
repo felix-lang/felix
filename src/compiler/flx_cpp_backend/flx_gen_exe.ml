@@ -182,6 +182,7 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
         in
         let name = cpp_instance_name syms bsym_table index ts in
         if mem `Cfun props then begin
+          (* this code should work for an ESCAPE function too *)
           (if with_comments
           then "      //call cproc " ^ src_str ^ "\n"
           else "") ^
@@ -191,6 +192,16 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
           (*
           print_endline ("[handle_closure] GENERATING STACK CALL for " ^ id);
           *)
+         if is_ehandler then begin
+            let _,argt = a in
+              "      // stack call ESCAPE FUNCTION\n" ^
+              "      {\n" ^
+              subs ^
+              "      " ^ name ^ Flx_gen_display.strd the_display props ^ 
+              "\n      .apply (" ^ args ^ ");\n" ^
+              "      }\n"
+          end else
+
           (if with_comments
           then "      //run procedure " ^ src_str ^ "\n"
           else "") ^
@@ -203,6 +214,15 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
         else
         let ptrmap = name ^ "_ptr_map" in
         begin
+          if is_ehandler then begin
+            let _,argt = a in
+              "      // heap call ESCAPE FUNCTION\n" ^
+              "      {\n" ^
+              subs ^
+              "      (FLX_NEWP(" ^ name ^ ")" ^ Flx_gen_display.strd the_display props ^ ")" ^
+              "\n      ->apply (" ^ args ^ ");\n" ^
+              "      }\n"
+          end else
           match kind with
           | Function ->
 (*
@@ -233,14 +253,6 @@ print_endline ("gen_exe: " ^ string_of_bexe bsym_table 0 exe);
             "      }\n"
 
           | Procedure ->
-            if is_ehandler then begin
-            let _,argt = a in
-              "      {\n" ^
-              subs ^
-              "      (FLX_NEWP(" ^ name ^ ")" ^ Flx_gen_display.strd the_display props ^ ")" ^
-              "\n      ->apply (" ^ args ^ ");\n" ^
-              "      }\n"
-            end else
             let call_string =
               "      return (FLX_NEWP(" ^ name ^ ")" ^ Flx_gen_display.strd the_display props ^ ")" ^
               "\n      ->call(" ^ args ^ ");\n"

@@ -131,7 +131,7 @@ open class Control
   //$  use a non-local goto, and they cannot pass across
   //$  a function boundary.
 
-  proc throw_continuation(x: unit->void) { _throw (C_hack::cast[cont] x); }
+  fun throw_continuation(x: unit->void) : any { _throw (C_hack::cast[cont] x); }
   private proc _throw: cont = "throw $1;";
 
  }
