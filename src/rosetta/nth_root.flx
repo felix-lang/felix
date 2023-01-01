@@ -1,0 +1,16 @@
+//translated from Nim
+
+fun nth_root (a: double, n: int): double = {
+  val dn = n.double;
+  var res = a;
+  var x = a / dn;
+  while abs(res - x) > 1.0e-15 do
+    x = res;
+    res = (1.0 / dn) * (((dn - 1.0) * x) + (a / pow(x, dn - 1.0)));
+  done
+  return res;
+}
+
+println$ f"%.15f" (nth_root(34.0, 5));
+println$ f"%.15f" (nth_root(42.0, 10));
+println$ f"%.15f" (nth_root(5.0, 2));
