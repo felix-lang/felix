@@ -742,7 +742,11 @@ and sb bsym_table depth fixlist counter prec tc =
       ">"
 
     | BTYP_inst (it,i,ts,mt) ->
-      0, (match bsym_table with 
+      0, (
+        match Flx_concordance.get_type_name i with
+        | Some name -> name
+        | None ->
+        match bsym_table with 
         | Some tab -> let name = qualified_name_of_bindex tab i in
           (* print_endline ("DEBUG: flx_print: BTYP_inst " ^ si i ^ ": " ^ name);  *)
           str_of_instkind it ^ " " ^ name

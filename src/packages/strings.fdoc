@@ -22,7 +22,7 @@ This type is deprecated, to be repalced by C++11 unicode string type.
 @tangle string.flx
 typedef cstring = +char;
 type string = "::std::basic_string<char>" 
-  requires Cxx_headers::string,
+  requires index TYPE_string, Cxx_headers::string,
   header '#include "flx_serialisers.hpp"',
   encoder "::flx::gc::generic::string_encoder",
   decoder "::flx::gc::generic::string_decoder"

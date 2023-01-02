@@ -114,5 +114,12 @@ let flx_decr_int = 203
 let flx_land = 210
 let flx_lor = 211
 let flx_lnot = 212
+
+let get_type_name (x:int) : string option =
+match x with 
+| 102 -> Some "int"
+| 112 -> Some "size"
+| 402 -> Some "string"
+| _ -> None
 @
 

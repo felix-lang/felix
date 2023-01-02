@@ -290,7 +290,12 @@ and str_of_btype typ =
   | BTYP_sum ts -> "BTYP_sum(" ^ ss ts ^")"
   | BTYP_compactsum ts -> "BTYP_compactsum(" ^ ss ts ^")"
   | BTYP_unitsum n -> string_of_int n
-  | BTYP_inst (it, i,ts,mt) -> "BTYP_inst("^str_of_instkind it ^","^string_of_int i^"["^ss ts^"]:"^Flx_kind.sk mt^")"
+  | BTYP_inst (it, i,ts,mt) -> 
+    begin match Flx_concordance.get_type_name i with
+    | Some name -> name
+    | None ->  
+     "BTYP_inst("^str_of_instkind it ^","^string_of_int i^"["^ss ts^"]:"^Flx_kind.sk mt^")"
+    end
   | BTYP_finst (i,ks,dom,cod) -> "BTYP_finst("^string_of_int i^"["^sks ks^"]:"^sk dom^"->"^sk cod^")"
   | BTYP_vinst (i,ts,mt) -> "BTYP_vinst("^string_of_int i^"["^ss ts^"]:"^Flx_kind.sk mt^")"
   | BTYP_tuple ts -> "BTYP_tuple(" ^ ss ts ^ ")"
