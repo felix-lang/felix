@@ -1,0 +1,70 @@
+fun digits (n: int) = {
+  // Return the list of digits of "n" in reverse order.
+  var res = darray[int]();
+  if n == 0 do 
+    res += 0; 
+    return res; 
+  done;
+  while n != 0 do
+    res += (n % 10);
+    n = n / 10;
+  done
+  return res;
+}
+
+proc sort_a_slice_desc (var d, n) = {
+  val nlen = n - 1;
+  var d2 = darray[int](d.(0..nlen));    // a copy of a slice of d
+  sort d2;                              // sorted Asc
+  for var i in nlen downto 0 do         // saved as desc
+    set(d, nlen - i, get(d2,i));
+  done
+}
+
+fun next_highest (n: int) = {
+  // Find the next highest integer of "n".
+  // If none is found, "n" is returned.
+  var d = digits(n);    // digits are in reverse order.
+  var m = d.0;
+  var delta = 0;
+  var best = 0;
+  var diff = 0;
+  var i = 0;
+  var j = 0;
+  var k = 0;
+  var di = 0;
+  iloop: for i in 0 upto (d.len.int - 1) do
+    di = d.i.int;
+    if di < m do
+      // Find the digit greater then d.(i) and closest to it.
+      delta = (m - di + 1);
+      best = 0;
+      for j in 0 upto (i - 1) do
+        diff = d.j.int - di;
+        if diff > 0 and diff < delta do
+          // Greater and closest.
+          delta = diff;
+          best = j;
+        done
+      done
+      // Exchange digits.
+      set(d,i, get(d,best));
+      set(d,best,di);
+      // Sort previous digits.
+      sort_a_slice_desc(d, i);  // d.(0..<i)
+      break iloop;
+    else 
+      m = di;
+    done
+  done
+  // Compute the value from the digits (in reverse order).
+  var result = 0;
+  for k in (d.len.int - 1) downto 0 do
+    //println$ d.(k);
+    result = (10 * result) + d.k.int; 
+  done
+  return result;
+}
+
+for n in list (0, 9, 12, 21, 12453, 738440, 45072010, 95322020) perform
+  println$ n.str + " -> " + str(next_highest(n));
