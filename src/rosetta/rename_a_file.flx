@@ -1,0 +1,20 @@
+//
+// Unix based OS
+//
+// if file of directory is missing, 
+// then throws an error like:
+//
+// mv: cannot stat 'input.txt': No such file or directory 
+//
+
+open Shell;
+
+proc cmd (s) = {
+  var x = system(s);
+  x += 0;  // trigger the call
+}
+
+cmd$ "mv input.txt output.txt";
+cmd$ "mv /input.txt /output.txt";
+cmd$ "mv docs mydocs";
+cmd$ "mv /docs /mydocs";
