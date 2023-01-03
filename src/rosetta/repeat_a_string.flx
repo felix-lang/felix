@@ -1,0 +1,8 @@
+fun srepeat (s,n): string = {
+  var sres = "";
+  for var i in 1 upto n perform
+    sres += s;
+  return sres;
+}
+
+println$ srepeat$ "Ha", 3;  // output: HaHaHa
