@@ -1,0 +1,92 @@
+
+fun is_prime (lval: int) : bool = {
+  assert lval >= 0 and lval < 64;
+  var prime_lst = (0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0,
+                   0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1,
+                   0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1,
+                   0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0);
+  if prime_lst.lval == 1 return true;
+  return false;
+}
+
+fun prime_triangle_row (var a: varray[int], var start, var alen) : bool = {
+  if (start + 2 >= alen)
+    return is_prime(a.start + a.(start + 1));
+  var i = start + 1;
+  var j = 0;
+  while (i + 1) < alen do
+    if is_prime(a.start + a.i) do
+      // swap
+      j = a.i;
+      set(a,i, get(a,start + 1));
+      set(a,start + 1,j);
+      if prime_triangle_row$ (a, start + 1, alen) 
+        return true;
+      // swap back
+      j = a.i;
+      set(a,i, get(a,start + 1));
+      set(a,start + 1,j);
+    done
+    i += 2;
+  done
+  return false;
+}
+
+fun prime_triangle_count (var a: varray[int], var start, var alen) : int = {
+  var count = 0;
+  if (start + 2 >= alen)
+    if is_prime(a.start + a.(start + 1))
+      return (count + 1);
+  var i = start + 1;
+  var j = 0;
+  while (i + 1) < alen do
+    if is_prime(a.start + a.i) do
+      // swap
+      j = a.i;
+      set(a,i, get(a,start + 1));
+      set(a,start + 1,j);
+      count += prime_triangle_count$ (a, start + 1, alen);
+      // swap back
+      j = a.i;
+      set(a,i, get(a,start + 1));
+      set(a,start + 1,j);
+    done
+    i += 2;
+  done
+  return count;
+}
+
+proc print_arr (a: varray[int], start: int, n: int) = {
+  if n == 0 return;
+  print$ f"%2i" (a.(start));
+  for var i in start + 1 upto (start + n - 1) perform
+      print$ f" %2i" (a.i);
+  println$ "";
+}
+
+proc main () = {
+  var a = varray[int] 22.size;
+  var n = 0;
+  var i = 0;
+  for n in 2 upto 20 do
+    for i in 0 upto (n - 1) do
+      a += (i + 1);
+    done
+    if prime_triangle_row(a,0,n) do 
+      print_arr(a,0,n);
+    done
+    erase(a,0,n);
+  done
+  println$ "";
+  for n in 2 upto 20 do
+    for i in 0 upto (n - 1) do
+      a += (i + 1);
+    done
+    if n > 2 do print$ " "; done
+    print$ f"%d" (prime_triangle_count(a,0,n)); 
+    erase(a,0,n);
+  done
+  println$ "";
+}
+
+main;
