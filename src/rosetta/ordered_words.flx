@@ -1,0 +1,44 @@
+val dict_file = "unixdict.txt";
+
+fun is_sorted(var s: string): bool = {
+  var last = char("A");
+  for c in s do
+    if c < last return false;
+    last = c;
+  done
+  return true;
+}
+
+fun join (a: darray[string], delim:string): string = {
+  var sres = "";
+  var alimit = a.len.int - 1;
+  for var i in 0 upto alimit do
+    if i == alimit do
+      sres += a.i;
+      return sres;
+    done
+    sres += (a.i + delim);
+  done
+  return sres;
+}
+
+var mx = 0;
+var word = "";
+var words = darray[string]();
+var wlen = 0;
+
+var f = fopen_input_text dict_file;
+if valid f do 
+  while not (feof f) do
+    word = (readln f).rstrip;  // trailing CR/LF isn't ordered
+    wlen = word.len.int;
+    if (wlen >= mx) and is_sorted(word) do
+      if wlen > mx perform 
+        mx, words = wlen, darray[string](); 
+      words += word;
+    done
+  done
+  fclose f;
+done
+
+println$ join$ words, ", ";

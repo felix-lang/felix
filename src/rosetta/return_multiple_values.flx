@@ -1,0 +1,10 @@
+fun addsub(x, y) =>
+  x + y, x - y;
+
+var sum = 0;
+var diff = 0;
+
+sum, diff = addsub(33, 12);
+
+println$ "33 + 12 = " + sum.str;
+println$ "33 - 12 = " + diff.str;

@@ -1,0 +1,6 @@
+proc example () => println$ "Example";
+
+proc repeat_proc (f, n) =>
+  for var i in 0 upto (n - 1) perform f;
+
+repeat_proc$ example, 3;

@@ -1,0 +1,30 @@
+val Exact = true;
+val Inexact = false;
+
+fun is_palindrome (p): bool = {
+  // Return true if the string is a palindrome.
+  var plen = p.len.int;
+  for var i in 1 upto (plen >> 1) do
+    if p.(i - 1) != p.(plen - i) 
+      return false;
+  done
+  return true;
+}
+
+fun is_palindrome(s, exact: bool): string = {
+  // Return true if a string is a palindrome.
+  // If not exact, ignore white spaces and ignore case.
+  var res = "";
+  if exact do
+    res = "'" + s + "' an exact palindrome? ";
+    return res + str(is_palindrome s);
+  else
+    res = "'" + s + "' an inexact palindrome? ";
+    return res + str(is_palindrome$ tolower(s));
+  done
+}
+
+println$ is_palindrome$ "racecar", Exact;
+println$ is_palindrome$ "Hannah", Exact;
+println$ is_palindrome$ "Hannah", Inexact;
+println$ is_palindrome$ "This is a Palindrome", Inexact;
