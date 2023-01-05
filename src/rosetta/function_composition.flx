@@ -1,7 +1,7 @@
 fun plus_two (a:int) : int => a + 2;
 fun minus_two (a:int) : int => a - 2;
 
-fun compose (f: (), g: ()) (a) => g(f(a));
+fun compose (f: (), g: ()) (x) => g(f(x));
 
 var plus_minus_two = compose$ (plus_two, minus_two);
 var add_four = compose$ (plus_two, plus_two);
