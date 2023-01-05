@@ -1,0 +1,33 @@
+fun int_name (i: int) = {
+  var ones = list("zero","one","two","three","four","five",
+                  "six","seven","eight","nine","ten","eleven","twelve",
+                  "thirteen","fourteen","fifteen","sixteen","seventeen",
+                  "eighteen","nineteen");
+  var tens = list("","ten","twenty","thirty", "forty", "fifty",
+                  "sixty","seventy","eighty","ninety");
+  var thousands = list("hundred","thousand","million","billion");
+
+  if i < 20 return ones.(i);
+  // 20, 30, .., 90
+  if i % 10 == 0 and i < 100 return tens.(i / 10); 
+  if i < 100 return tens.(i / 10) + " " + int_name(i % 10); 
+
+  var zeros = int(log10(i.double)) / 3;  // number of thousands
+  var factor = 100;
+  if zeros > 0 perform 
+    factor = int(pow(10.0, (3.0 * zeros.double)));
+
+  return int_name(i / factor) + " " + thousands.(zeros) + " " + int_name(i % factor);
+}
+
+fun decode (a:int) : string = {
+  var res = int_name(a);
+  var alen = res.len.int;
+  var alenstr = int_name(alen);
+  if a == 4 
+    return res + " is magic.";
+  return res + " is " + alenstr + ", " + decode(alen); 
+}
+
+for var i in 0 upto 20 perform
+  println$ decode(i);
