@@ -1,0 +1,26 @@
+val zero = uint256(0);
+val one = uint256(1);
+val two = uint256(2);
+
+val start = uint256(150);
+
+fun fact_recurs (x: uint256): uint256 = {
+  if x > zero perform
+    return x * fact_recurs(x - one);
+  return 1.uint256;
+}
+
+fun fact_loop (x: uint256) : uint256 = {
+  var res = one;
+  for var i in two upto x perform
+    res *= i;
+  return res;
+}
+
+var t1 = time();
+println$ "Recursive: " + str(fact_recurs(start));
+println$ f"Duration: %0.3f sec" (time() - t1);
+t1 = time();
+println$ "Loop:      " + str(fact_loop(start));
+println$ f"Duration: %0.3f sec" (time() - t1);
+
