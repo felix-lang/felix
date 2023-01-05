@@ -1,0 +1,10 @@
+fun plus_two (a:int) : int => a + 2;
+fun minus_two (a:int) : int => a - 2;
+
+fun compose (f: (), g: ()) (a) => g(f(a));
+
+var plus_minus_two = compose$ (plus_two, minus_two);
+var add_four = compose$ (plus_two, plus_two);
+
+println$ plus_minus_two(10);
+println$ add_four(10);
