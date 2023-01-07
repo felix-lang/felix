@@ -1,0 +1,50 @@
+// assumes that 135-0.txt file has been downloaded from
+// https://www.gutenberg.org/files/135/135-0.txt 
+//
+
+val in_file = "135-0.txt";
+var data = "";
+var words = strdict[int] ();
+var counts = darray[int * string]();
+var w = "";
+
+proc text_only (s: &string) = {
+  // inplace modification to lower case
+  // where non-text is translated to space
+  for var k in 0uz upto s.len - 1uz do
+    var c: char = tolower((*s).[k]);
+    if isletter(c) or isdigit(c) do
+      store(s,k.int,c);
+    else
+      store(s,k.int,char ' ');
+    done
+  done
+}
+
+var f = fopen_input_text in_file;
+if valid f do 
+  data = load f;
+  fclose f;
+done
+
+text_only(&data);
+
+var i = 0;
+for w in split(data, " ") do
+  if len(w) > 1uz do
+    i = 1 + words.get_dflt(w,0);
+    words.add w i;
+  done
+done
+
+match key,value in words.iterator do
+  counts += value, key;
+done
+
+sort counts;
+
+var j = counts.len - 1uz;
+for var k in j  downto j - 20uz do
+    println$ rjust(counts.k.1.str, 7) + " occurs " + rjust(counts.k.0.str, 6) + " times";
+done
+
