@@ -1,0 +1,34 @@
+val pi: double = 3.1415926535897932384626433832795;
+//val pi: double = 104348.0 / 33215.0;
+val width = 1000.0;
+val height = 1000.0;
+val trunk_len = 400.0;
+val scale_factor = 0.6;
+val start_angle = 1.5 * pi;
+val delta_angle = 0.2 * pi;
+
+val stroke = 30.0;
+val stroke_factor = 0.7;
+val recurs_limit = 1.0;  // try 0.6 for more data points
+
+proc draw_tree (f, x, y, tlen, theta, swidth) = {
+  if tlen >= recurs_limit do
+    var x2 = x + tlen * cos(theta);
+    var y2 = y + tlen * sin(theta);
+    var s = "<line x1='" + x.str + "' y1='" + y.str + "' x2='" + x2.str + "' y2='" + y2.str + "' style='stroke:white;stroke-width:" + swidth.str + "'/>\n";
+    write$ f, s; 
+    draw_tree$ (f, x2, y2, tlen * scale_factor, theta + delta_angle, swidth * stroke_factor);
+    draw_tree$ (f, x2, y2, tlen * scale_factor, theta - delta_angle, swidth * stroke_factor);
+  done
+}
+
+var foutsvg = fopen_output_text("tree.svg");
+
+write$ foutsvg, """<?xml version='1.0' encoding='utf-8' standalone='no'?>
+<!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 1.1//EN' 'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'>
+<svg width='100%%' height='100%%' version='1.1' xmlns='http://www.w3.org/2000/svg'>
+<rect width="100%" height="100%" fill="black"/>\n""";
+
+draw_tree(foutsvg, 0.5 * width, height, trunk_len, start_angle, stroke);
+write$ foutsvg, "</svg>\n";
+fclose(foutsvg);

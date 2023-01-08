@@ -1,0 +1,71 @@
+// translated from the Pascal version
+// Spigot algorithm
+//
+val n = 1000;
+val nlen = (10 * n) / 3;
+
+var a = darray[int]();
+
+fun one_loop (sz: int) : int = {
+  var x = 0;
+  var res = 0;
+  var rem = 0;
+  // only calc as far as needed
+  // +16 for security digits ~5 decimals
+  var i = (sz * 10) / 3 + 16;
+  if i > nlen do
+    i = nlen;
+  done
+  while i > 0 do
+    x = (10 * a.i) + (res * i);
+    var twoimin1 = 2 * i - 1;
+    res = x / twoimin1;
+    rem = x % twoimin1;
+    set(a,i,rem);  // x mod (2*i-1)
+    i -= 1;
+  done 
+  return res;
+}
+
+proc main () = {
+  var ind = 0;
+  var k = 0;
+  var j = 0;
+  var q = 0;
+  var nines = 0;
+  var predigit = 0;
+
+  for ind in 0 upto nlen do
+    a += 2;
+  done
+
+  for ind in 1 upto nlen do
+    q = one_loop(nlen - ind);
+    set(a,1, q % 10);
+    q = q / 10;
+    if q == 9 do
+      nines += 1;
+    else
+      if q == 10 do
+        print$ str(predigit + 1);
+        for k in 1 upto nines perform
+          print$ "0";
+        predigit = 0;
+        nines = 0;
+      else
+        if ind > 1 perform
+          print$ str(predigit);
+        if ind == 2 perform print$ "."; 
+        predigit = q;
+        if nines != 0 do
+          for k in 1 upto nines perform
+            print$ "9";
+          nines = 0;
+        done
+      done
+    done 
+  done
+  println$ predigit;
+}
+
+main;

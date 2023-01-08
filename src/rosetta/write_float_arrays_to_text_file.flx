@@ -1,0 +1,22 @@
+val fname = "filename.txt";
+val xprecision = 3;
+val yprecision = 5;
+
+var x = list[long](1L, 2L, 3L, 100000000000L);
+var y = unbox (map (fun (i: long) => sqrt(i.double)) x);
+var z = zip2 (x) (y);
+
+var f = fopen_output_text fname;
+if valid f do
+  for sq in z do
+    writeln$ f, (f"%.*g\t%.*g" (xprecision, sq.0.double, yprecision, sq.1));
+  done
+  fclose f;
+done
+
+var finp = fopen_input_text fname;
+if valid finp do
+  println$ (load finp);
+  fclose finp;
+done
+

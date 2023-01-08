@@ -1,0 +1,103 @@
+val arr_sz = 500000;
+// 50000000 -> 50 digits 450000 -> 28 digits; 95000 -> 18 digits; 43000 -> 15 digits
+val maxdigits = 60;
+
+val zero = uint256(0);
+val one = uint256(1);
+val two = uint256(2);
+val three = uint256(3);
+val five = uint256(5);
+val seven = uint256(7);
+val ten = uint256(10);
+
+fun min4 (a: uint256, b: uint256, c: uint256, d: uint256): uint256 = {
+  var min1 = a;
+  var min2 = c;
+  if b < a perform min1 = b;
+  if d < c perform min2 = d;
+  if min1 <= min2 return min1;
+  return min2;
+}
+
+fun join (v: darray[uint256], delim: string): string = {
+  var res = "";
+  for var ind in 0 upto v.len.int - 2 do
+    res += str(v.ind) + delim;
+  done
+  return (res + delim);
+}
+
+fun humble (n: int) : darray[uint256] = {
+  var res = darray[uint256]();
+  var m = 0;
+  for m in 0 upto n.int + 1 perform 
+    res += zero;
+  set(res, 0, one);
+
+  var next2 = two;
+  var next3 = three;
+  var next5 = five;
+  var next7 = seven;
+  var i = 0;
+  var j = 0;
+  var k = 0;
+  var l = 0;
+  var smallest = zero;
+
+  for m in 1 upto n.int - 1 do
+    smallest = min4(next2, next3, next5, next7);
+    set(res, m, smallest);
+    if smallest == next2 do
+      i += 1;
+      next2 = two * res.i;
+    done
+    if smallest == next3 do
+      j += 1;
+      next3 = three * res.j;
+    done
+    if smallest == next5 do
+      k += 1;
+      next5 = five * res.k;
+    done
+    if smallest == next7 do
+      l += 1;
+      next7 = seven * res.l;
+    done
+  done
+  return res;
+}
+
+var h = humble(arr_sz);
+println$ "The first 50 Humble numbers are:\n" + join(h.(0..49), " ");
+
+var maxused = h.len.int - 1;
+var counts = darray[int]();
+// an extra two -> allows for a partial count followed by a zero count
+for var m in 0 upto maxdigits + 2 perform counts += 0;
+var digits = 1;
+var pow10 = ten;
+
+floop: for m in 0 upto maxused.int do
+  wloop: while true do
+    if h.m >= pow10 do
+      pow10 *= ten;
+      digits += 1;
+    else
+       break wloop;
+    done
+  done
+  if digits <= maxdigits do
+    set(counts, digits, counts.digits + 1);
+  else
+    break floop;
+  done
+done
+
+println$ "Of the first " + maxused.str + " Humble numbers:";
+println$ f"%9i have  1 digit" (counts.1);    
+prntlp: for m in 2 upto maxdigits do
+  // don't display the entry prior to a zero count, as it is incomplete
+  if (m + 2 <= maxdigits) and (counts.(m + 2) == 0) perform break prntlp;
+  //if counts.m == 0 perform break prntlp;
+  println$ f"%9i have %2i digits" (counts.m, m);    
+done
