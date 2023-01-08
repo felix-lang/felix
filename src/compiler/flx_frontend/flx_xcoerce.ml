@@ -8,6 +8,7 @@ that handles explicit user coercions!
 let debug = false
 
 exception Vfound (* for variants, Found already used elsewhere *)
+exception NameNotFound of string
 
 let si x = string_of_int x
 
@@ -65,34 +66,92 @@ print_endline ("Coercion function index = " ^ string_of_int fidx);
    let coerced_function = bexpr_closure  (btyp_function (rd,rc)) (fidx,[]) in
    coerced_function
    
+(* NOTE: the variant src expr type being coerced to the dst type must be subtype,
+which means it has a "subset" of the constructors of the dst.
+
+So if the src has a constructor name NOT in the dst, it's an error!
+*)
+and unique_check ls =
+  let ok = ref [] in
+  List.iter 
+    (fun (name,_) ->  
+      if List.mem name !ok then raise (NameNotFound name)
+      else ok := name :: !ok
+    )
+    ls
+
 and variant_coercion new_table bsym_table counter parent remap ((srcx,srct) as srce) dstt ls rs sr =
   let coerce parent e dstt = expand_coercion new_table bsym_table counter parent remap e dstt sr in
-  if debug then
+  if debug then 
   print_endline ("Variant coercion " ^ Flx_btype.st srct ^ " => " ^ Flx_btype.st dstt); 
+  begin try unique_check ls 
+  with NameNotFound name ->
+     Flx_exceptions.clierr sr ("Coercion src type has duplicate constructor " ^ name ^ "\n" ^
+       Flx_print.sbt bsym_table srct
+     )
+  end;
+
+  begin try unique_check rs 
+  with NameNotFound name ->
+     Flx_exceptions.clierr sr ("Coercion dst type has duplicate constructor " ^ name ^ "\n" ^
+       Flx_print.sbt bsym_table dstt
+     )
+  end;
+
+
+  (* Start with a simple name check to make error reporting easier *)
+  begin try 
+    List.iter (fun (name, ltyp) -> (* run through all the src constructors *)
+    begin try 
+      List.iter (fun (rname, rtyp) -> (* run through all argument constructors *)
+        if name = rname then raise Vfound (* found src name in dst *)
+      ) 
+      rs;
+      raise (NameNotFound name) (* A src constructor 'name' has no corresponding dst constructor 'rname' *)
+    with Vfound -> () (* matching constructors including types .. keep checking *) 
+    end
+    ) 
+    ls
+    with NameNotFound name ->
+      Flx_exceptions.clierr sr ("Src variant\n" ^ Flx_print.sbt bsym_table srct ^ "\n" ^
+       "Contains constructor `" ^ name ^ "\n" ^
+       "which is missing from the dst coercion type\n" ^
+       Flx_print.sbt bsym_table dstt ^ "\n" ^
+       "and therefore cannot be a subtype of the coercion dst type")
+   end;
+
+
   (* check for the special case where the argument constructors all
   have the same type as the corresponding parameters
   This is a CHEAT, we use a reinterpret case, doing this 
   depends on knowing the backend representation!
   *)
   begin try 
-    List.iter (fun (name, ltyp) ->
-      (* find ALL the parameter constructors of the same name
+    List.iter (fun (name, ltyp) -> (* run through all the src constructors *)
+      (* find ALL the dst constructors of the same name
       at least one of them has to have the same type *)
-      begin try List.iter (fun (rname, rtyp) ->
-        if name = rname 
-        &&  Flx_typeeq.type_eq (Flx_print.sbt bsym_table) counter ltyp rtyp  
-        then raise Vfound
-        ) rs;
-        raise Not_found
-      with Vfound -> () 
+      begin try 
+        List.iter (fun (rname, rtyp) -> (* run through all argument constructors *)
+          if name = rname 
+            &&  Flx_typeeq.type_eq (Flx_print.sbt bsym_table) counter ltyp rtyp  
+          then raise Vfound (* one argument constructor matches one parameter constructor *)
+        ) 
+        rs;
+        raise Not_found (* A src constructor 'name' has no corresponding dst constructor 'rname' *)
+      with Vfound -> () (* matching constructors including types .. keep checking *) 
       end
     ) ls; 
+
+    (* we got through and ALL parameter constructors have a corresponding argument constructor *)
+    (* so we just do a reinterpret cast *)
+
     let e = remap parent srce in
     if debug then
     print_endline ("Shortcut variant coercion!");
     bexpr_reinterpret_cast (e,dstt)
   with 
   | Not_found -> 
+  print_endline ("SPECIAL Variant coercion " ^ Flx_btype.st srct ^ " => " ^ Flx_btype.st dstt); 
   (* OK, now lets handle the special case where there's no choice
      because the target has only ONE constructor with a given name
      In fact, I am going to cheat, and just use the first name
@@ -122,7 +181,10 @@ and variant_coercion new_table bsym_table counter parent remap ((srcx,srct) as s
       List.iter (fun (name,_) -> ignore (get_rel_seq name)) rs;
       Hashtbl.iter (fun name count -> 
         if count <> 0 then 
-          let typ = List.assoc name rs in
+          let typ =  
+             try List.assoc name rs 
+             with Not_found -> print_endline ("Not found bug XXX"); assert false 
+          in
           let eqtypes = List.fold_left 
             (fun acc (n,t) -> acc && n<>name || Flx_unify.type_eq bsym_table counter typ t) 
             true rs 
@@ -133,28 +195,23 @@ and variant_coercion new_table bsym_table counter parent remap ((srcx,srct) as s
       ) counts;
       let coercions = List.map (fun (name, ltyp) ->
         let condition = bexpr_match_variant (name,srce) in
-(*
-print_endline ("ltyp = " ^ Flx_btype.st ltyp);
-*)
+print_endline ("ltyp1 = " ^ Flx_btype.st ltyp);
         let extracted = bexpr_variant_arg ltyp (name,srce) in
         (* just use first one .. later we could try next one if it fails *)
-(*
-print_endline ("ltyp = " ^ Flx_btype.st ltyp);
-*)
-        let rtyp = List.assoc name rs in
+print_endline ("ltyp2 = " ^ Flx_btype.st ltyp);
+        let rtyp =  
+           try List.assoc name rs 
+           with Not_found -> print_endline ("NOt FoUnD but rtyp cal"); assert false
+        in
         let coerced = coerce parent extracted rtyp in
-(*
 print_endline ("dstt = " ^ Flx_btype.st dstt);
-*)
         (* this is required if dstt was recursive and unfolded,
            since the hash requires a minimised type.
            Should be enforced in the hash routine but Ocaml compilation
            model has got in the way.
         *)
         let dstt = Flx_fold.minimise bsym_table counter dstt in
-(*
 print_endline ("MINIMISED dstt = " ^ Flx_btype.st dstt);
-*)
         let new_variant = bexpr_variant dstt (name, coerced) in 
         condition, new_variant
         ) ls 
@@ -413,9 +470,12 @@ print_endline ("FINAL RESULT " ^ Flx_print.sbe bsym_table result);
     function_coercion new_table bsym_table counter parent remap srce dstt ld lc rd rc sr
 
   | BTYP_variant ls, BTYP_variant rs ->
+    begin try
     let ls = List.map (fun (s,t) -> s,unfold "variant ls component" t) ls in
     let rs = List.map (fun (s,t) -> s,unfold "variant rs component" t) rs in
     variant_coercion new_table bsym_table counter parent remap srce dstt ls rs sr
+    with Not_found -> print_endline ("Variant coercion Not_found bug"); assert false
+    end
 
   | BTYP_record ls, BTYP_record rs ->
     record_coercion new_table bsym_table counter parent remap srce dstt ls rs sr
@@ -469,13 +529,17 @@ and process_expr new_table bsym_table counter parent sr expr =
   match e with
   (* coercion with argument free of reducible coercions *)
   | BEXPR_coerce ((srcx,srct) as srce,dstt),_ -> 
-(*
+    (*
     print_endline ("Examining coercion " ^ Flx_print.sbe bsym_table e );
-*)
-    let e' = expand_coercion new_table bsym_table counter parent remap srce dstt sr in
-(*
+    *)
+    let e' = 
+      try   
+        expand_coercion new_table bsym_table counter parent remap srce dstt sr 
+      with Not_found -> print_endline ("Not found bug"); assert false
+    in
+    (*
     print_endline ("Expanded to " ^ Flx_print.sbe bsym_table e');
-*)
+    *)
     e'
 
   (* no reducible coercions left *)
@@ -502,10 +566,13 @@ let process_entry new_table bsym_table counter parent i (bsym : Flx_bsym.t) =
 (*
 print_endline ("Processing function " ^ Flx_bsym.id bsym);
 *)
+    begin try 
     let exes = process_exes new_table bsym_table counter (Some i) exes in
     let bbdcl = Flx_bbdcl.bbdcl_fun (props, vs, ps, ret,effects, exes) in 
     let bsym = Flx_bsym.replace_bbdcl bsym bbdcl in
     Flx_bsym_table.add new_table i parent bsym 
+    with Not_found -> print_endline ("Not found bug"); assert false
+    end
 
   | bbdcl -> Flx_bsym_table.add new_table i parent bsym
 
