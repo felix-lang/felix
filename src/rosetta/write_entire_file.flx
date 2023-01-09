@@ -1,0 +1,4 @@
+val fname = "filename.txt";
+
+save (fname, "The contents of the file\n");
+
