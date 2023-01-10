@@ -14,6 +14,7 @@ proc ruler = {
     if j % 10 == 0 do print$ "+"; else print$ "."; done
   println$ "";
 }
+
 fun str_justify(s: string, width: int): string = {
   // working from RH to LH, double each space to justify s to width
   var i = s.len.int - 1;
@@ -32,11 +33,12 @@ fun str_justify(s: string, width: int): string = {
 fun word_wrap (s: string, width: int, justify: bool): string = {
   var s2 = search_and_replace(s.strip,"\n"," ");
   val words = split(s2, " ");
-  var line = words.0.strip;
+  var line = words.0;
   var letter_cnt = line.len.int;
   var res = "";
   var w = "";
-  var x = "";
+  var w1 = "";
+
   floop:  for var i in 1 upto words.len.int - 1 do
     w = words.i.strip;
     if w.len == 0uz perform continue floop;
@@ -49,8 +51,8 @@ fun word_wrap (s: string, width: int, justify: bool): string = {
       line = w;
       letter_cnt = w.len.int;
     else
-      x = words.(i - 1);  
-      if x.(x.len.int - 1) == "." do
+      w1 = words.(i - 1);  
+      if w1.(w1.len.int - 1) == "." do
         // prev word ended a sentence?
         line += " ";
         letter_cnt += 1;
