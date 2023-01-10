@@ -1,0 +1,73 @@
+val txt = """
+    In olden times when wishing still helped one, there lived a king
+    whose daughters were all beautiful, but the youngest was so beautiful
+    that the sun itself, which has seen so much, was astonished whenever
+    it shone in her face.  Close by the king's castle lay a great dark
+    forest, and under an old lime tree in the forest was a well, and when
+    the day was very warm, the king's child went out into the forest and
+    sat down by the side of the cool fountain, and when she was bored she
+    took a golden ball, and threw it up on high and caught it, and this
+    ball was her favorite plaything.""";
+
+proc ruler = {
+  for var j in 1 upto 80 perform 
+    if j % 10 == 0 do print$ "+"; else print$ "."; done
+  println$ "";
+}
+fun str_justify(s: string, width: int): string = {
+  // working from RH to LH, double each space to justify s to width
+  var i = s.len.int - 1;
+  var xtra = width - i - 1;
+  var res = s;
+  while i > 1 and xtra > 0 do
+    if res.i == " " do
+      res = res.[0 to i] + " " + res.[i to];
+      xtra -= 1;
+    done
+    i -= 1;
+  done
+  return res;
+}
+
+fun word_wrap (s: string, width: int, justify: bool): string = {
+  var s2 = search_and_replace(s.strip,"\n"," ");
+  val words = split(s2, " ");
+  var line = words.0.strip;
+  var letter_cnt = line.len.int;
+  var res = "";
+  var w = "";
+  var x = "";
+  floop:  for var i in 1 upto words.len.int - 1 do
+    w = words.i.strip;
+    if w.len == 0uz perform continue floop;
+    if letter_cnt + 1 + w.len.int > width do
+      if justify do
+        res += str_justify(line + "\n", width + 1);
+      else
+        res += line + "\n";
+      done
+      line = w;
+      letter_cnt = w.len.int;
+    else
+      x = words.(i - 1);  
+      if x.(x.len.int - 1) == "." do
+        // prev word ended a sentence?
+        line += " ";
+        letter_cnt += 1;
+      done
+      line += (" " + w);
+      letter_cnt += 1 + w.len.int;
+    done
+  done;
+  res += line;
+  return res.strip;
+}
+
+ruler;
+println$ word_wrap(txt, 80, false);
+ruler;
+println$ word_wrap(txt, 72, false);
+ruler;
+println$ word_wrap(txt, 80, true);
+ruler;
+println$ word_wrap(txt, 72, true);
