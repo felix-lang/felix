@@ -244,6 +244,7 @@ struct FLX_EXCEPTIONS_EXTERN flx_range_failure_t : flx_exception_t {
 FLX_EXCEPTIONS_EXTERN long range_check (long l, long x, long h, flx_range_srcref_t sref, char const *cf, int cl);
 FLX_EXCEPTIONS_EXTERN void print_loc(FILE *ef,flx_range_srcref_t x,char const *cf, int cl);
 FLX_EXCEPTIONS_EXTERN void print_cxxloc(FILE *ef,char const *cf, int cl);
+FLX_EXCEPTIONS_EXTERN void print_srclines(FILE *ef,flx_range_srcref_t x);
 
 
 // ********************************************************
@@ -290,6 +291,7 @@ struct FLX_EXCEPTIONS_EXTERN flx_link_failure_t : flx_exception_t {
 
 @tangle flx_exceptions.cpp
 #include <stdio.h>
+#include <string.h>
 
 #include "flx_exceptions.hpp"
 
@@ -384,6 +386,36 @@ void print_loc(FILE *ef,flx_range_srcref_t x,char const *cf, int cl)
   fprintf(ef,"C++ location  : %s %d\n", cf, cl);
 }
 
+#define SRC_LINE_SZ  512
+
+void print_srclines(FILE *ef,flx_range_srcref_t x)
+{
+  FILE* fp;
+  char buf[SRC_LINE_SZ];
+  int lnr = 0;
+  
+  if ((fp = fopen(x.filename, "r")) != NULL)
+  {
+    /* display code lines: startline-1 .. endline+1 */
+    buf[SRC_LINE_SZ-1] = '\0';
+    while ((fgets(buf, sizeof(buf)-1, fp) != NULL) && (++lnr <= x.endline+1))
+    {
+      buf[strlen(buf)-1] = '\0';        // eat the newline 
+      if ((lnr >= x.startline-1) && (lnr <= x.endline+1))
+      {
+        if (lnr == x.startline-1 || lnr == 1) {
+          fprintf(ef,"Felix code: %s\n", buf);
+        } 
+        else 
+        {
+          fprintf(ef,"            %s\n", buf);
+        }
+      }
+    }
+    fclose(fp);
+  }
+}
+
 }}
 @
 
@@ -454,6 +486,7 @@ fprintf(stderr, "Felix exception handler\n");
   if (flx_assert_failure_t const *x = dynamic_cast<flx_assert_failure_t const*>(e))
   {
     fprintf(stderr,"Assertion Failure\n");
+    print_srclines(stderr,x->flx_loc);
     print_loc(stderr,x->flx_loc,x->cxx_srcfile, x->cxx_srcline);
     return 3;
   }
