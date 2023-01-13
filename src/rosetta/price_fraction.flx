@@ -1,0 +1,15 @@
+val Pricemap = (0.1, 0.18, 0.26, 0.32, 0.38, 0.44, 0.50, 0.54, 0.58, 0.62,
+                0.66, 0.70, 0.74, 0.78, 0.82, 0.86, 0.90, 0.94, 0.98, 1.00);
+
+fun top_limit (i: int): int => int(100.0 * ((0.05 * (i + 1).double ) + 0.01));
+
+fun to_standard (d) : double = {
+  var v = int(100.0 * d);
+  for var i in 0 upto Pricemap.len.int - 1 do
+    if v < top_limit(i) return Pricemap.i;
+  done
+} 
+
+for j in (0.0, 0.21, 0.45, 0.61, 0.63, 0.78, 0.89, 1.0) do
+  println$ f"Price for %.2f is %.2f" (j, to_standard(j));
+done
