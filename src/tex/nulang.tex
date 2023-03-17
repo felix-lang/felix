@@ -79,7 +79,7 @@ construct new types from the base, abstraction, polymorphism, and modularity.
 
 \section{Development outline}
 The details of our new system can only be established by research and experiment.
-Nevertheless for a language targetting CairoVM the following plan is proposed.
+Nevertheless for a language targetting some particular VM the following plan is proposed.
 \begin{itemize}
 \item{Phase 1} The compiler is first written in any combination of languiages, so it supports
 the required semantics, though perhaps not efficiently.
@@ -87,29 +87,23 @@ the required semantics, though perhaps not efficiently.
 \item{Phase 3} The compiler is improved so the compiler itself is more efficient.
 \item{Phase 4} The compiler is rewritten in its own source language.
 \item{Bootstrap} The compiler is applied to itself, generating a compiler which now
-runs on CairoVM.
+runs on target VM.
 \item{Enhancement} Now the compiler and CairoVM both will need to be modified to
 tune the resulting system to obtain the desired performance outcome.
 \end{itemize}
 
-The front end of the compiler should be as generic (non Cairo specific) as possible
-because now the language itself becomes the defining standard, abstracting away
+The front end of the compiler should be as generic (not specific to a particular VM) 
+as possible because now the language itself becomes the defining standard, abstracting away
 the back end VM. This then allows the VM to be modified to improve performance
-without impacting the semantics of existing programs. It is expected that initially
-new builtins will be added by the experience of using the system will probably lead
-to significant architectural changes as well.
+without impacting the semantics of existing programs.
 
 \section{Non-determinism}
-The current Cairo system uses two languages: Cairo language is used for deterministic
-computations which can be required to generate proofs of execution. However Cairo
-has a feature where an "oracle" can "guess" the result of computation, and the system
-merely checks that the guess is correct. At present Python is used for the Oracle.
+Some VM system uses two languages: the core VM assermbler language is used for deterministic
+computations which can be required to generate proofs of execution. However some have 
+a feature where an "oracle" can "guess" the result of computation, and the system
+merely checks that the guess is correct. 
 
-Neither Cairo nor Python are even marginally suitable as application languages.
-Cairo is to low level and orientied towards the VM, whilst Python doesn't
-even have a static type system so hardly counts as a real language at all.
-
-Instead we need something like this:
+We need something like this:
 \begin{minted}{C}
 fun sqrt(x:u32):u32 invariant result^2 = x { ... }
 \end{minted}
@@ -210,7 +204,7 @@ In particular it is common practice to leave out the parentheses entirely.
 
 \begin{definition}
 A {\em monoid} is a semigroup with a unit $u$, that is
-$$x\cdot u = x \rm{\ and\ }u \cdot x = x$$
+$$x\cdot u = x {\rm \ and\ }u \cdot x = x$$
 for all x in the set.
 \end{definition}
 
@@ -223,7 +217,7 @@ for all $x$ there exists an element $y$ such that
 $$x \cdot y = u {\rm\ and\ } y \cdot x = u $$
 \end{definition}
 where $u$ is the unit of the underlying monoid. For integers of course,
-the additive inverse of a value is it's negation.
+the additive inverse of a value is its negation.
 
 \begin{definition}
 An operation is {\em commutative} if the result is the same with the operands
@@ -315,10 +309,10 @@ Each of the required operations for a field (or ring if a ring is being specifie
 must be either implemented in the target natively, in which case the number of
 execution cycles required must be specified, or is defined in terms of another
 defined operation, in such a way no cyclic dependencies exist. In the latter case
-the compile derives the cost from the definition.
+the compiler derives the cost from the definition.
 
 \subsection{Versions}
-In version 1, the a definition must be given first before it can be used.
+In version 1, a definition must be given first before it can be used.
 In later versions, the a dependency checker will ensure completeness
 and consistency. In still later versions defaults may be provided.
 
@@ -331,12 +325,12 @@ N<n, base>
 to specify a ring of size n, defined using the already defined ring \verb$base$.
 The compiler will define all operations automatically, using modular arithmetic
 etc, provided $n^2\leq |{\mathtt base}|$, otherwise it will issue a diagnostic
-error message that the base ring is not large enough an terminate the compilation.
+error message that the base ring is not large enough and terminate the compilation.
 
 Note, the base ring does not have to be intrinsic.
 
 To define a new field, we need only a ring sufficiently large for the underlying
-ring operations, however we must define the `verb$recip$ operation natively:
+ring operations, however we must define the \verb$recip$ operation natively:
 \begin{minted}{felix}
 field nufield = based goldilocks recip = primitive cost 24;
 \end{minted}
@@ -349,9 +343,8 @@ or embeddings if approproiate. Research is required here to decide
 how to handle computations with mixed families.
 \begin{minted}{felix}
 to be done
-\end{minted]
+\end{minted}
 
-\section{Products}
 \section{Compact Products}
 We first provide {\em compact linear products}. This is a categorical product
 with the type given by the n-ary constructor like
@@ -411,6 +404,65 @@ can decode it to extract a value of one of the injection types.
 In a sum of rings, addition is precisely addition with carry,
 and multiplication is modulo the size of the sum (which is the
 sum of the component sizes).
+
+\chapter{Modularity}
+Contrary to popular belief and design, an appropriate unit of modularity
+is the {\em routine.}
+
+A basic routine is a labelled lexically contiguous sequence of instructions
+accepting an argument and with a terminal operation which either halts
+the routine, or invokes another.
+
+The terminal is a sum type in which the constructors names must be labels
+of routines, and in which the arguments of the constructor become the
+argument of the invoked routine.  The exit selected is determined by
+the injection which created the value of the sum type.
+
+In a more conventional and relaxed form, a routine can contain multiple
+exits possibly selected by a conditional.
+
+In this model, a {\em subroutine} is a special case of a routine in which
+the caller passes it's current continuation (the next instruction) as, or as
+part of, the called routine's argument implicitly. Then the caller can be resumed
+by use of a return instruction.
+
+A {\em function} is a special case of a subroutine, in which the caller's suspension
+contains an unitialised reserved slot for a value which is assigned a value
+by the return instruction before the called routine terminates and the caller
+is resumed.
+
+A coroutine is a different special case of a routine which is passed a continuation,
+but not necessarily the callers continuation. The coroutine can then exit by
+resuming any suspension.
+
+The usual way to organise coroutines is using a schedular and channels in the style
+of Tony Hoares communication sequential processes (CSP) but with indeterminate
+evaluation replacing concurrency.
+
+Central to the execution model is the idea that a routine can suspend itself,
+and be resumed by others, in particular the notion of continuation passing
+is fundamental, and functions are merely a special case.
+
+In particular, functions are very weak at handling failure, for example
+division by zero, so a routine that performs a division should in fact
+have two continuations to choose from.  in this case favouring one
+as special, which is what happens with a subroutine due to the implicit
+acceptance of the callers continuation makes the divide by zero exceptional,
+which is clearly bad design.
+
+\chapter{Addressing}
+One of the core tenants of a von Neumann architecture is that memory is
+addressable, and programs are stored in memory.
+
+Standard ISA usually involve bytes and words which are rings of size powers of $2^8$,
+and there will be a word size, typically a ring $2^64$ which is used to address memory.
+
+We must generalise this model, because many modern VM use finite fields as basic
+memory elements, and such fields never have a size which is a power of 2 since
+for a ring to be a field, it must be a product of rings of a size which is a prime number,
+and 2 is too small for most calculations.
+
+This all leads to the question, exactly what is an address?
 
 
 \end{document}
