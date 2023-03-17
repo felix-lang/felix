@@ -77,55 +77,6 @@ theory providing the basic types, and category theory providing ways to
 construct new types from the base, abstraction, polymorphism, and modularity.
 
 
-\section{Development outline}
-The details of our new system can only be established by research and experiment.
-Nevertheless for a language targetting some particular VM the following plan is proposed.
-\begin{itemize}
-\item{Phase 1} The compiler is first written in any combination of languiages, so it supports
-the required semantics, though perhaps not efficiently.
-\item{Phase 2} The compiler is improved so generated code is more efficient.
-\item{Phase 3} The compiler is improved so the compiler itself is more efficient.
-\item{Phase 4} The compiler is rewritten in its own source language.
-\item{Bootstrap} The compiler is applied to itself, generating a compiler which now
-runs on target VM.
-\item{Enhancement} Now the compiler and CairoVM both will need to be modified to
-tune the resulting system to obtain the desired performance outcome.
-\end{itemize}
-
-The front end of the compiler should be as generic (not specific to a particular VM) 
-as possible because now the language itself becomes the defining standard, abstracting away
-the back end VM. This then allows the VM to be modified to improve performance
-without impacting the semantics of existing programs.
-
-\section{Non-determinism}
-Some VM system uses two languages: the core VM assermbler language is used for deterministic
-computations which can be required to generate proofs of execution. However some have 
-a feature where an "oracle" can "guess" the result of computation, and the system
-merely checks that the guess is correct. 
-
-We need something like this:
-\begin{minted}{C}
-fun sqrt(x:u32):u32 invariant result^2 = x { ... }
-\end{minted}
-Here, the code in the curly braces computed the square root
-and is an oracle: the result is not found by traced VM execution
-but by magic. Then the invariant is evaluated by the VM and
-the evaluation is traced in the generated proof, if it evaluates
-to true, the oracle was right and it doesn't matter how it guessed
-the right answer.
-
-
-If the invariant is omitted, the body of the function is executed
-by the VM and traced. Conversely, if you have a function without
-an invariat, one could be added to improve performance.
-
-The key thing is that a single language is used to generate code for
-both the function body and invariant, and the oracle could be a copy
-of the VM with proof generation turned off, or a C or Rust program
-running on a concurrent distributed network. in the tight coupling
-model the trustworthiness of the communication is easier to establish.
-
-
 \section{Ring Theory}
 The heart of a computer is just a ring called the ALU. We propose
 a system as follows: a linear ring is a subrange of the integers
