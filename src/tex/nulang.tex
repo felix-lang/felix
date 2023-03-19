@@ -238,6 +238,33 @@ work without modification.
 In particular we can use \verb$uint64_t$ to represent rings of index up to 
 $2^{32}$.
 
+\section{Type void}
+The type void is represented by an empty set. Since there no values
+of this type, it is representation independent; that is, it is a memory
+of all families. It is also a degenerate memory of all categories.
+
+There are many cases where instantiation of a type variable needs to exclude void.
+For example a pair of type $A * B$ only has two components if neither is void.
+If A is void, the type is void, and projections of $A * B -> B$ do not exist.
+
+Nevertheless it is a useful type, for example an array of length zero is the
+unit tuple and the usual index laws for integers apply: $T^0 = 1$.
+
+It is an open issue how to handle void correctly.
+
+\section{Type unit}
+The set ${0}$ is the unit type. Since we know the value from the type,
+the type requires no representation. Instead most uses of a unit value
+can be eliminated. For example, functions returning unit always return
+the value 0, so their application can be replace by that value.
+
+\section{Type bool}
+Bool is a special type. Although it is not representation independent,
+comparisons cannot proceed without it. It is, variously, a categorical
+sum of units, a group, a ring, and indeed a field.
+
+
+
 \section{Intrinsics}
 An instrinsic is a ring or field which is provided natively by the target system.
 We use the following example to show how:
@@ -355,6 +382,137 @@ can decode it to extract a value of one of the injection types.
 In a sum of rings, addition is precisely addition with carry,
 and multiplication is modulo the size of the sum (which is the
 sum of the component sizes).
+
+\chapter{Categories}
+Categories, or {\em kinds} are used to provide structure to collections of types.
+A category can be used as a {\em constraint} on a type varible which has two
+implications. First, use of a type not of that category will lead to a compilation
+error. More significantly, operators are introduced into the scope of the quantified
+entity, which allow algorithms to be written in a type safe manner.
+
+During monomorphisation when the type variable is replaced by a monotype,
+the polymorphic operators will also be replaced by appropriate monotypic
+operations, this can be done safely with no risk of a type error so
+the process does not require further type checking.
+
+All our categories provide operators parametrised in two ways:
+in the abstract, and concretely.
+
+The abstract semantics are based on the mathematics of integers,
+whilst the concrete semantics provide a representation which
+allows the actual implementation in a finite environment,
+and thus provides bounds.
+
+The abstract semantics are all well known basic mathematics,
+however the proper handling of the bounds remains an open issue.
+
+The concept is as follows: consider a category bounded by size $n$,
+then some operations may fail due to insufficient capacity of
+the representation. Therefore we say the concrete category is 
+a {\em local approximation} to the mathematical abstraction,
+and provide the argument that for sufficiently large $n$ any
+given operation will work correctly.
+
+In other words, in the limit, the local approximations provide
+the exact semantics that would be provided by the abstract category
+of countably infinite size based on the integers.
+
+\section{Category set}
+The category set contains types considered as discrete collections
+of values, admitting only comparison for equality as an operation.
+The primary operation on a mathematical set is membership, which together
+with other set axioms is equivalent to equality.
+
+A set can be represented by any type, provided it is sufficiently large.
+One common use of such weak types is as indexes to the tuple constructor.
+This is because, for example, sequencing through the indices in a loop
+would not product projections of a uniform type.
+
+\begin{minted}{felix}
+category set[T]
+  eq: T * T -> 2
+  ne: T * T -> 2
+\end{minted}
+
+\section{Category seq}
+In this category we can iterate through elements of the underlying
+integral representation within the bounds of the abstract type.
+The category corresponds roughly to what C++ calls an input iterator.
+
+It is important to note the implied total ordering is, however
+not available. This is because such comparisons can be very
+expensive in proof generating machines using AIR constraints.
+
+Note also, the {\em next} and {\em prev} operations are cyclic and
+cannot fail, in other words, the value which is next afer the last
+one is the very first one again.
+
+\begin{minted}{felix}
+category seq[T] : set[T]
+  zero: 1 -> T
+  last: 1 -> T
+  succ: T * T -> 2
+  pred: T * T -> 2
+  next: T -> T
+  prev: T -> T
+\end{minted}
+
+\section{Category linear}
+This category extends sequences to allow observation of a total ordering.
+
+\begin{minted}{felix}
+category linear[T] : seq[T]
+  lt  : T * T -> 2
+  gt  : T * T -> 2
+  le  : T * T -> 2
+  ge  : T * T -> 2
+\end{minted}
+
+\section{Category group}
+The types of this category are additive groups. Recall all our types are
+just subranges of integers, and the implementation is simply the
+computation in a bigger group modulo the group size, then it is clear
+these groups are all Abelian (commitative) and indeed cyclic.
+
+Groups in effect give random access iterators.
+
+\begin{minted}{felix}
+category group[T] : seq[T]
+  add: T * T -> T
+  sub: T * T -> T
+  neg: T * T -> T
+\end{minted}
+
+\section{Category ring}
+This category adds multiplication and integer division to a group
+to form a commutative ring with unit.
+
+\begin{minted}{felix}
+category ring[T] : group[T]
+  one : 1 -> T
+  mul : T * T -> T
+  udiv : T  * (T - {0}) -> T
+  umod : T  * (T - {0}) -> T
+  udivmod : T  * (T - {0}) -> T * T
+\end{minted}
+
+\section{Category field}
+Fields are usually intrinsic, since the core operation, computation
+of the reciprocal and division, must be optimised for a particular
+field.
+
+Fields are intended for crypto operations and require two hash functions:
+one hashes a single field value, and the second is intended to combine 
+such a hash with another field value to produce another hash.
+
+\begin{minted}{felix}
+category ring[T] : group[T]
+  recip:  T - {0} -> T
+  fdiv : T  * T - {0} -> T
+  hash : T -> T
+  hash2 : T * T -> T
+\end{minted}
+
 
 \chapter{Modularity}
 Contrary to popular belief and design, an appropriate unit of modularity
