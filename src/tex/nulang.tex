@@ -69,7 +69,7 @@ tractable.
 A new language is required, in which at least the basic data types are no longer
 simple signed or unsigned integers and machine word size addresses, but which
 can support a more general class of finite rings for conventional computations,
-and finite fields of hashing and other cryptographic calculations.
+and finite fields for hashing and other cryptographic calculations.
 
 In addition, the ad hoc nature of older languages is no longer tolerable,
 instead we need a system soldidly based in algebra: ring theory and finite field
@@ -102,6 +102,42 @@ We use category theory to create new types from old ones.
 Our type system must be at least a distributive category.
 This gives us products (tuples and arrays) and sums (variants).
 
+However we have a problem. Many of the categories involved in traditional
+type system theory are infinite. For example a distributive category is
+one of the most basic essentials for any first order type theory,
+provding all finite sums and products related by the distributive law.
+
+Such category, whilst nice in theory, is not directly useful in 
+computing because all computers are finite state machines. We are stuck 
+between a rock and hard place. This problem is not merely evident in
+higher mathematics .. it is intrinsic to the essential requirement for representations
+of (signed) integers which is clearly intractable.
+
+Traditional languages such as C simply give the wrong results on overflow,
+whilst some newer languages vainly attempt to ensure a timely program
+failure occurs.
+
+
+To solve these problems we need a new mathematical concept which turns out
+to be a very old concept instead: the idea is that of {\em limits.}
+We want to say we compute with a {\em local approximation} to the integers,
+whose correctness is bounded by a a representation size $n$, so we can say
+that our calculation will indeed be correct, if only we have a large enough $n$.
+
+In particular, the integers can now be regarded not as a countably infinite set,
+since such a beast is unrepresentable, but instead as an idealised limit
+of a sequence of ever larger finite representations.
+
+Similarly, a type category can be regarded not as distributive for unicorns
+do not exist, but rather as a bounded local approximation and member of
+a sequence of ever larger representations, which in the limit approaches
+the structure of an idealised distributive category.
+
+However it is not enough to merely posit such an theoretical solution
+and continue as before; instead we must in fact be able to compute
+the bounds required to ensure the correctness of a program, a new
+and nontrivial task.
+
 \section{Addressing}
 Addressing is a difficult topic. If you consider memory to be one
 huge integer, an object can be extracted by dividing by a
@@ -129,6 +165,94 @@ to recover the value which we previously took the logarithm of is done
 using a decoder which creates a fanout dependent on the base of the logarithm,
 
 \chapter{Type System}
+\section{Theory}
+Let $\mathcal{Set}$ be the usual distributive category consisting of all small sets and functions.
+We are going to provide two modifications. 
+
+First let $\mathcal{Set}_n$ be the full subcategory whose
+objects consist only of sets of size $n$ or smaller. This category is not distributive because not
+all finite sums and products exist, however the distributive law does hold, provided the relevant
+sums and products exist. We will say this category is {\em locally distributive}.
+
+If $n < m$ then $\mathcal{Set}_n$ can be embedded in $\mathcal{Set}_m$, which has larger sets,
+by simply mapping every function in the former to the same function in the latter. 
+If there is a need to compute a sum or product which is not available in 
+the former we can simply upgrade our computation space to a larger category. 
+In particular, for any finite computation, there is always a large enough locally
+distributive category in which we can perform the computation successfully.
+
+Our second modification is to take each category $\mathcal{Set}_n$ and find its
+{\em skeleton} category $\mathrm{Set}_n$. We first partition all the set objects
+into classes with the equivalence relation of equal size, all the function arrows
+can be similarly partitioned because for finite sets, equality of size makes these
+objects isomorphic.
+
+Then, as usual, we will choose a canonical representative from each class, and use
+the functions between the canonical representatives exclusively to perform
+calculations.
+
+In particular, for a set size $n$ the canonical representative will be the set
+consisting of the integers from 0 to $n-1$, a local compact subrange of integers,
+which we will denote by $\mathbb{N}_n$, or, where the context is clear, we will
+just write $n$. 
+
+We will denote values using the notation \verb$element : type$ for example
+$4:5$ denotes the integer 4 considered as a member of $\mathbb{N}_5$.
+
+What we have done so far is taken an abstract mathematical construction and
+reduced it to an abstraction which is more amenable to computation: computers
+are finite state machines so finiteness is mandatory, and they can perform
+computations on integers, so we have some hope of actually doing real
+computations. 
+
+But we are not finished yet because we have not specified how to actually
+perform the calculations. To handle this problem, we need some more
+machinery.
+
+Computers have hardware which can perform some computations. Many computers
+have instructions which can do arithmetic. Therefore what we must do is
+provide a way to specify which operations can be done, and how to
+combine them to perform other computations we desire.
+
+The first thing we must do is enrich our type system with constraints.
+Suppose we want to add two values of type $5$. There will certainly
+be a function \verb$add: 5 * 5 -> 5$ that can do this, but how do we find it?
+
+To make this work, we will introduce another subcategory $\mathrm{AGroup}_n$ of
+additive groups sizes 0 to $n-1$ with a specific set of functions including 
+$add: J * J -> J$ and $sub: J * J -> J$ where $J$ is the type of size $J$.
+We have to define these functions. To do this, we will pick a type $R_k$ from category
+$\mathrm{Ring}_m$ where $k\ge 2n$ and define 
+$$add_J (x,y) = J(\mathrm{mod}_R (add_R(R x, R y))$$ 
+
+In this formula, the function R is the embedding $J->R$ which maps a value of type $J$ to
+the same value in $R$. $J$ is the partial inverse mapping back; it's precondition is satisfied
+due to the modulo operation. 
+
+What this formula is doing is specifying operations for a group size $n$ in terms of computations
+in a ring of size at least $2n$. The minimum size ensures the result cannot wrap around
+in the ring, and the modulo operation then wraps it around in the group. Although we have
+written the formula using applications, there is a corresponding formula which is purely
+compositional.
+
+In other words, we're doing computations for one data type using another sufficiently
+large one, which is called the {\em representation type}. Now to completely specify
+a data type we need to say its kind: is it a group, ring, or field, we need to say its
+size, and we need to specify its representation type.
+
+Now you may wonder, how then do we calculate in the representation type? Of course,
+we do that using its representation type! This would lead to an infinite regress
+unless we take some action! So we will allow some types to be declared {\em intrinsic}.
+
+For example common choices for intrinsics would be \verb$u32$ and \verb$u64$,
+the rings with $2^{32}$ and $2^{64}$ elements, respectively. These are chosen
+for the obvious reason the computations are already implement in our target
+hardware. However, for many crypto VM, we are more likely to make
+say \verb$goldilocks$ prime field intrinsic. In fact for compatibility with
+existing code almost all crypto VM.
+
+
+\section{Categorical Models}
 We start needing  several classes of types: discrete sets, sequences, totally ordered
 sets, groups, rings, and fields.
 Each of these types will be considered a finite subset of the integers 
@@ -152,7 +276,7 @@ to implement all the operations of \verb$u64$.
 
 Furthermore the compiler can, potentially, replace \verb$a + b + c$ in \verb$u32$
 with \verb$(a + b + c) umod 2^32$, optimising the computation by removing a \verb$umod$
-operation, since the sum cannot come even close to exceeding $2^64$. Unlike hand 
+operation, since the sum cannot come even close to exceeding $2^{64}$. Unlike hand 
 implementations, the compiler can generate good code which is guarranteed to be correct.
 
 
@@ -365,7 +489,11 @@ and values like
 \begin{minted}{felix}
 compactproductvalue(v0,v1,... vnm1)
 \end{minted}
-Note syntactic sugar is yet to be determined.
+We will use the syntax something like
+\begin{minted}{felix}
+let x : R0 \* R1 \* R2 = (v0\, v1\, v3) in ..
+\end{minted}
+
 
 All the data types must be in the same family, and the product
 of their sizes must be less than or equal to the family base size.
@@ -374,10 +502,10 @@ is based on the representation.
 
 Projections and slices are provided automatically
 \begin{minted}{felix}
-compactprojection<index, base> : T -> Rindex
+compactprojection<index, base, domain, codomain> : index -> domain -> codomain
 \end{minted}
 This is a function which extracts the component selected
-by the index. The index must be a constant.
+by the index. The index must be of $Set$ kind, that is, a constant.
 
 \subsection{Ring Products}
 \begin{definition}
@@ -405,6 +533,33 @@ The projection $p_k$ of the $k'th$ ring is given by $$v / r_k \mod |R_k|$$
 where $|R|$ is the size of the ring $R$.
 \end{theorem}
 
+\subsection{Product Functors}
+The constructor of a product is a special kind of type mapping called a {\em functor}.
+Category theory requires functors to have certain properties so that they
+act parametrically. In particular functors map functions from the domain space
+to the codomain space, not just types.
+
+The most important thing about these functors is the indexing type.
+Consider the functor
+$$ringtuple5: Ring ^ 5 -> Ring$$
+where $5:Set$ is considered as the discrete set of integers from 0 to 4.
+This is a commonly used functor which maps 5 ring types into a single ring type,
+with indexes the constants 0,1,2,3,4.
+
+For example given:
+$$ringtuple5 (N2, N3, N4, N5, N6) \mapsto N2 * N3 * N4 * N5 * N6$$
+then  a value you might write
+$$proj2: N2 * N3 * N4 * N5 * N6 -> N4$$
+and for a value extraction
+$$proj2 (1,2,3,4,5) = 3$$
+with appropriate types assumed. This is just pseudo code, the point
+here is there is a discrete projection for each component.
+
+This is necessary for this kind of projection, because the type of each
+projection differs.
+
+There are two projections which are more advanced.
+
 \subsection{Generalised products}
 A generalised projection is also provided which accepts an
 expression as an argument. Its codomain is the type dual
@@ -412,18 +567,27 @@ to the product, that is a sum type consisting of the component
 index and value.  We note that the representation is uniform because
 the constructor arguments are all structures from the same family.
 
-\section{Arrays}
+This kind of projection can be indexed by a ring or even a field
+because now we have made the projection type uniform.
+
+\subsection{Arrays}
 If all the types of a product are the same, it is called an array.
 An array projecton accepts an expression as an argument, which cannot
 be out of bounds, since the type of the expression must be the index
-type of the constructing functor. The array projection is defined by
-first applying a generalised projection and then applying the smash 
-operator which throws out the constructor of a repeated sum.
+type of the constructing functor.
 
-Note there is a related operator which retains the index value,
-so that an iteration will get a index,value pair.
+That index type therefore, to allow index calculations, could be,
+for example a ring. This gives us random access to the array.
+ 
+In fact we can also generalise array projections, so the result
+consists of both the input index and value. It's very useful
+in constructions like
+\begin{minted}{felix}
+for key,value in a ...
+\end{minted}
 
-The math is straightforward but the syntax needs to be established.
+because a plain iteration through the values is often not enough,
+since the index is implicit and hidden by the loop.
 
 \section{Sums}
 Just as for products, we provide categorical sums including
@@ -476,7 +640,13 @@ In other words, in the limit, the local approximations provide
 the exact semantics that would be provided by the abstract category
 of countably infinite size based on the integers.
 
-\section{Category set}
+\section{category Void}
+the empty category with no types.
+
+\section{category Unit}
+A category with one type, the set $\{0\}$.
+
+\section{Category Set}
 The category set contains types considered as discrete collections
 of values, admitting only comparison for equality as an operation.
 The primary operation on a mathematical set is membership, which together
@@ -493,7 +663,7 @@ category set[T]
   ne: T * T -> 2
 \end{minted}
 
-\section{Category seq}
+\section{Category Seq}
 In this category we can iterate through elements of the underlying
 integral representation within the bounds of the abstract type.
 The category corresponds roughly to what C++ calls an input iterator.
@@ -516,7 +686,7 @@ category seq[T] : set[T]
   prev: T -> T
 \end{minted}
 
-\section{Category linear}
+\section{Category Linear}
 This category extends sequences to allow observation of a total ordering.
 
 \begin{minted}{felix}
@@ -527,7 +697,7 @@ category linear[T] : seq[T]
   ge  : T * T -> 2
 \end{minted}
 
-\section{Category group}
+\section{Category Group}
 The types of this category are additive groups. Recall all our types are
 just subranges of integers, and the implementation is simply the
 computation in a bigger group modulo the group size, then it is clear
@@ -542,7 +712,7 @@ category group[T] : seq[T]
   neg: T * T -> T
 \end{minted}
 
-\section{Category ring}
+\section{Category Ring}
 This category adds multiplication and integer division to a group
 to form a commutative ring with unit.
 
@@ -555,7 +725,56 @@ category ring[T] : group[T]
   udivmod : T  * (T - {0}) -> T * T
 \end{minted}
 
-\section{Category field}
+\subsection{Division by Zero}
+Careful observation of the signature of the integer division and modulus
+operators above shows that the dividend is not allowed to be zero.
+
+Unlike other languages, this is enforced by the type system. At run time
+division by zero is impossible.
+
+In order that this be the case, we have to construct the type $T-\{0\}$
+which can be done with a conversion or cast together with a {\em proof}
+that the argument cannot be zero. the programmer {\em is required to prove
+the dividend cannot be zero}.
+
+This is an example of a type discipline called {\em dependent typing}.
+In general dependent typing is very hard for programmers, luckily our
+main primary requirement only involve proving one particular case.
+
+In almost all cases of real code, a programmer {\em knows} the value
+cannot be zero and not only that, they {\em know why} but now they
+actually {\em have} to write that proof or the compilation will fail.
+
+To make this tenable in all cases, we provide a simplistic construction
+which provides that proof automatically: we allow the programmer
+to pattern match the proposed dividend in the same manner an option
+type can be matched.
+\begin{minted}{felix}
+match v with
+| Zero -> cc0 
+| Nonzero x -> cc1 x
+endmatch
+\end{minted}
+where the type of the \verb$Nonzero$ constructor is indeed the type of
+the argument $v$ minus $\{0\}$. Note that in both cases a continuation
+is invoked: this operation is performed in the dual cofunctional space.
+
+If the programmer likes, however, they can actually write a formal proof
+sketch. To make this work we need a language for writing proofs, and
+we need a proof assistant. In the simplest cases, if enough information
+is available, the assistant can generate a correct proof automatically
+and the programmer need only write an assertion the argument is
+non-zero.
+
+If the assistant cannot perform the proof, the programmer will
+need to provide it more data.
+
+Automatic provers for simple properties of integers are no available
+and are comprehensible. More advanced proofs required for full
+dependent typing would be beyond most programmers.
+
+
+\section{Category Field}
 Fields are usually intrinsic, since the core operation, computation
 of the reciprocal and division, must be optimised for a particular
 field.
@@ -571,6 +790,89 @@ category ring[T] : group[T]
   hash : T -> T
   hash2 : T * T -> T
 \end{minted}
+
+\chapter{Addressing}
+Indirection and addressing of data is a core capability of most machines,
+however few programmers understand what an address actually is, mathematically.
+
+Consider a machine in which all of memory is consider a single very big integer.
+For a 32 bit machine with big endian representation byte 0 has value
+$$v = v0 * 256 ^ {2^32 - 1}$$
+To extract the value of this byte we use a projection:
+$$v / 256 ^ {2^32 - 2} \mod 256$$
+More generally for the n'th byte
+$$v / 256 ^ {2^32 - (n - 2)} \mod 256$$
+which is equivalent to shifting the byte "right" all the way to
+the end of memory.
+
+This is an unconveniently large value to store! In fact to store a computation
+in general we would need all of memory just for the quotient!
+
+Why not store just $n$ instead? The first byte will be numbered zero,
+the second 1, etc. We have to note this is not fully general because
+it can only pick out values on 256 bit boundaries, however the modulus
+is very compact, and we can adjust it to pick out part of a byte, or
+several bytes, at least for small sizes.
+
+For large objects, the modulus too will get too large, so again,
+what can we do? Well we can take the logarithm of the modulus
+base 256! Then to perform the calculation we use it as a power
+of 256.
+
+Similarly, if we take the logarithm base 256 of the quotient we get
+$$\log_256 (256 ^ {2^32 - (n - 2)}) = 2^32 - (n - 2) $$
+
+In summary, an {\em address} is a logarithm of the quotient of
+a projection, calculated to some base. The base is a quantisation
+factor that determines the granularity of the address. We will normally
+quantize the modulus too.
+
+With conventional ISAs, the logarithmic base is usually 256. Even machines
+with minimal addressable memory quantum of two bytes usually provide
+a byte address and simply require the low bit to be zero.
+
+However on a proof generating machine, a suitable power of two base
+for the logarithm may not exist. Such machine usually max out at just
+under a power of 256 for their largest atomic type since it has
+to be a prime number such as the Goldilocks prime $2^64 - 2^32 + 1$.
+
+Furthermore, whilst common VM's actually ise conventional addresses,
+they tend to address a 4 tuple of value of prime fields. There is no
+common addressing model.
+
+The reason we needed data addresses is simple. The cost of computations
+of compact product constructors and projections is medium on a conventional
+ISA but much better on a proof generating machine because the cost of
+field operations is usually 1. However, once we run out of space,
+we have to use multiple values to hold a product, and to find these
+objects in memory efficiently we want to use {\em one} address: the first
+value is at that address and the second at the address plus 1.
+
+To find a value now, we have two step calculation: first we calculate
+the offset of the base address and extract the value there, and
+then extract a component using the compact projection formula.
+
+However even this is not enough, if the value is bigger than a memory
+cell. In this case we need to perform two or more extractions
+using addressing projections and then several compact projections
+to get the pieces right, before recombining them.
+
+In particular, given a small ring, plus an addressing scheme, where
+the small ring is less than or (ideally) equal to the base of the addressing logarithm,
+we can construct much larger rings using an array of addressable words
+of the size of the logarithm base, together with standard high school
+long arithmetic.
+
+If this wasn't enough, there is no reason which a second level of addressing
+is also made available, with much larger logarithm base, and indeeds,
+this is universally the case we caching scales up to eventually lead
+to large scale stores (called disks usually even though solid state
+technology is universal today).
+
+The addressing scheme for data is called the {\em memory model},
+and we need a fully general, and in light of large scale stores,
+recursive mathematical formulation.
+
 
 
 \chapter{Modularity}
