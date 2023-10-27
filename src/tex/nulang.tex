@@ -1,6 +1,7 @@
-
 \documentclass[oneside]{book}
-\usepackage{xcolor}
+
+% colours
+\usepackage[dvipsnames]{xcolor}
 \definecolor{bg}{rgb}{0.95,0.95,0.95}
 \definecolor{exbg}{rgb}{0.80,0.95,0.95}
 \definecolor{emphcolor}{rgb}{0.5,0.0,0.0}
@@ -28,6 +29,20 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{amscd}
+\usepackage{graphicx}
+\usepackage{framed}
+\usepackage{color}
+\usepackage{tcolorbox}
+
+\definecolor{gray}{gray}{0.3}
+\definecolor{darkgreen}{rgb}{0,0.55,0}
+\definecolor{purple}{rgb}{0.5,0,1}
+
+\newtcolorbox{xcomment}{colback=red!5!white,colframe=black!60!white}
+\newtcolorbox{ycomment}{colback=green!5!white,colframe=black!60!white}
+
+\def\Set{\mathit{Set}}
+\def\Nat{\mathit{Nat}}
 
 % minted
 \usemintedstyle{friendly}
@@ -35,6 +50,9 @@
 \usepackage{hyperref}
 \hypersetup{pdftex,colorlinks=true,allcolors=blue}
 \usepackage{hypcap}
+
+\usepackage[backend=biber]{biblatex}
+\addbibresource{../src/tex/nubib.bib}
 
 \title{Maclean\\ A new language for the modern world}
 \author{John Skaller}
@@ -46,9 +64,11 @@ For many years binary byte addressable von Neumann machines dominated the comput
 However the world has changed, with increasing demands for security and privacy and
 trusted access to computing power required in an untrustworthy environment.
 
+\begin{xcomment}
 With the rise of cryptography and the invention of the block chain, new capabilities
 have arisen, along with new requirements. The established von Neumann architectures
 are no longer suitable.
+\end{xcomment}
 
 Block chain operations are basically microservices operating in an untrusted environment,
 where proof that a server faithfully executed a program is required, in addition to the
@@ -66,42 +86,113 @@ optimisation must now deal with both execution, and proof generation. Performanc
 of virtual machines is considerably degraded so that the proof generation becomes
 tractable.
 
-A new language is required, in which at least the basic data types are no longer
-simple signed or unsigned integers and machine word size addresses, but which
-can support a more general class of finite rings for conventional computations,
-and finite fields for hashing and other cryptographic calculations.
+\begin{xcomment}
+Behind the birth of the crypto world, other new requirements arose. 
+Clearly with the internet itself, there is a requirement for distributed,
+concurrent processing, along with a need for sophisticated communications.
+Yet whilst type systems for single threaded local memory access are
+reasonably advanced there is only flegdling support for typing
+communications, and only rudimentary understanding of concurrent
+processes (even at the local level).
+\end{xcomment}
 
+Today, early vectorisation in supercomputers, primarily to compute
+inner prodcts rapidly, has be superceded by more general and 
+capable GPUs, capable of running thousands of threads concurrently.
+Although these devices were originally for improving graphics display
+rendering speeds, they have rapidly been adopted for more general
+applications amendable to parellel processing. Yet mostly they're
+programmed with a separate language than the CPU, and with very
+little type safety.
+
+\begin{ycomment}
 In addition, the ad hoc nature of older languages is no longer tolerable,
 instead we need a system soldidly based in algebra: ring theory and finite field
 theory providing the basic types, and category theory providing ways to
 construct new types from the base, abstraction, polymorphism, and modularity.
+\end{ycomment}
 
 
-\section{Ring Theory}
-The heart of a computer is just a ring called the ALU. We propose
-a system as follows: a linear ring is a subrange of the integers
-0..n-1 with the usual ring operations plus (integer) division and
-modulus.
+\chapter{Category Theory}
+\begin{definition}
+A {\em category} is a directed multi-graph whose vertices are called {\em objects,}
+and whose edges are termed {\em arrows} or {\em morphisms},
+together with an equality operator for both objects and arrows,
+and a partial binary operator called {\em composition} with two
+constraints:
+\begin{enumerate}
+\item If $A,B,C$ are objects, and $f:A\rightarrow B$ is an arrow
+from A to B, and $g:B\rightarrow C$ is an arrow from B to C,
+then there exists an arrow $h:A\rightarrow C$ such that
+$$h = g \circ f = f \odot g$$
+where $\circ$ is composition operator in forward notation and $\odot$
+is the (vastly prefered) composition operator in reverse notation.
+\item For every object $X$ there is an arrow $1_X:X\rightarrow X$
+called an {\em identity} arrow, such that for all arrows $f:A\rightarrow X$
+$$f \odot 1_X = f$$
+and for all arrows $g:X\rightarrow C$
+$$1_X \odot g = g$$
+\end{enumerate}
+The head object of an arrow is called the {\em domain} and the tail
+object the {\em codomain}.
 
-The user starts by declaring one or more rings to be {\em intrinsic}
-and can then define new rings using any already defined rings, including
-the intrinusics. These are just the usual operations modulo the ring size,
-to handle multiplication, the base ring needs to be at least size $(n-1)^2$.
+Note that due to the bijection between opjects and identity arrows
+we can throw out the object altogether; such a category is called
+an {\em arrows only} category. 
+\end{definition}
 
-For example you can define \verb$u32$ in the instrinsic prime field
-provided it is big enough, the compiler will generate all the necessary
-operations.
+\begin{example}
+The collection of all small sets and functions between them is 
+the category {\em Set}.  In this case the objects are sets,
+and sometimes called types; the arrow are functions.
+\end{example}
 
-It is possible to define ring operation given only a smaller ring,
-using the equivalent of high school long addition, multiplication
-and division, {\em provided} we also supply a memory model for
-addressing.
+\begin{example}
+For any graph, the collection of
+all paths on the graph is a category.
+\end{example}
 
-\section{Category Theory}
-We use category theory to create new types from old ones.
+\begin{definition}
+A {\em subcategory} of a category is a subset of objects and arrows
+which forms a category. This means, objects and identity arrows
+correspond, and the set of arrows must be closed under composition.
+\end{definition}
+
+\begin{definition}
+The {\em dual}, or {\em opposite} of a category $X$ is the same
+category with all the arrows reversed, usually written $X^{\mathit{op}}$.
+\end{definition}
+
+\begin{definition}
+A {\em covariant mono-functor} is a structure preserving map
+$F:A\rightarrow B$ from
+categopry $A$ to category $B$, which maps objects to objects and
+arrows to arrows and which preserves composition; that is,
+$$F(f\odot g) = F(f) \odot F(g)$$
+Visually this means triangles map to (possibly degenerate) triangles.
+
+A {\em contravariant functor} reverses the arrows, so that
+if $f:A\rightarrow B$ then $F(f):F(B)\rightarrow A$ and so
+the structure preservation rule becomes 
+$$F(f\odot g) = F(g) \odot F(f)$$
+A contravariant functor is a covariant functor from the opposite
+category.
+
+The notion can be extended to include multiple domain catgeories 
+by forming a product and if necessary, dualising a category.
+A domain categpory has positive variance $+$ if its action
+is covariant and negative variance (-) if contravariant.
+
+Such a multifunctor is also known as a {\em type constructor}
+or simply a {\em polymorphic type}.
+\end{definition}
+
+We use category theory \cite{category_theory} to create new types from old ones.
 Our type system must be at least a distributive category.
-This gives us products (tuples and arrays) and sums (variants).
+This gives us products \cite{products} (tuples and arrays) 
+and sums (variants) \cite{coproducts}.
 
+\section{Finiteness}
 However we have a problem. Many of the categories involved in traditional
 type system theory are infinite. For example a distributive category is
 one of the most basic essentials for any first order type theory,
@@ -121,7 +212,7 @@ failure occurs.
 To solve these problems we need a new mathematical concept which turns out
 to be a very old concept instead: the idea is that of {\em limits.}
 We want to say we compute with a {\em local approximation} to the integers,
-whose correctness is bounded by a a representation size $n$, so we can say
+whose correctness is bounded by a representation size $n$, so we can say
 that our calculation will indeed be correct, if only we have a large enough $n$.
 
 In particular, the integers can now be regarded not as a countably infinite set,
@@ -133,77 +224,564 @@ do not exist, but rather as a bounded local approximation and member of
 a sequence of ever larger representations, which in the limit approaches
 the structure of an idealised distributive category.
 
-However it is not enough to merely posit such an theoretical solution
+However it is not enough to merely posit such a theoretical solution
 and continue as before; instead we must in fact be able to compute
 the bounds required to ensure the correctness of a program, a new
 and nontrivial task.
 
-\section{Addressing}
-Addressing is a difficult topic. If you consider memory to be one
-huge integer, an object can be extracted by dividing by a
-another large integer and then applying a modulus, these are
-simply generalisation of the usual shift and mask operations without
-the power of two requirement.
+\section{Type Model}
+We define two classes of categories.
 
-However the divisor must be about the same size as all of memory,
-which is not tractable. How is this problem solved on a traditional
-machine?
+\subsection{Structural Categories}
+Structural categories are full subcategories of $\Set$ whose
+types are local, compact subranges of the natural numbers,
+that is, integers in the range $0..m-1$ for some $m$.
+Since the category is full, all functions are available.
+Structural categories are used for systems programming.
 
-The answer is to take its logarithm, which is called an address.
-However the result causes a loss of information, which then requires
-memory to be broken into chunks. On a traditional machine the address
-is 64 bits long and the chunk is 8 bits long. Consequently, we cannot
-address fine details (such as individual bits), and we also cannot
-easily span large values.
+One advantage of structural categories is that; being full subcategories
+means that full subcategories are easily specified by simply
+listing a subset of the types: the subcategory then consists of
+all the arrows between these types.
 
-This problem is solved in C by padding. So we must do the equivalent,
-only now we must forget binary coding, since our rings and fields
-and addressing no longer need to be powers of 2.
+\subsection{Abstract Categories}
+These are finite non-structural non-full subcategories of $\Set$.
+Since they are not full subcategories, some arrows of the corresponding
+structural categeory of the same size are missing, which is what makes
+them abstract (abstraction is a matter of forgetting details).
 
-Note that from the point of view of a circuit the application of an exponential
-to recover the value which we previously took the logarithm of is done
-using a decoder which creates a fanout dependent on the base of the logarithm,
+The corresponding structural category is call the {\em representation.}
+An abstract category is usually specify by nominating certain arrows
+call {\em generators} which form a basis for the category. This is called
+the {\em interface}. The interface is then {\em instantiated} by
+mapping arrows from the abstraction to the representation using
+a forgetful functor.
+
+\subsection{Free Categories}
+An abstract category specified only by the carestian closure of the generators 
+under composition is said to be {\em free}. Free categories form an {\em initial
+algebra.}. A free category may be regarded as {\em abstract syntax.}
+
+\subsection{Constrained Categories}
+A constrained category is a free category with a non-trival constraint 
+specified by a set of equations. The constraint is a functor which is not an isomorphism. 
+The effect of the constraint is also called a {\em representation invariant}
+in which some distinct terms of the initial alegra are {\em equivalent,}
+this equivalence is sometimes called {\em semantics}.
+
+\begin{example}
+The representation of a rational number is usually constructed by first using
+a pair of intgers $(p,q)$ as the presentation and then adding two constraints:
+$q>0$ and $\mathrm{gcd}(p,q)=1$, the latter eqivalent to a claim $p$ and $q$ are relatively
+prime.
+\end{example}
 
 \chapter{Type System}
 \section{Theory}
-Let $\mathcal{Set}$ be the usual distributive category consisting of all small sets and functions.
-We are going to provide two modifications. 
+Let $\Set$ be the usual distributive category consisting of all small sets and functions.
+Let $\Set_n$ be the full subcategory containing only sets of size less than $n$.
 
-First let $\mathcal{Set}_n$ be the full subcategory whose
-objects consist only of sets of size $n$ or smaller. This category is not distributive because not
+Let $\Nat$ be the full subcategory of $\Set$ consisting
+of sets of integers $\mathit{N}_n=[0,n)$ for some $n$, and let
+$\Nat_n$ be the full category consisting of the 
+sets $N_k$ for $k\in \mathit{N}_n$.
+
+\begin{figure}[h]
+\includegraphics[width=0.8\textwidth]{../../IMG_0224.jpg}
+\caption{Categorical inclusion diagram}
+\label{fig:categorical inclusion}
+\end{figure}
+
+The objects of these categories are sets which we will also call {\em types.}
+
+The category with no objects is called {\em Void}, with one object, the empty set,
+is called {\em Unit}. The category $\mathit{Nat_2}$ has two objects, the empty set
+and a set containing only 0, and is also called {\em Bool}.
+
+The empty set $\mathit{N_0}$ is also called {\em void}, and the set $\mathit{N_1}$
+with just $\{0\}$ {\em unit}, the set with two values, 0 and 1 is called {\em bool}.
+
+The number of objects in a finite category is given by a the function {\em size}
+which is overloaded to also given the number of values of a set, and is written
+\begin{equation}
+\mathrm{size}X = |X|
+\end{equation}
+so that in particular
+\begin{equation}
+|N_n|=n
+\end{equation}
+The fundamental theorem of our construction is
+\begin{lemma}
+Every object $X$ of size $k<n$ in $\mathit{Set_n}$ is isomorphic to the unique object $N_k$
+in $\mathit{Nat_n}$. 
+\end{lemma}
+
+The basic idea is that we have a functor 
+\begin{equation}
+\mathrm{Rep_1}: \Nat_n\rightarrow \Set_n,
+\end{equation}
+where $\mathrm{Rep}_1$ is an isomorphism.
+
+To perform a computation in the image of the functor in $\Set_n$ 
+we first apply the inverse functor, perform the calculation using integers in $\Nat_n$
+and then apply the functor to go back from the representation space to the represented space.
+
+However this is not enough because for example we can have two distinct objects in $\Set_n$
+of the same size which "behave differently" so we would need a second functor 
+\begin{equation}
+\mathrm{Rep_2}: \Nat_n\rightarrow \Set_n
+\end{equation}
+which is also an isomorphism. In fact, the same object can be used in different ways,
+and so "behave differently" in different contexts.
+
+However, we cannot have this second functor model operations on a single objects
+behaving "the same way" in each context give different results, these functors
+must be constrained so that it does not matter which representation is used, 
+we get the same answer. This leads to the following core theorem:
+\begin{theorem}
+Any two representations must be naturally equivalent, in other words,
+the representation functors must be related by a natural transformation.
+\end{theorem}
+
+
+
+\subsection{Compact Tuple}
+\begin{definition} {\em Compact Tuple}.
+The compact tuple functor has kind 
+$$\mathrm{Tup}: (Nat-N_0)^{\mathit{N_n}}\rightarrow \Nat,$$
+where the index set is considered as a discrete set.
+\footnote{the index structure is crucial and will be generalised later} 
+It maps types
+$$(N_{i_0}, N_{i_1}, ... , N_{i_{n-1}}) \mapsto N_m$$
+where 
+$$m=\prod_{j=0}^{n-1}j_k.$$ 
+
+The value map is given by
+$$(v_0, v_1, ... ,v_{n-1}) \mapsto
+v_0  r_0 + v_1  r_1 + ... + r_{n-1}  v_{n-1}$$
+where
+$$r_k = \prod_{j=k+1}^{n-1}i_j$$
+where the empty product is 1.
+ 
+The projection functions of type 
+$$\mathrm{prj}_k: N_m\rightarrow N_k$$
+of the $k'th$ index is given by 
+$$v \mapsto v / r_k \mod i_k$$
+using Euclidean (integer) division.
+
+The common notation for tuple types is
+$$N_{i_0} \times N_{i_1} \times ... \times N_{i_{n-1}}$$
+and values are usually written
+$$v_0, v_1, ... ,v_{n-1}$$.
+
+When it is clear, we will just write $n$ instead of $N_n$, for
+example 5 instead of $N_5$.
+
+Note that the result of the functor is {\em NOT} a type: this cannot be
+emphasised enough. The result is a family of projections with the
+same index as the functor.
+\end{definition}
+
+Note 
+\begin{itemize}
+\item Category theory explained \cite{products}
+\item the domain categories have the empty set excluded because its setwise cartesian product
+with a non-empty set is the empty set, and is not a categorical product due to the non-existence of 
+a projection for the non-empty component.
+
+\item
+for a domain component of unit type $N_1$ a projection will be the unique
+map $N_m\rightarrow N_1$ and the result will be
+the value 0, independent of the constructed value $v$, since $x \mod 1$
+always has value 0. In particular no state is required for storage of the
+component and our encoding does not allocate any. Nevertheless the encoding
+of the projection yields the correct result, namely 0.
+
+\item
+if the index set itself is empty, the product exists and is the unit type $N_1=\{0\}$
+and there are no projections so the categorical requirement is satisfied in vaccuo.
+
+\item
+the indexing scheme is big-endian so a component with index 0 has the highest value.
+This is un-natural mathematically but conforms to the usual Western representation
+of numbers, lexicographical ordering, and the usual convention in programming languages.
+Of course we use Arabic numbers, and Arabic is read right to left.
+
+\item
+product formation is not associative: associates are isomorphic but not equal;
+they have different projections; however, they all have the same domain. For example
+$$5 \times 3 \times 2 \neq (5 \times 3) \times 2 \neq 5 \times (3 \times 2)$$
+have projections $30\rightarrow 5,\,30\rightarrow 3,\,30\rightarrow 2$ and 
+$30\rightarrow 5\times 3,\,30\rightarrow 2$ and $30\rightarrow 5,\,30\rightarrow 3\times 2$,
+respectively. 
+\end{itemize}
+
+The construction given is well known and is commonly called a {\em variadic number system}.
+
+
+\begin{center}
+\begin{tabular}{|l|r|r|r|r|}
+\hline
+\multicolumn{5}{|c|}{British Monetary System}\\
+\hline
+name & pounds & shillings & pence & farthings \\
+$k$&0&1&2&3\\ 
+$i_k$&  100 &  20 & 12 & 4 \\ 
+$r_k$         &   960 & 48  & 4  & 1 \\ \hline
+
+\multicolumn{5}{|c|}{Constructor}\\ \hline
+$v_k$& 2     &  3  &  4  & 1 \\
+$v_k\times r_k$ & 1920 & 144 & 16 &  1 \\ \hline
+$v=\sum_0^3v_k\times r_k$&\multicolumn{3}{|c|}{}&2081\\ \hline
+\multicolumn{5}{|c|}{Projections}\\ \hline
+$v/r_k$& 2 & 43 & 520 & 2081 \\
+$v/r_k\mod i_k$&2&3&4&1\\
+\hline
+\end{tabular}
+\end{center}
+
+For example in the British monetary system, 20 shillings is a pound, 
+12 pence is a shilling, and 4 farthings is a penny. So v0=2 pounds, v1=3 shillings, v2=4 pence,
+and v3=1 farthing is equal to 2 * (20 * 12 * 4) + 3 * (12 * 4) + 4 * (4) + 1 * (1) farthings.
+We store 2081 farthings. We extract pounds as 2081 / (20 * 12 * 4) = 2, shillings as
+(2081 / (12 * 4)) mod 20 = 3. pence as 2081 / (4) mod 12 = 5 and 2081 / (1) mod 4 = 1 farthing
+where the formulae in parentheses are precisly the $r_k$ above. 
+
+Note the first modulo is not required by construction, and the final division will 
+always be by 1. The store of farthings is a compact product, and the extractors
+of each denomination are projections. The general formulae and category theoretic
+rationalisation reduces to primary school arithmetic!
+
+
+
+\subsection{Compact Enumeration}
+In order to understand compact enumerations with arguments we will first start 
+with a special case, the unit sum. A type we would write as 1+1+1 can be thought
+of as a 3 slot check box, where you mark 1 of the three slots with your choice.
+The encoding of your choice will simply be its position, 2, 1 or 0.
+In otherwords the type $N_3$ can be considered a unit sum.
+
+Now suppose you have a check box that gives two choices, so that if you select
+the first, you get 3 more choices, and if you select the second, you get 4 choices.
+Thus can be written (1+1+1)+(1+1+1+1) or more simply 3+4, and is equivalent
+to having 7 choices. In particular we can just use the value 6 for the first choice,
+5 for the second choice, and so on down to 0. More precisely, values in the range
+4..6 inclusive represent the first case and 3..0 the second case.
+
+Therefore we can figure out which of the top level two cases are encoded
+by testing if the stored value is in the inclusive range 4..6 (first case),
+or 3..0 (second case).
+
+If we find the first case we have to subtract 4 to get the summand.
+otherwise we have the second case and the value is the answer.
+
+It takes only a second to realise that the argument of a sum type
+in our system is always a type with $k$ states; that is, $N_k$
+for some $k$, even if it was constructed as a product, the formula
+will work to find the argument.
+
+Category theorists call this type constructor a sum or coproduct,
+and programmers usually call them variants, however we will
+follow Rust and just call them enumerations.
+
+\begin{definition} {\em Compact Enumeration}.
+The compact enumeration functor has kind 
+$$\mathrm{Enum}: (Nat-N_0)^{\mathit{N_n}}\rightarrow \Nat,$$
+where the index set is considered as a discrete set.
+It maps types
+$$(\mathit{N}_{i_0}, \mathit{N}_{i_1}, ... , \mathit{N_{i_{n-1}}}) \rightarrow \mathit{N}_m$$
+where 
+$$m=\sum_{k=0}^{n-1}i_k$$. 
+
+The injection function index $k$ type $$\mathrm{inj}_k : N_{i_k} \rightarrow \Nat_m$$
+constructs the enumeration as follows: 
+$$v\mapsto v + s_k$$
+where
+$$s_k = \sum_{j=k+1}^{n-1}i_j$$
+where the empty sum is 0.
+
+Decoding an enumeration requires extracting both the index and injected
+value. The index is given by the largest $k$ such 
+that $v \geq s_k$ and the argument is then $v - s_k$. 
+\end{definition}
+
+Note
+\begin{itemize}
+\item
+the ordering is big-endian, with the operand of the choice 
+in position 0 being given the highest value.
+
+\item
+the required $k$ always exists because $s_{n-1}=0$.
+
+\item
+as for products we exlude $N_0$ from the input categories,
+however for a different reason. There is a unique map from $N_0=\{\}$ 
+to every set which is a perfectly good injection, but it cannot
+be applied and so does not construct an enumeration, so has
+no representation in our encoding scheme. A sum containing voids
+is well defined but isomorphic to a sum with the voids removed
+(except if it is the only one), so we will treat that isomorphismn
+as an equality and exclude void cases.
+\end{itemize}
+
+\subsection{Compact Arrays}
+If all the components of a compact product are the same type,
+we can use a special array functor to construct it.
+\begin{definition} {\em Compact Array}
+The compact array functor has kind 
+$$\mathrm{Arr}: (Nat-N_0)\times {\Nat}\rightarrow \Nat,$$
+
+It maps types
+$$(\mathit{N}_b, \mathit{N}_n) \mapsto \mathit{N}_m$$
+where 
+$$m=b \times n.$$
+
+The value map is given by
+$$(v_0, v_1, ... ,v_{n-1}) \mapsto
+\sum_{k=0}^{n-1} v_k r_k$$
+where
+$$r_k = b^{n-1-k}$$
+ 
+The projection functions of type 
+$$\mathrm{aprj}: N_m \times N_n \rightarrow N_b$$
+of the $k'th$ index is given by 
+$$(v,k) \mapsto v / b^{n-1-k} \mod b$$
+using Euclidean (integer) division.
+\end{definition}
+
+The type $N_b$ is the base type of the array, and the type $N_n$ is
+the index type, the array will be length $n$. Not that unlike the
+ordinary projection $\mathrm{prj}$, the $\mathrm{aprj}$ operator takes
+an argument $k$ of the index type $N_n$, in other words the index
+can be computed at run time. The reason is that the type of the
+projection is independent of the index.
+
+\subsection{Generalised Compact Arrays}
+It seems a pity we cannot calculate the indices of a tuple at run time
+because the tuple components all have different types.
+Luckily there's a way to fix this! We simply unify projection codomains
+into a coproduct type, namely, the categorical dual of the product type!
+\begin{definition} {\em Generalised Compact Array}
+The generalised compact array functor has kind 
+$$\mathrm{GArr}: (Nat-N_0)\times {\Nat}\rightarrow \Nat,$$
+
+It maps types
+$$(\mathit{N}_{i_0}, \mathit{N}_{i_1}, ... , \mathit{N_{i_{n-1}}}) \mapsto \mathit{N}_p$$
+where 
+$$p=\sum_{k=0}^{n-1}{i_k}.$$ 
+
+The value map is given by
+$$(v_0, v_1, ... ,v_{n-1}) \mapsto
+v_0  r_0 + v_1  r_1 + ... + r_{n-1}  v_{n-1}$$
+where
+$$r_k = \sum_{j=k+1}^{n-1}i_j$$
+where the empty sum is 0.
+ 
+The projection functions of type 
+$$\mathrm{gprj}: N_m \times N_n \rightarrow N_p$$
+of the $k'th$ index is given by 
+$$(v,k) \mapsto (v / r_k \mod i_k) + s_k$$
+where
+$$s_k = \sum_{j=k+1}^{n-1}i_j$$
+\end{definition}
+
+Note that for example $A \times B \rightarrow A + B$, in other words the
+projections all retun the sum type which is dual to the product type.
+In particular the usual projection first returns the $k'th$ component 
+which is then injected into the dual sum at the same position.
+To retrieve the value could do the usual case analysis. however
+since we know the index it can be retrieved immediately by
+just subtracting $s_k$.
+
+
+\subsection{Compact Coarrays}
+A coarray, or repeated sum, is the dual of an array, that is,
+it is a special case of the enumeration in which all the
+enumerants have the same type. In this case the injection
+functions can take a run time argument.  Now the sum of the
+RHS components can be computed by a single multiply, and
+instead of a linear search through subranges, we can 
+use a binary chop to reduce the decoding time.
+
+In fact, a different encoding could be used consiting of
+a pair, the index and value which would admid constant
+time encoding (by just using projections).
+
+[add specs]
+
+\chapter{Compact Linear Types}
+The theory presented in the previous chapter appears reasonably general,
+but in fact it is somewhat crude {\em because} it starts with subranges
+of integers, and uses them as indices for functors.
+
+We now present a more general system of mind blowing expressive power.
+Note that, desipte this, the representational computations are the same.
+
+\begin{definition}
+Given two functors for products and sums with the empty product, or unit,
+denoted 1, and the empty sum, or void, denoted 0, then, a {\em compact
+linear type} is defined recursively as follows:
+\begin{enumerate}
+\item 0 is a compect linear type
+\item 1 is a compect linear type
+\item any finite product of compact linear types is compact linear
+\item any finite sum of compact linear types is compact linear
+\end{enumerate}
+Note that in fact the first two conditions can be dropped, since
+they are subsumed by the second two conditions. 
+\end{definition}
+
+A {\em unitsum} is a special case which is a finite sum of units,
+that is, a type of the form $1+1+...+1$. This is just our
+original type $N_n$ for the sum of $n$ units.
+
+However there is a significant extension to our original formulation:
+where previously we used sum and product functors indexed by
+$N_k$ for some $k$, we now allow {\em any compact linear type}
+as the functor index type.
+
+To understand how radical an upgrade this is, and what it actually
+means, consider the product $2 \times (3 \times 4)$. Products are
+not associative so we first construct $3\times4$ with a bifunctor
+indexed by $N_2$, then construct the whole term, with a second
+bifunctor, also indexed by $N_2$.
+
+This is clearly inconvenient, we would like to compose the functors
+so there is only one functor, and we do that {\em by changing
+the index type} to $1+(1+1) = 1 + 2$.
+
+It's important to see that the index is an exponential, and so obeys the
+usual index laws. In particular the domain category is
+$$\Nat^{1+2} = \Nat \times {\Nat^2}$$
+which means the LHS is precisely the functor composite of the RHS.
+What we have done is {\em lifted the structure out of the codomain
+into the domain}. In particular, we have {\em linearised} the
+structured type in doing so.
+
+To see what this means, lets consider that the value of the RHS type
+$$(1,(2,3))$$
+is in fact
+$$(1,2,3)$$
+in the LHS type. What's more, the {\em representation} type of both
+is precsiely $N_{24}$ and iterating through the representation will
+find all the values, in order, for both types.
+
+In particular, every structured type is an array, with an index
+that models the type as an exponential. Consider another example:
+$$((1,2,3),(4,5,6))$$
+This is an array length 2, of arrays length 3; that is, it has type
+$$(N^3)^2$$
+However it is equivalent to an single linear array
+of type
+$$N^{2\times 3}$$
+with the corresponding value being
+$$(1,2,3,4,5,6)$$
+In particular you can see when we raise an exponential to an index
+we get a product, and when we raise a product to an index we get a sum.
+Conversely, if the index of a functor is a sum, the type designated
+is a product, and if a product it is an exponential.
+
+To put this another we, the index is the {\em logarithm} of the type.
+In our array of arrays case, we have converted the type to a matrix
+so instead of writing $(x.1).2$ for a component we can now
+write $x.(1,2)$ and the subcript is now a pair, instead of two
+successively applied subscripts. An array of arrays is not a matrix,
+because a matrix does take a single index which is a pair.
+
+Linearisation is an isomorphism, not an identity; but it has the special
+property that the underlying representation is not changed; that is, the order
+of array elements is invariant. In code, this means it is a suitable static
+cast, involving no run time operations. Contrast this with symmetry, which is 
+also an isomorphism, but requires reordering of values in the store.
+
+The interpretation is that:
+\begin{enumerate}
+\item When the functor has an index of type $k$, the array subscript has type $k$
+\item The element accessed is the representation of $k$
+\end{enumerate}
+
+Here are more examples. Consider
+$$(1,2,3),(4,5)$$
+The type is 
+$$N^3\times N^2$$
+This can be represented as a linear array
+$$(1,2,3,4,5)$$
+by using a functor index of type
+$$3+2$$
+This means, you first chose the left summand of type 3 or the right
+summand of type 2, which is picking which tuple you're interested in,
+either $(1,2,3)$ of $(4,5)$, respectively.
+
+In the first case, you now pick a value of type 3, and in the second,
+a value of type 2. In other words, the array index is a variant.
+To actually compute the array index, we simply use the representation
+which is 0,1, or 2 in the first case, and 3 or 4 in the second.
+So the representation value is an index of the original data structure,
+but {\em linearatsed} or {\em flattened}.
+
+Compact linear types were invented with the intention they be used
+as array indices allowing polyadic array operations; that is,
+operations on matrices of arbitrary rank and dimension, in a manner
+independent of the rank and dimension. The rules are the generalistions
+of the binary index laws:
+$$\log (X^n\times X^m) = X ^ {n + m}$$
+and
+$$\log {X^n}^m = X ^ {m \times n}$$
+Note the reversed order of the second case law. This is necessary
+so that in sequencing, the $n$, or inner index moves fastest.
+
+\chapter{blah}
+
+
+Neither $\Set_n$ nor $\Nat_n$ are distributive because not
 all finite sums and products exist, however the distributive law does hold, provided the relevant
-sums and products exist. We will say this category is {\em locally distributive}.
+sums and products exist. We will say these categories are {\em locally distributive}.
 
-If $n < m$ then $\mathcal{Set}_n$ can be embedded in $\mathcal{Set}_m$, which has larger sets,
-by simply mapping every function in the former to the same function in the latter. 
-If there is a need to compute a sum or product which is not available in 
-the former we can simply upgrade our computation space to a larger category. 
-In particular, for any finite computation, there is always a large enough locally
-distributive category in which we can perform the computation successfully.
+We note that $\Nat_m$ is a full subcategory of $\Nat_n$ when $m<n$
+which means there is a linear sequence of these categories forming a total order
+by inclusion. As a consequence if a finite computation is parametrised by the category size 
+a lower bound must be calculated for the category size.
 
-Our second modification is to take each category $\mathcal{Set}_n$ and find its
-{\em skeleton} category $\mathrm{Set}_n$. We first partition all the set objects
-into classes with the equivalence relation of equal size, all the function arrows
-can be similarly partitioned because for finite sets, equality of size makes these
-objects isomorphic.
+The size of a tuple of type \verb%2 * 4 * 3% is 24, of a sum \verb%2 + 4 + 4% is 9.
+More generally the size of a type given by an expression involving digits, 
+product symbols, and sum symbols is given by the same expression reinterpreted
+as an ordinay arithmetic expression. 
 
-Then, as usual, we will choose a canonical representative from each class, and use
-the functions between the canonical representatives exclusively to perform
-calculations.
+A second observation is that $\Nat_n$ is a full subcategory of $\Set_n$
+The interpretation is as follows: any type $T$ in $\Set_n$ of size $k$ is isomorphic
+to $\mathit{N}_k$ so all operations in $\Set_n$ can be performed by mapping
+to $\Nat_n$ using isomorphisms, doing the operations, and mapping the
+results back with the inverses. For example to find the next element in an
+enumeration of size $k$ we can map to $N_k$, find the next enumerant,
+and map back to enumeration. Types other than $\Nat_n$ are called 
+{\em nominal types} and can be represented with suitable isomorphisms
+using {\em structural types}. Therefore it suffices to work exclusively
+with the structural type system. 
 
-In particular, for a set size $n$ the canonical representative will be the set
-consisting of the integers from 0 to $n-1$, a local compact subrange of integers,
-which we will denote by $\mathbb{N}_n$, or, where the context is clear, we will
-just write $n$. 
+As an example, consider the representation of a rational number as a pair
+satisfying the usual invariant that the denominator is positive and is relatively
+prime to the numerator. We can represent these exact value by using
+Cantor's diagnonal method which proved the number of rational numbers
+is the same as the number of integers. This accounts for both pairs
+which do not correspond with any rational because the denominator
+is zero, and also the fact that all pairs of form $(ki, kj)$ represent
+the same rational. In practice we simply use appropriate operations
+in $\Nat$ to enure the pair is stored in canonical form.
+The important fact is we have shown that an arbitrary abstraction
+can be presented by using a structural representation.
 
-We will denote values using the notation \verb$element : type$ for example
-$4:5$ denotes the integer 4 considered as a member of $\mathbb{N}_5$.
+To put this another way, all abstractions are simply a non-full subcategory
+formed by keeping some functions and discarding the rest. Of course
+this is well understood in principle, where for example in an object
+oriented system and abstract data type is represented by public methods
+whose implementation details are private. However, we have generalised
+these intuitions and presented a rigourous mathematical model of abstraction
+using the notion of subcategories in category theory. The model transcends
+not only object orientation but {\em all} module systems. In particular
+using category theory we shall see later abstractions can be made polymorphic.
 
-What we have done so far is taken an abstract mathematical construction and
-reduced it to an abstraction which is more amenable to computation: computers
-are finite state machines so finiteness is mandatory, and they can perform
-computations on integers, so we have some hope of actually doing real
-computations. 
+
 
 But we are not finished yet because we have not specified how to actually
 perform the calculations. To handle this problem, we need some more
@@ -791,149 +1369,7 @@ category ring[T] : group[T]
   hash2 : T * T -> T
 \end{minted}
 
-\chapter{Addressing}
-Indirection and addressing of data is a core capability of most machines,
-however few programmers understand what an address actually is, mathematically.
-
-Consider a machine in which all of memory is consider a single very big integer.
-For a 32 bit machine with big endian representation byte 0 has value
-$$v = v0 * 256 ^ {2^32 - 1}$$
-To extract the value of this byte we use a projection:
-$$v / 256 ^ {2^32 - 2} \mod 256$$
-More generally for the n'th byte
-$$v / 256 ^ {2^32 - (n - 2)} \mod 256$$
-which is equivalent to shifting the byte "right" all the way to
-the end of memory.
-
-This is an unconveniently large value to store! In fact to store a computation
-in general we would need all of memory just for the quotient!
-
-Why not store just $n$ instead? The first byte will be numbered zero,
-the second 1, etc. We have to note this is not fully general because
-it can only pick out values on 256 bit boundaries, however the modulus
-is very compact, and we can adjust it to pick out part of a byte, or
-several bytes, at least for small sizes.
-
-For large objects, the modulus too will get too large, so again,
-what can we do? Well we can take the logarithm of the modulus
-base 256! Then to perform the calculation we use it as a power
-of 256.
-
-Similarly, if we take the logarithm base 256 of the quotient we get
-$$\log_256 (256 ^ {2^32 - (n - 2)}) = 2^32 - (n - 2) $$
-
-In summary, an {\em address} is a logarithm of the quotient of
-a projection, calculated to some base. The base is a quantisation
-factor that determines the granularity of the address. We will normally
-quantize the modulus too.
-
-With conventional ISAs, the logarithmic base is usually 256. Even machines
-with minimal addressable memory quantum of two bytes usually provide
-a byte address and simply require the low bit to be zero.
-
-However on a proof generating machine, a suitable power of two base
-for the logarithm may not exist. Such machine usually max out at just
-under a power of 256 for their largest atomic type since it has
-to be a prime number such as the Goldilocks prime $2^64 - 2^32 + 1$.
-
-Furthermore, whilst common VM's actually ise conventional addresses,
-they tend to address a 4 tuple of value of prime fields. There is no
-common addressing model.
-
-The reason we needed data addresses is simple. The cost of computations
-of compact product constructors and projections is medium on a conventional
-ISA but much better on a proof generating machine because the cost of
-field operations is usually 1. However, once we run out of space,
-we have to use multiple values to hold a product, and to find these
-objects in memory efficiently we want to use {\em one} address: the first
-value is at that address and the second at the address plus 1.
-
-To find a value now, we have two step calculation: first we calculate
-the offset of the base address and extract the value there, and
-then extract a component using the compact projection formula.
-
-However even this is not enough, if the value is bigger than a memory
-cell. In this case we need to perform two or more extractions
-using addressing projections and then several compact projections
-to get the pieces right, before recombining them.
-
-In particular, given a small ring, plus an addressing scheme, where
-the small ring is less than or (ideally) equal to the base of the addressing logarithm,
-we can construct much larger rings using an array of addressable words
-of the size of the logarithm base, together with standard high school
-long arithmetic.
-
-If this wasn't enough, there is no reason which a second level of addressing
-is also made available, with much larger logarithm base, and indeeds,
-this is universally the case we caching scales up to eventually lead
-to large scale stores (called disks usually even though solid state
-technology is universal today).
-
-The addressing scheme for data is called the {\em memory model},
-and we need a fully general, and in light of large scale stores,
-recursive mathematical formulation.
-
-
-
-\chapter{Modularity}
-Contrary to popular belief and design, an appropriate unit of modularity
-is the {\em routine.}
-
-A basic routine is a labelled lexically contiguous sequence of instructions
-accepting an argument and with a terminal operation which either halts
-the routine, or invokes another.
-
-The terminal is a sum type in which the constructors names must be labels
-of routines, and in which the arguments of the constructor become the
-argument of the invoked routine.  The exit selected is determined by
-the injection which created the value of the sum type.
-
-In a more conventional and relaxed form, a routine can contain multiple
-exits possibly selected by a conditional.
-
-In this model, a {\em subroutine} is a special case of a routine in which
-the caller passes it's current continuation (the next instruction) as, or as
-part of, the called routine's argument implicitly. Then the caller can be resumed
-by use of a return instruction.
-
-A {\em function} is a special case of a subroutine, in which the caller's suspension
-contains an unitialised reserved slot for a value which is assigned a value
-by the return instruction before the called routine terminates and the caller
-is resumed.
-
-A coroutine is a different special case of a routine which is passed a continuation,
-but not necessarily the callers continuation. The coroutine can then exit by
-resuming any suspension.
-
-The usual way to organise coroutines is using a schedular and channels in the style
-of Tony Hoares communication sequential processes (CSP) but with indeterminate
-evaluation replacing concurrency.
-
-Central to the execution model is the idea that a routine can suspend itself,
-and be resumed by others, in particular the notion of continuation passing
-is fundamental, and functions are merely a special case.
-
-In particular, functions are very weak at handling failure, for example
-division by zero, so a routine that performs a division should in fact
-have two continuations to choose from.  in this case favouring one
-as special, which is what happens with a subroutine due to the implicit
-acceptance of the callers continuation makes the divide by zero exceptional,
-which is clearly bad design.
-
-\chapter{Addressing}
-One of the core tenants of a von Neumann architecture is that memory is
-addressable, and programs are stored in memory.
-
-Standard ISA usually involve bytes and words which are rings of size powers of $2^8$,
-and there will be a word size, typically a ring $2^64$ which is used to address memory.
-
-We must generalise this model, because many modern VM use finite fields as basic
-memory elements, and such fields never have a size which is a power of 2 since
-for a ring to be a field, it must be a product of rings of a size which is a prime number,
-and 2 is too small for most calculations.
-
-This all leads to the question, exactly what is an address?
-
+\printbibliography
 
 \end{document}
 
