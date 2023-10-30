@@ -43,6 +43,9 @@
 
 \def\Set{\mathit{Set}}
 \def\Nat{\mathit{Nat}}
+\def\Hom{\mathit{Hom}}
+\def\ALU{\mathit{ALU}}
+\def\MMU{\mathit{MMU}}
 
 % minted
 \usemintedstyle{friendly}
@@ -609,6 +612,102 @@ a pair, the index and value which would admid constant
 time encoding (by just using projections).
 
 [add specs]
+
+\section{The ALU}
+We now have almost enough machinery to specify our first device.
+\begin{definition}
+An $\mathrm {ALU}_n$ is a device with two registers, an instruction register $F$
+of size $k$
+and a data register $A$ of size $n$. The instruction register contains an ALU implementation
+specific encoding of a functin $f:N_n\rightarrow N_n$ which is applied to the 
+value in the $A$ register, which is replaced by the result of applying the function to it.
+\end{definition}
+
+A simple case of an ALU is a {\em synchronous} ALU which has a clock input.
+It reads the instruction and data on the rising edge of the clock pulse,
+and must write the result to the data register prior to the falling edge
+of the clock.
+
+An {\em asynchronous} ALU reads its input on an input clock pulse, writes
+the result to the data register, and then emits an output clock pulse to
+signify completion.
+
+The key observation to be made, in either case, is that composition of functions is represented
+temporaly by successive ALU operations.
+
+Let $S$ be a subset of the functions of the type $N_n$.
+The collection is said to be a {\em spanning set} if its transitive 
+closure under composition is the set $\Hom(N_n,N_n)$, the set of all functions
+from $N_n$ to $N_n$.
+
+A spanning set is said to be a {\em basis} if the removal
+of any one function would leave a non-spanning set.
+
+An ALU is said to be {\em absolutely complete} if the set of instructions
+it accepts map to a is the set of all functions of the category.
+Only very small ALUs can be absolutely complete, since the number of
+functions from a set of size $n$ to itself is $n^n$.
+
+An ALU is seid to be {\em temporaly complete} or just {\em complete}
+is the set of mapped functions is a spanning set, otherwise the
+ALU is {\em incomplete} or {\em abstract}.
+
+We wish to extend these definitions to the whole category $\Nat_{n+1}$
+(the $+1$ being required in the notation so that $N_n$ is the largest type.)
+
+We can do this as follows: first, a function with codomain $N_c$ for $c<n$
+can be extended to a function with codomain $N_n$ by post composition with
+the embeddding from $N_c$ to $N_n$. The beauty of this arrangement is that,
+since $N_c$ is simply a subset of $N_n$, and this an integer of $N_c$ is the
+very same integer of $N_N$, the operation is merely a type cast to ensure
+type correctness and has no run time impact; in other words it is has
+no operation and does not require a an instruction to effect it.
+
+Secondly, if the domain of the function $f$ is $N_d$, we can replace
+it with a function $g$ provided $g\restriction_{N_d}=f$ and pre
+compose another embedding, which as above is a type cast with no
+run time impact.
+
+Indeed, this second method subsumes the first if $g:N_n\rightarrow N_n$.
+
+Thus we can represent functions of the whole category, 
+provided we have suitable function on the largest type.
+This is not a universal property of categories of course,
+but peculiar to a specific construction of the $\Nat$ family.
+
+It is well known, for any category, that given any chain of arrows,
+appropriate identity arrows can be added at any point, without changing
+the resulting composite, and, identities can be removed at any point,
+unless the chain consists of a single identity.
+
+However for the $\Nat$ family we have a much stronger result: for any
+category $\Nat_n$ the chain of arrows an $\ALU$ can implement embedding
+functions required to ensure type correctness can be ignored when constructing
+the corresponding instruction stream for the ALU.
+This is called {\em type erasure}. In effect it means that instructions
+are {\em generic} in the sense that each instruction can represent a whole
+family of functions.
+
+It is important to note that more than one $g$ can represent $f$, because
+the action of $g$ on values outside the domain of $f$ can be anything,
+since, when $g$ is used to replace $f$, the argument to $g$ is guarranteed
+to be in the domain of $f$ and the result of applying it to values
+outside the domain are irrelevant, since such application cannot occur.
+
+Another way to view this result is to say that an ALU for a category
+$Nat_n$ can perform all the {\em supported} operations for all the contained
+categories. The qualification {\em supported} is required in case
+the ALU can only represent an abstraction; that is, if the instructions
+do not form a spanning set for the largest type of the largest category.
+
+A particular mapping of functions 
+$$\mathrm{Repr}: \Hom_n(\_,\_) \rightarrow \Hom(N_n, N_n)$$
+used to represent them is called a {\em representation} of 
+the category $\Nat_{n+1}$ and in effect reduces the design
+space of the ALU to the monoidal subcategory with only
+the largest type retained.
+
+
 
 \chapter{Compact Linear Types}
 The theory presented in the previous chapter appears reasonably general,
@@ -1369,6 +1468,8 @@ category ring[T] : group[T]
   hash2 : T * T -> T
 \end{minted}
 
+\cleardoublepage
+\addcontentsline{toc}{chapter}{Bibliography}
 \printbibliography
 
 \end{document}
