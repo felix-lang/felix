@@ -121,26 +121,29 @@ construct new types from the base, abstraction, polymorphism, and modularity.
 A {\em category} is a directed multi-graph whose vertices are called {\em objects,}
 and whose edges are termed {\em arrows} or {\em morphisms},
 together with an equality operator for both objects and arrows,
-and a partial binary operator called {\em composition} with two
+and a partial binary operator called {\em composition} with three 
 constraints:
 \begin{enumerate}
-\item If $A,B,C$ are objects, and $f:A\rightarrow B$ is an arrow
+\item {\em Closure:} If $A,B,C$ are objects, and $f:A\rightarrow B$ is an arrow
 from A to B, and $g:B\rightarrow C$ is an arrow from B to C,
 then there exists an arrow $h:A\rightarrow C$ such that
 $$h = g \circ f = f \odot g$$
 where $\circ$ is composition operator in forward notation and $\odot$
 is the (vastly prefered) composition operator in reverse notation.
-\item For every object $X$ there is an arrow $1_X:X\rightarrow X$
+\item {\em Identity:} For every object $X$ there is a unique arrow $1_X:X\rightarrow X$
 called an {\em identity} arrow, such that for all arrows $f:A\rightarrow X$
 $$f \odot 1_X = f$$
 and for all arrows $g:X\rightarrow C$
 $$1_X \odot g = g$$
+\item {\em Associativity:} If $f\rightarrow B$, $g:B\rightarrow C$ and $h:C\rightarrow D$ then
+$$(f\odot g) \odot h = f\odot (g \odot h)$$
+which as usual means the parentheses may be elided without ambiguity.
 \end{enumerate}
 The head object of an arrow is called the {\em domain} and the tail
 object the {\em codomain}.
 
-Note that due to the bijection between opjects and identity arrows
-we can throw out the object altogether; such a category is called
+Note that due to the bijection between objects and identity arrows
+we can throw out the objects altogether; such a category is called
 an {\em arrows only} category. 
 \end{definition}
 
@@ -151,8 +154,9 @@ and sometimes called types; the arrow are functions.
 \end{example}
 
 \begin{example}
-For any graph, the collection of
-all paths on the graph is a category.
+For any directed graph, the collection of
+all paths on the graph is a category; provided we add, if necessary, an identity
+arrow for each vertex.
 \end{example}
 
 \begin{definition}
@@ -162,123 +166,46 @@ correspond, and the set of arrows must be closed under composition.
 \end{definition}
 
 \begin{definition}
+If $D$ and $C$ are objects of a category, the set of all arrows 
+from $D$ to $C$ is called the {\em hom set} from $D$ to $C$
+and is written
+$$\Hom(D,C).$$
+\end{definition}
+
+\begin{definition}
 The {\em dual}, or {\em opposite} of a category $X$ is the same
 category with all the arrows reversed, usually written $X^{\mathit{op}}$.
 \end{definition}
 
 \begin{definition}
-A {\em covariant mono-functor} is a structure preserving map
+A {\em covariant functor} is a structure preserving map
 $F:A\rightarrow B$ from
 categopry $A$ to category $B$, which maps objects to objects and
 arrows to arrows and which preserves composition; that is,
-$$F(f\odot g) = F(f) \odot F(g)$$
+$$F(f\odot_A g) = F(f) \odot_B F(g)$$
+where $\odot_A$ is the composition operator on $A$, 
+and $\odot_B$ is the composition operator on B.
+\end{definition}
 Visually this means triangles map to (possibly degenerate) triangles.
 
+\begin{definition}
 A {\em contravariant functor} reverses the arrows, so that
 if $f:A\rightarrow B$ then $F(f):F(B)\rightarrow A$ and so
 the structure preservation rule becomes 
 $$F(f\odot g) = F(g) \odot F(f)$$
+\end{definition}
 A contravariant functor is a covariant functor from the opposite
 category.
 
-The notion can be extended to include multiple domain catgeories 
-by forming a product and if necessary, dualising a category.
-A domain categpory has positive variance $+$ if its action
-is covariant and negative variance (-) if contravariant.
-
-Such a multifunctor is also known as a {\em type constructor}
-or simply a {\em polymorphic type}.
+\begin{definition}
+If $A$ and $B$ are categories, the {\em product} category, written $A\times B$
+consists of pairs of objects and arrows from $A$ and $B$. The definition
+can be extended to any finite number of categories.
 \end{definition}
 
-We use category theory \cite{category_theory} to create new types from old ones.
-Our type system must be at least a distributive category.
-This gives us products \cite{products} (tuples and arrays) 
-and sums (variants) \cite{coproducts}.
-
-\section{Finiteness}
-However we have a problem. Many of the categories involved in traditional
-type system theory are infinite. For example a distributive category is
-one of the most basic essentials for any first order type theory,
-provding all finite sums and products related by the distributive law.
-
-Such category, whilst nice in theory, is not directly useful in 
-computing because all computers are finite state machines. We are stuck 
-between a rock and hard place. This problem is not merely evident in
-higher mathematics .. it is intrinsic to the essential requirement for representations
-of (signed) integers which is clearly intractable.
-
-Traditional languages such as C simply give the wrong results on overflow,
-whilst some newer languages vainly attempt to ensure a timely program
-failure occurs.
-
-
-To solve these problems we need a new mathematical concept which turns out
-to be a very old concept instead: the idea is that of {\em limits.}
-We want to say we compute with a {\em local approximation} to the integers,
-whose correctness is bounded by a representation size $n$, so we can say
-that our calculation will indeed be correct, if only we have a large enough $n$.
-
-In particular, the integers can now be regarded not as a countably infinite set,
-since such a beast is unrepresentable, but instead as an idealised limit
-of a sequence of ever larger finite representations.
-
-Similarly, a type category can be regarded not as distributive for unicorns
-do not exist, but rather as a bounded local approximation and member of
-a sequence of ever larger representations, which in the limit approaches
-the structure of an idealised distributive category.
-
-However it is not enough to merely posit such a theoretical solution
-and continue as before; instead we must in fact be able to compute
-the bounds required to ensure the correctness of a program, a new
-and nontrivial task.
-
-\section{Type Model}
-We define two classes of categories.
-
-\subsection{Structural Categories}
-Structural categories are full subcategories of $\Set$ whose
-types are local, compact subranges of the natural numbers,
-that is, integers in the range $0..m-1$ for some $m$.
-Since the category is full, all functions are available.
-Structural categories are used for systems programming.
-
-One advantage of structural categories is that; being full subcategories
-means that full subcategories are easily specified by simply
-listing a subset of the types: the subcategory then consists of
-all the arrows between these types.
-
-\subsection{Abstract Categories}
-These are finite non-structural non-full subcategories of $\Set$.
-Since they are not full subcategories, some arrows of the corresponding
-structural categeory of the same size are missing, which is what makes
-them abstract (abstraction is a matter of forgetting details).
-
-The corresponding structural category is call the {\em representation.}
-An abstract category is usually specify by nominating certain arrows
-call {\em generators} which form a basis for the category. This is called
-the {\em interface}. The interface is then {\em instantiated} by
-mapping arrows from the abstraction to the representation using
-a forgetful functor.
-
-\subsection{Free Categories}
-An abstract category specified only by the carestian closure of the generators 
-under composition is said to be {\em free}. Free categories form an {\em initial
-algebra.}. A free category may be regarded as {\em abstract syntax.}
-
-\subsection{Constrained Categories}
-A constrained category is a free category with a non-trival constraint 
-specified by a set of equations. The constraint is a functor which is not an isomorphism. 
-The effect of the constraint is also called a {\em representation invariant}
-in which some distinct terms of the initial alegra are {\em equivalent,}
-this equivalence is sometimes called {\em semantics}.
-
-\begin{example}
-The representation of a rational number is usually constructed by first using
-a pair of intgers $(p,q)$ as the presentation and then adding two constraints:
-$q>0$ and $\mathrm{gcd}(p,q)=1$, the latter eqivalent to a claim $p$ and $q$ are relatively
-prime.
-\end{example}
-
+A functor from a pair of categories is sometimes called a {\em bifunctor}.
+In computer science, a functor is also known as a {\em type constructor}
+or simply a {\em polymorphic type}.
 \chapter{Type System}
 \section{Theory}
 Let $\Set$ be the usual distributive category consisting of all small sets and functions.
@@ -307,12 +234,25 @@ with just $\{0\}$ {\em unit}, the set with two values, 0 and 1 is called {\em bo
 The number of objects in a finite category is given by a the function {\em size}
 which is overloaded to also given the number of values of a set, and is written
 \begin{equation}
-\mathrm{size}X = |X|
+\mathrm{size}(X) = |X|
 \end{equation}
 so that in particular
 \begin{equation}
 |N_n|=n
 \end{equation}
+
+Note: it is important to understand that the type $N_3$ in $\Nat_4$ is the {\em same}
+type as found in $\Nat_5$. It's not a different type because $\Nat_4$ is a subcategory
+of $\Nat_4$. Similarly, an integer $3$ in $N_4$ is the {\em same} integer as the $3$
+in $N_5$ even though the type appears different this is not so, because again, they're
+subtypes. So what this means is that for example $3$ has type $N_4$ and type $N_5$ and
+type $N_6$ etc. In other words, the embedding is the identity map.
+
+It's usual in algebra to use embeddings: for example, the integers are embedded
+in the rationals, but an integer $3$ is {\em not the same} as the rational $3/1$ 
+it corresponds to.
+ 
+ 
 The fundamental theorem of our construction is
 \begin{lemma}
 Every object $X$ of size $k<n$ in $\mathit{Set_n}$ is isomorphic to the unique object $N_k$
@@ -357,7 +297,7 @@ where the index set is considered as a discrete set.
 It maps types
 $$(N_{i_0}, N_{i_1}, ... , N_{i_{n-1}}) \mapsto N_m$$
 where 
-$$m=\prod_{j=0}^{n-1}j_k.$$ 
+$$m=\prod_{j=0}^{n-1}i_j.$$ 
 
 The value map is given by
 $$(v_0, v_1, ... ,v_{n-1}) \mapsto
@@ -619,7 +559,7 @@ We now have almost enough machinery to specify our first device.
 An $\mathrm {ALU}_n$ is a device with two registers, an instruction register $F$
 of size $k$
 and a data register $A$ of size $n$. The instruction register contains an ALU implementation
-specific encoding of a functin $f:N_n\rightarrow N_n$ which is applied to the 
+specific encoding of a function $f:N_n\rightarrow N_n$ which is applied to the 
 value in the $A$ register, which is replaced by the result of applying the function to it.
 \end{definition}
 
@@ -644,7 +584,7 @@ A spanning set is said to be a {\em basis} if the removal
 of any one function would leave a non-spanning set.
 
 An ALU is said to be {\em absolutely complete} if the set of instructions
-it accepts map to a is the set of all functions of the category.
+it accepts map to the set of all functions of the type.
 Only very small ALUs can be absolutely complete, since the number of
 functions from a set of size $n$ to itself is $n^n$.
 
@@ -658,10 +598,10 @@ We wish to extend these definitions to the whole category $\Nat_{n+1}$
 We can do this as follows: first, a function with codomain $N_c$ for $c<n$
 can be extended to a function with codomain $N_n$ by post composition with
 the embeddding from $N_c$ to $N_n$. The beauty of this arrangement is that,
-since $N_c$ is simply a subset of $N_n$, and this an integer of $N_c$ is the
-very same integer of $N_N$, the operation is merely a type cast to ensure
+since $N_c$ is simply a subset of $N_n$, and thus an integer of $N_c$ is the
+very same integer of $N_n$, the operation is merely a type cast to ensure
 type correctness and has no run time impact; in other words it is has
-no operation and does not require a an instruction to effect it.
+no operation and does not require an instruction to effect it.
 
 Secondly, if the domain of the function $f$ is $N_d$, we can replace
 it with a function $g$ provided $g\restriction_{N_d}=f$ and pre
@@ -707,7 +647,112 @@ the category $\Nat_{n+1}$ and in effect reduces the design
 space of the ALU to the monoidal subcategory with only
 the largest type retained.
 
+\begin{example}
+Consider an ALU of size $2^{64}$ with instructions
+\begin{verbatim}
+LDA #999    // load immediate
+CLRH        // clear high 32 bits
+ADD         // add high 32 bits to low 32 bits
+NEG         // negate
+MUL         // multiply high 32 bits with low 32 bits
+\end{verbatim}
+These instructions suffice to implement all the operations
+of a ring of size $2^{32}$. In particular \verb$CLRH$ mathematically
+implements modulo $2^{32}$. Note that the ALU can {\em NOT} perform
+ring operations of size $2^{64}$ because addition and multiplication
+both requires two arguments, which are represented in a single value
+as a compact product.
+\end{example}
 
+\begin{example}
+{\em Register files.} Most real world processors have multiple registers and
+instructions which operator on them, for example one might have 8 registers
+of size 32 bits. Although our ALU model only allows a single register,
+we can easily consider it to be the compact product of 8 x 32 bit types
+and design our instruction set accordingly.
+\end{example}
+
+\begin{example}
+{\em Stack machine.} Many VM in the crypto world use a stack instead
+of registers. In conventional applications this can be inefficient,
+but the simplification of the instruction set signicantly reduces
+the complexity of the associate AIR constraints. The run time performance
+is of little interest since ZK proof generation dominates processesing.
+Clearly, our ALU model allows for the use of a stack instead of, or as
+well as, registers in much the same way. However the stack must be bounded
+to a small size.
+\end{example}
+
+\section{The MMU}
+Although in theory there is no limit to the size of an ALU,
+in practice one step calculations with very large integers
+are intractable; and this observation extends to computations
+unpacked to any fixed number of composition steps.
+
+At the heart of the problem is the representation of projections:
+for a very large integer maintaining state, the divisor of an
+arbitrary projection is roughly the same size as the state itself.
+Similarly, to obtain an arbitrarily large chunk of the state,
+the modulus is similarly sized.
+
+Luckily, we already have a solution: if we are willing to throw
+out some precision, we can use a logarithm for the divisor an
+modulus, and have the projection operator implicitly raise them.
+This is what \verb$aprj$ does. 
+
+In most conventional machines today, a single array of base
+type $2^8$, called a {\em byte} is used, with $2^{32}$ or $2^{64}$
+index values, and this array is called {\em main memory}.
+The logarithms, base $2^8$, used for projections, are called 
+{\em addresses}, the sequence of subsequent $k$ bytes is called
+an {\em object} where $k$ is the logarithm of the projection modulus.
+The combination of a run time address with a compile time size is 
+commonly known as a {\em pointer}.
+
+The key difficulty here is that the digital logarithm loses information;
+that is, it is not injective. However, quite apart from the large values
+which can be handled, and desipite the loss of compactness resulting from
+the loss of injectivity, logarithms have a major advantage, to the point
+where very few current programming languages have any notion
+of compact sums and products at all: division, a notoriously expensive
+operation, can be replaced by subtraction, which is very much cheaper.
+
+Most modern memory systems are little endian (just to confuse you)
+so in fact we use addition: every C programmer knows that to unpack
+a struct you can simply add the offset in bytes of the component.
+
+However this leads to a complication in our maths: we now have
+{\em two} kinds of products, our original compact products,
+and now our non-compact ones as well. Furthermore, the programmer
+no has to make choices about which kinds of products to use.
+
+\begin{example}
+An array of 64 boolean values has two viable representations:
+as a single 64 bit integer, or as an array of 64 bytes. In the C++
+standard arrays of objects are used for all base types except 
+\verb$bool$ which has a template specialisation using a compact
+representation. In fact this was an extremely poor choice because
+not all the usual array operations work, which means parametric
+polymorphism fails.
+\end{example}
+
+\begin{example}
+In the Felix programming language, which has both compact and non-compact
+products, the author originally tried to have the compiler make
+the distinction and hide it from the programmer. Alas, the requirement
+to support polymorphic operations soon showed this could not work.
+In particular, non-compact data structures can be addressed with
+ordinary pointers of machine word size, and whilst compact
+pointers are indeed possible (and implemented!), they require
+three machine words: an object pointer, along with the usual
+quotient and modulus, and therefore have a distinct type.
+
+It is, in fact, worth noting that to preserve generic behaviour
+(since mathematically a product is a product), the author was
+pushed into finally introducing a first class kinding system
+so that type variables used in compact product types could
+be constrained to accept only compact types.
+\end{example}
 
 \chapter{Compact Linear Types}
 The theory presented in the previous chapter appears reasonably general,
@@ -829,644 +874,6 @@ and
 $$\log {X^n}^m = X ^ {m \times n}$$
 Note the reversed order of the second case law. This is necessary
 so that in sequencing, the $n$, or inner index moves fastest.
-
-\chapter{blah}
-
-
-Neither $\Set_n$ nor $\Nat_n$ are distributive because not
-all finite sums and products exist, however the distributive law does hold, provided the relevant
-sums and products exist. We will say these categories are {\em locally distributive}.
-
-We note that $\Nat_m$ is a full subcategory of $\Nat_n$ when $m<n$
-which means there is a linear sequence of these categories forming a total order
-by inclusion. As a consequence if a finite computation is parametrised by the category size 
-a lower bound must be calculated for the category size.
-
-The size of a tuple of type \verb%2 * 4 * 3% is 24, of a sum \verb%2 + 4 + 4% is 9.
-More generally the size of a type given by an expression involving digits, 
-product symbols, and sum symbols is given by the same expression reinterpreted
-as an ordinay arithmetic expression. 
-
-A second observation is that $\Nat_n$ is a full subcategory of $\Set_n$
-The interpretation is as follows: any type $T$ in $\Set_n$ of size $k$ is isomorphic
-to $\mathit{N}_k$ so all operations in $\Set_n$ can be performed by mapping
-to $\Nat_n$ using isomorphisms, doing the operations, and mapping the
-results back with the inverses. For example to find the next element in an
-enumeration of size $k$ we can map to $N_k$, find the next enumerant,
-and map back to enumeration. Types other than $\Nat_n$ are called 
-{\em nominal types} and can be represented with suitable isomorphisms
-using {\em structural types}. Therefore it suffices to work exclusively
-with the structural type system. 
-
-As an example, consider the representation of a rational number as a pair
-satisfying the usual invariant that the denominator is positive and is relatively
-prime to the numerator. We can represent these exact value by using
-Cantor's diagnonal method which proved the number of rational numbers
-is the same as the number of integers. This accounts for both pairs
-which do not correspond with any rational because the denominator
-is zero, and also the fact that all pairs of form $(ki, kj)$ represent
-the same rational. In practice we simply use appropriate operations
-in $\Nat$ to enure the pair is stored in canonical form.
-The important fact is we have shown that an arbitrary abstraction
-can be presented by using a structural representation.
-
-To put this another way, all abstractions are simply a non-full subcategory
-formed by keeping some functions and discarding the rest. Of course
-this is well understood in principle, where for example in an object
-oriented system and abstract data type is represented by public methods
-whose implementation details are private. However, we have generalised
-these intuitions and presented a rigourous mathematical model of abstraction
-using the notion of subcategories in category theory. The model transcends
-not only object orientation but {\em all} module systems. In particular
-using category theory we shall see later abstractions can be made polymorphic.
-
-
-
-But we are not finished yet because we have not specified how to actually
-perform the calculations. To handle this problem, we need some more
-machinery.
-
-Computers have hardware which can perform some computations. Many computers
-have instructions which can do arithmetic. Therefore what we must do is
-provide a way to specify which operations can be done, and how to
-combine them to perform other computations we desire.
-
-The first thing we must do is enrich our type system with constraints.
-Suppose we want to add two values of type $5$. There will certainly
-be a function \verb$add: 5 * 5 -> 5$ that can do this, but how do we find it?
-
-To make this work, we will introduce another subcategory $\mathrm{AGroup}_n$ of
-additive groups sizes 0 to $n-1$ with a specific set of functions including 
-$add: J * J -> J$ and $sub: J * J -> J$ where $J$ is the type of size $J$.
-We have to define these functions. To do this, we will pick a type $R_k$ from category
-$\mathrm{Ring}_m$ where $k\ge 2n$ and define 
-$$add_J (x,y) = J(\mathrm{mod}_R (add_R(R x, R y))$$ 
-
-In this formula, the function R is the embedding $J->R$ which maps a value of type $J$ to
-the same value in $R$. $J$ is the partial inverse mapping back; it's precondition is satisfied
-due to the modulo operation. 
-
-What this formula is doing is specifying operations for a group size $n$ in terms of computations
-in a ring of size at least $2n$. The minimum size ensures the result cannot wrap around
-in the ring, and the modulo operation then wraps it around in the group. Although we have
-written the formula using applications, there is a corresponding formula which is purely
-compositional.
-
-In other words, we're doing computations for one data type using another sufficiently
-large one, which is called the {\em representation type}. Now to completely specify
-a data type we need to say its kind: is it a group, ring, or field, we need to say its
-size, and we need to specify its representation type.
-
-Now you may wonder, how then do we calculate in the representation type? Of course,
-we do that using its representation type! This would lead to an infinite regress
-unless we take some action! So we will allow some types to be declared {\em intrinsic}.
-
-For example common choices for intrinsics would be \verb$u32$ and \verb$u64$,
-the rings with $2^{32}$ and $2^{64}$ elements, respectively. These are chosen
-for the obvious reason the computations are already implement in our target
-hardware. However, for many crypto VM, we are more likely to make
-say \verb$goldilocks$ prime field intrinsic. In fact for compatibility with
-existing code almost all crypto VM.
-
-
-\section{Categorical Models}
-We start needing  several classes of types: discrete sets, sequences, totally ordered
-sets, groups, rings, and fields.
-Each of these types will be considered a finite subset of the integers 
-from 0 to $n-1$ where n is the size of the set.
-
-One of the {\em key} ideas behind our type system is that a type is not merely
-determined by its abstract semantics, in terms of the equality of 
-composition of functions, but is also dependent on the underlying representation.
-
-By suitable constraints on the representation type, the abstract operations
-of the type being defined can now be generated automatically by the compiler.
-For example given the ring \verb$u64$ all the operations of the ring \verb$u32$
-can be generated by the compiler: it suffices to write
-\begin{minted}{felix}
-typedef u32 = N<2^32, u64>;
-\end{minted}
-to have a convenient alias for this type. The compiler simply replaces \verb$a * b$ in
-\verb$u32$ with \verb$a * b umod 2^32$ in \verb$u64$. It can do this because the rules
-of algebra are builtin to the compiler, and because \verb$u64$ is known to be big enough
-to implement all the operations of \verb$u64$.
-
-Furthermore the compiler can, potentially, replace \verb$a + b + c$ in \verb$u32$
-with \verb$(a + b + c) umod 2^32$, optimising the computation by removing a \verb$umod$
-operation, since the sum cannot come even close to exceeding $2^{64}$. Unlike hand 
-implementations, the compiler can generate good code which is guarranteed to be correct.
-
-
-
-
-\section{Preliminary definitions}
-\begin{definition}
-A {\em semi-group} is a set together with an associative binary operation; that is
-$$(a \cdot b)\cdot c = a \cdot (b \cdot c)$$
-where infix $\cdot$ is taken as the symbol for the binary operation.
-\end{definition}
-
-Associativity is a crucial property for an operator because it allows concurrent
-evaluation of arbitrary subsequences of a sequence of operands. For example given
-the operand expression 
-$$(((1\cdot2)\cdot3)\cdot4)\cdot5$$
-we can compute $1\cdot2$ and $4\cdot5$ concurrently:
-$$(1\cdot2)\cdot3\cdot(4\cdot5)$$
-then then combine 3 to either the LHS or RHS subterm before performing the final combination.
-Another way of looking at this property is that the values to be combined can be stored in
-the leaves of a tree and any bottom up visitation algorithm can be used to find the total combination.
-
-Associativity means you can add or remove (balanced pairs of) parentheses freely.
-In particular it is common practice to leave out the parentheses entirely.
-
-\begin{definition}
-A {\em monoid} is a semigroup with a unit $u$, that is
-$$x\cdot u = x {\rm \ and\ }u \cdot x = x$$
-for all x in the set.
-\end{definition}
-
-The existence of a unit means you can freely add or remove units from
-anywhere in your computation.
-
-\begin{definition}
-A {\em group} is a monoid in which every element has an inverse, that is,
-for all $x$ there exists an element $y$ such that
-$$x \cdot y = u {\rm\ and\ } y \cdot x = u $$
-\end{definition}
-where $u$ is the unit of the underlying monoid. For integers of course,
-the additive inverse of a value is its negation.
-
-\begin{definition}
-An operation is {\em commutative} if the result is the same with the operands
-reversed, that is, for all $a$ and $b$.
-$$a \cdot b = b \cdot a$$
-A group is said to be commutative if the group operation is commutative.
-\end{definition}
-
-Commutativity says you can switch the order of children in the tree representation
-of an expression.
-
-If an operation is also associative, commutative, and has a unit, then the operation
-is well defined on a set of operands, taking the operation on the empty
-set to be the unit. 
-
-This means irrespective of what data structure you use to hold the
-values to be combined, and what algorithm you use to scan them,
-provided you visit each value exactly once, the result of the
-operation on them is invariant.
-
-\begin{definition}
-A {\em ring} is a set with two operations denoted by $+$ and $*$ such
-that the set with $+$ is a group, and the set excluding the additive
-unit is a monoid, and the following rule, called the
-{\em distributive law} holds for all $a$, $b$ and $c$
-$$a * (b + c)  = a * b + a * c$$
-
-If the multiplication operation is commutative then it is called
-a commutative ring.
-\end{definition}
-
-\subsection{The rings $\mathbb{N}_n$}
-\begin{definition}
-Let $\mathbb{N}_n$ be the subrange of the integers $0..n-1$ with 
-addtion, subtraction, 
-multiplication, division and remainder defined as the natural result modulo $n$.
-Then $\mathbb{N}_n$ is a commutative ring called a {\em natural ring}.
-\end{definition}
-
-The usual linear order is also defined.  Negation is defined by
-$$-x = n - x$$
-
-Natural computations prior to finding the modular residual present an issue
-we resolve by performing these computations in a much larger ring.
-
-\begin{definition}
-The {\em size} of a finite ring $R$, written $|R|$, is the number of values of the underlying set.
-\end{definition}
-\subsection{Representation}
-\begin{lemma} The C data types
-\begin{minted}{C++}
-uint8_t uint16_t uint32_t uint64_t
-\end{minted}
-with C builtin operations for addition, subtraction, negation, and multiplication
-are the rings
-\(\mathbb{N}_{2^8}\ \mathbb{N}_{2^{16}}\ \mathbb{N}_{2^{32}}\ \mathbb{N}_{2^{64}} \)
-respectively, with the usual comparison operations, unsigned integer division,
-and unsigned integer modulus.
-\end{lemma}
-
-\begin{theorem}
-{\em Representation Theorem}. The values of a ring $\mathbb{N}_n$ can be represented
-by values of a ring $\mathbb{N}_{n^2}$ and the operations addition, substraction, negation
-multiplication and modulus computed by the respective operations modulo $n$. Comparisions
-work without modification.
-\end{theorem}
-In particular we can use \verb$uint64_t$ to represent rings of index up to 
-$2^{32}$.
-
-\section{Type void}
-The type void is represented by an empty set. Since there no values
-of this type, it is representation independent; that is, it is a memory
-of all families. It is also a degenerate memory of all categories.
-
-There are many cases where instantiation of a type variable needs to exclude void.
-For example a pair of type $A * B$ only has two components if neither is void.
-If A is void, the type is void, and projections of $A * B -> B$ do not exist.
-
-Nevertheless it is a useful type, for example an array of length zero is the
-unit tuple and the usual index laws for integers apply: $T^0 = 1$.
-
-It is an open issue how to handle void correctly.
-
-\section{Type unit}
-The set $\{0\}$ is the unit type. Since we know the value from the type,
-the type requires no representation. Instead most uses of a unit value
-can be eliminated. For example, functions returning unit always return
-the value 0, so their application can be replace by that value.
-
-\section{Type bool}
-Bool is a special type. Although it is not representation independent,
-comparisons cannot proceed without it. It is, variously, a categorical
-sum of units, a group, a ring, and indeed a field.
-
-
-
-\section{Intrinsics}
-An instrinsic is a ring or field which is provided natively by the target system.
-We use the following example to show how:
-\begin{minted}{felix}
-field goldilocks = 
-  intrinsic size = 2^64 - 2^32 - 2, 
-    add = primitive cost 1,
-    neg = primitive cost 1,
-    sub = fun (x,y) => add (x, neg y),
-    mul = primitive cost 1,
-    udiv = primitive cost 4,
-    umod = primitive cost 4,
-    udivmod = primitive cost 4,
-    recip = primitive cost 1,
-    fdiv = fun (x,y) => mul (x, recip x),
-    ... // TODO: finish list
-;
-\end{minted}
-Each of the required operations for a field (or ring if a ring is being specified),
-must be either implemented in the target natively, in which case the number of
-execution cycles required must be specified, or is defined in terms of another
-defined operation, in such a way no cyclic dependencies exist. In the latter case
-the compiler derives the cost from the definition.
-
-\subsection{Versions}
-In version 1, a definition must be given first before it can be used.
-In later versions, the a dependency checker will ensure completeness
-and consistency. In still later versions defaults may be provided.
-
-\section{Derived structures}
-\subsection{One step derivations}
-Once we have one or more intrinsic, we can use the type notation
-\begin{minted}{felix}
-N<n, base>
-\end{minted}
-to specify a ring of size n, defined using the already defined ring \verb$base$.
-The compiler will define all operations automatically, using modular arithmetic
-etc, provided $n^2\leq |{\mathtt base}|$, otherwise it will issue a diagnostic
-error message that the base ring is not large enough and terminate the compilation.
-
-Note, the base ring does not have to be intrinsic. One of the jobs of the compiler
-is to successively reduce operations down a path until intrinsic operations
-are computed. For example is \verb$u64$ is intrinsic, \verb$u32$ can be defined
-in terms of it, \verb$u16$ in terms of \verb$u32$ and \verb$u8$ in terms of \verb%u16%.
-However \verb%u8% is in fact ultimately in the \verb$u64$ family and will use a that
-as its representation. If the client is targetting a 32 bit machine, they may choose
-to make \verb$u32$ intrinsic as well: this may make the operations more efficient
-but it will have no impact on the semantics of the program.
-
-To define a new field, we need only a ring sufficiently large for the underlying
-ring operations, however we must define the \verb$recip$ operation natively:
-\begin{minted}{felix}
-field nufield = based goldilocks recip = primitive cost 24;
-\end{minted}
-
-\section{Families}
-All data types derived directly or indirectly on a particular
-intrinsic base form a {\em type family,} Operations with mixed families require
-the specification of isomorphism between abstractly equivalent types,
-or embeddings if approproiate. Research is required here to decide
-how to handle computations with mixed families.
-\begin{minted}{felix}
-to be done
-\end{minted}
-
-\section{Compact Products}
-We first provide {\em compact linear products}. This is a categorical product
-with the type given by the n-ary constructor like
-\begin{minted}{felix}
-compactproducttype<R0, R1, ... Rnm1)
-\end{minted}
-and values like
-\begin{minted}{felix}
-compactproductvalue(v0,v1,... vnm1)
-\end{minted}
-We will use the syntax something like
-\begin{minted}{felix}
-let x : R0 \* R1 \* R2 = (v0\, v1\, v3) in ..
-\end{minted}
-
-
-All the data types must be in the same family, and the product
-of their sizes must be less than or equal to the family base size.
-All the operators are defined componentwise. However sequencing
-is based on the representation.
-
-Projections and slices are provided automatically
-\begin{minted}{felix}
-compactprojection<index, base, domain, codomain> : index -> domain -> codomain
-\end{minted}
-This is a function which extracts the component selected
-by the index. The index must be of $Set$ kind, that is, a constant.
-
-\subsection{Ring Products}
-\begin{definition}
-Let $R_i$ for $i$ in $\mathbb{N}_n$ be a tuple of $n$ finite rings, none of which are void,
-then the {\em tensor product} of the rings, denoted by
-$$R_0 \otimes R_1 \otimes ... \otimes R_{n-1}$$
-is a ring with values tuples of corresponding elements, operations
-defined componentwise, comparisons defined by the usual lexicographic
-ordering, and iterators sequencing through values in the defined order.
-\end{definition}
-The size of the ring is the product of the ring sizes.
-
-\begin{theorem} {\em Compact Linear Product Representation}.
-A compact linear product can be represented by a single value
-$0..{N-1}$ where $N$ is the product of the sizes of the rings.
-The encoding of a value $(v_0, v_1, ... ,v_{n-1})$ is given by
-$$v_0 * r_0 + v_1 * r_1 + ... + r_{n-1} * v_{n-1}$$
-where $r_{n-1}=1$ and $r_k$ for $k$ in $0..n-2$ is the product of the sizes of the rings
-$R_j$ for $j>k$:
-$$r_k = \prod_{j=k+1}^{n-1} |R_j|$$
-where the empty product is 1. That is, the product of the sizes of the rings
-to the {\em right} of ring $R_k$ in the ring product formula.
-
-The projection $p_k$ of the $k'th$ ring is given by $$v / r_k \mod |R_k|$$
-where $|R|$ is the size of the ring $R$.
-\end{theorem}
-
-\subsection{Product Functors}
-The constructor of a product is a special kind of type mapping called a {\em functor}.
-Category theory requires functors to have certain properties so that they
-act parametrically. In particular functors map functions from the domain space
-to the codomain space, not just types.
-
-The most important thing about these functors is the indexing type.
-Consider the functor
-$$ringtuple5: Ring ^ 5 -> Ring$$
-where $5:Set$ is considered as the discrete set of integers from 0 to 4.
-This is a commonly used functor which maps 5 ring types into a single ring type,
-with indexes the constants 0,1,2,3,4.
-
-For example given:
-$$ringtuple5 (N2, N3, N4, N5, N6) \mapsto N2 * N3 * N4 * N5 * N6$$
-then  a value you might write
-$$proj2: N2 * N3 * N4 * N5 * N6 -> N4$$
-and for a value extraction
-$$proj2 (1,2,3,4,5) = 3$$
-with appropriate types assumed. This is just pseudo code, the point
-here is there is a discrete projection for each component.
-
-This is necessary for this kind of projection, because the type of each
-projection differs.
-
-There are two projections which are more advanced.
-
-\subsection{Generalised products}
-A generalised projection is also provided which accepts an
-expression as an argument. Its codomain is the type dual
-to the product, that is a sum type consisting of the component
-index and value.  We note that the representation is uniform because
-the constructor arguments are all structures from the same family.
-
-This kind of projection can be indexed by a ring or even a field
-because now we have made the projection type uniform.
-
-\subsection{Arrays}
-If all the types of a product are the same, it is called an array.
-An array projecton accepts an expression as an argument, which cannot
-be out of bounds, since the type of the expression must be the index
-type of the constructing functor.
-
-That index type therefore, to allow index calculations, could be,
-for example a ring. This gives us random access to the array.
- 
-In fact we can also generalise array projections, so the result
-consists of both the input index and value. It's very useful
-in constructions like
-\begin{minted}{felix}
-for key,value in a ...
-\end{minted}
-
-because a plain iteration through the values is often not enough,
-since the index is implicit and hidden by the loop.
-
-\section{Sums}
-Just as for products, we provide categorical sums including
-repeated sums, which are the dual of arrays, along with 
-injections functions.
-
-However the sum of rings is not a ring in the category or rings.
-In the category of types, the operations on the sum of two rings
-is instead define by the operations on the representation.
-
-Since our rings are cyclic, the sum of \verb$N<3>$ and \verb$N<4>$ behaves like
-\verb$N<7>$. However note, it is still a proper categorical sum, since we
-can decode it to extract a value of one of the injection types.
-
-In a sum of rings, addition is precisely addition with carry,
-and multiplication is modulo the size of the sum (which is the
-sum of the component sizes).
-
-\chapter{Categories}
-Categories, or {\em kinds} are used to provide structure to collections of types.
-A category can be used as a {\em constraint} on a type varible which has two
-implications. First, use of a type not of that category will lead to a compilation
-error. More significantly, operators are introduced into the scope of the quantified
-entity, which allow algorithms to be written in a type safe manner.
-
-During monomorphisation when the type variable is replaced by a monotype,
-the polymorphic operators will also be replaced by appropriate monotypic
-operations, this can be done safely with no risk of a type error so
-the process does not require further type checking.
-
-All our categories provide operators parametrised in two ways:
-in the abstract, and concretely.
-
-The abstract semantics are based on the mathematics of integers,
-whilst the concrete semantics provide a representation which
-allows the actual implementation in a finite environment,
-and thus provides bounds.
-
-The abstract semantics are all well known basic mathematics,
-however the proper handling of the bounds remains an open issue.
-
-The concept is as follows: consider a category bounded by size $n$,
-then some operations may fail due to insufficient capacity of
-the representation. Therefore we say the concrete category is 
-a {\em local approximation} to the mathematical abstraction,
-and provide the argument that for sufficiently large $n$ any
-given operation will work correctly.
-
-In other words, in the limit, the local approximations provide
-the exact semantics that would be provided by the abstract category
-of countably infinite size based on the integers.
-
-\section{category Void}
-the empty category with no types.
-
-\section{category Unit}
-A category with one type, the set $\{0\}$.
-
-\section{Category Set}
-The category set contains types considered as discrete collections
-of values, admitting only comparison for equality as an operation.
-The primary operation on a mathematical set is membership, which together
-with other set axioms is equivalent to equality.
-
-A set can be represented by any type, provided it is sufficiently large.
-One common use of such weak types is as indexes to the tuple constructor.
-This is because, for example, sequencing through the indices in a loop
-would not product projections of a uniform type.
-
-\begin{minted}{felix}
-category set[T]
-  eq: T * T -> 2
-  ne: T * T -> 2
-\end{minted}
-
-\section{Category Seq}
-In this category we can iterate through elements of the underlying
-integral representation within the bounds of the abstract type.
-The category corresponds roughly to what C++ calls an input iterator.
-
-It is important to note the implied total ordering is, however
-not available. This is because such comparisons can be very
-expensive in proof generating machines using AIR constraints.
-
-Note also, the {\em next} and {\em prev} operations are cyclic and
-cannot fail, in other words, the value which is next afer the last
-one is the very first one again.
-
-\begin{minted}{felix}
-category seq[T] : set[T]
-  zero: 1 -> T
-  last: 1 -> T
-  succ: T * T -> 2
-  pred: T * T -> 2
-  next: T -> T
-  prev: T -> T
-\end{minted}
-
-\section{Category Linear}
-This category extends sequences to allow observation of a total ordering.
-
-\begin{minted}{felix}
-category linear[T] : seq[T]
-  lt  : T * T -> 2
-  gt  : T * T -> 2
-  le  : T * T -> 2
-  ge  : T * T -> 2
-\end{minted}
-
-\section{Category Group}
-The types of this category are additive groups. Recall all our types are
-just subranges of integers, and the implementation is simply the
-computation in a bigger group modulo the group size, then it is clear
-these groups are all Abelian (commitative) and indeed cyclic.
-
-Groups in effect give random access iterators.
-
-\begin{minted}{felix}
-category group[T] : seq[T]
-  add: T * T -> T
-  sub: T * T -> T
-  neg: T * T -> T
-\end{minted}
-
-\section{Category Ring}
-This category adds multiplication and integer division to a group
-to form a commutative ring with unit.
-
-\begin{minted}{felix}
-category ring[T] : group[T]
-  one : 1 -> T
-  mul : T * T -> T
-  udiv : T  * (T - {0}) -> T
-  umod : T  * (T - {0}) -> T
-  udivmod : T  * (T - {0}) -> T * T
-\end{minted}
-
-\subsection{Division by Zero}
-Careful observation of the signature of the integer division and modulus
-operators above shows that the dividend is not allowed to be zero.
-
-Unlike other languages, this is enforced by the type system. At run time
-division by zero is impossible.
-
-In order that this be the case, we have to construct the type $T-\{0\}$
-which can be done with a conversion or cast together with a {\em proof}
-that the argument cannot be zero. the programmer {\em is required to prove
-the dividend cannot be zero}.
-
-This is an example of a type discipline called {\em dependent typing}.
-In general dependent typing is very hard for programmers, luckily our
-main primary requirement only involve proving one particular case.
-
-In almost all cases of real code, a programmer {\em knows} the value
-cannot be zero and not only that, they {\em know why} but now they
-actually {\em have} to write that proof or the compilation will fail.
-
-To make this tenable in all cases, we provide a simplistic construction
-which provides that proof automatically: we allow the programmer
-to pattern match the proposed dividend in the same manner an option
-type can be matched.
-\begin{minted}{felix}
-match v with
-| Zero -> cc0 
-| Nonzero x -> cc1 x
-endmatch
-\end{minted}
-where the type of the \verb$Nonzero$ constructor is indeed the type of
-the argument $v$ minus $\{0\}$. Note that in both cases a continuation
-is invoked: this operation is performed in the dual cofunctional space.
-
-If the programmer likes, however, they can actually write a formal proof
-sketch. To make this work we need a language for writing proofs, and
-we need a proof assistant. In the simplest cases, if enough information
-is available, the assistant can generate a correct proof automatically
-and the programmer need only write an assertion the argument is
-non-zero.
-
-If the assistant cannot perform the proof, the programmer will
-need to provide it more data.
-
-Automatic provers for simple properties of integers are no available
-and are comprehensible. More advanced proofs required for full
-dependent typing would be beyond most programmers.
-
-
-\section{Category Field}
-Fields are usually intrinsic, since the core operation, computation
-of the reciprocal and division, must be optimised for a particular
-field.
-
-Fields are intended for crypto operations and require two hash functions:
-one hashes a single field value, and the second is intended to combine 
-such a hash with another field value to produce another hash.
-
-\begin{minted}{felix}
-category ring[T] : group[T]
-  recip:  T - {0} -> T
-  fdiv : T  * T - {0} -> T
-  hash : T -> T
-  hash2 : T * T -> T
-\end{minted}
 
 \cleardoublepage
 \addcontentsline{toc}{chapter}{Bibliography}
