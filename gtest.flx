@@ -1,0 +1,74 @@
+SCHEME """(define  (mklist es)`(ast_apply ,_sr (,(nos "list") (ast_tuple ,_sr ,es))))""";
+
+syntax grammar {
+x[let_pri]:= "grammar" xproduction* "endgrammar" =># 
+  """`(ast_variant ("grammar" ,(mklist _2)))"""
+;
+
+xproduction := sname ":=" (xnonterminal | xterminal)* ";" =># 
+  """
+    (let*
+      (
+        (cast (lambda (sym)`(ast_coercion ,_sr (,sym ,(nos "sym_t")))))
+        (mapcast (map cast _3))
+      )
+       `(ast_variant ("production" (ast_tuple ,_sr (,(stringof _1) ,(mklist  mapcast)))))
+    )
+  """
+;
+
+xnonterminal := sname =>#
+  """`(ast_variant ("nonterminal" ,(stringof _1)))"""
+;
+
+xterminal := sstring =># // a string, to be interpreted as a regexp
+  """`(ast_variant ("terminal" ,(stringof _1))))""";
+}
+ 
+open syntax grammar;
+println$ "Grammar test";
+var s = grammar
+  start := x y;
+  x := "Jello";
+  y := "world";
+endgrammar;
+println$ "Grammar spec parsed";
+typedef gram_t = (
+  | `grammar of list[prod_t]
+);
+typedef prod_t = ( 
+  | `production of string * list[sym_t]
+);
+typedef sym_t = (
+  | `terminal of string 
+  | `nonterminal of string 
+);
+
+instance Str[sym_t] {
+  fun str(x:sym_t):string => 
+    match x with
+    | `terminal s => "(terminal " + s + ")"
+    | `nonterminal s => "(nonterminal " + s + ")"
+    endmatch
+  ;
+}
+instance Str[prod_t] {
+  fun str(x:prod_t):string => 
+    match x with
+    | `production (name, ls) => "  production " name + " := " + List::cat "," (List::map (str of sym_t) ls) + ";"
+    endmatch
+  ;
+}
+instance Str[gram_t] {
+  fun str(x:gram_t):string => 
+    match x with
+    | `grammar ls => "grammar" + List::cat "\n" (List::map (str of prod_t) ls) +"\nendgrammar\n"
+    endmatch
+  ;
+}
+
+
+println$ s.str;
+
+
+  
