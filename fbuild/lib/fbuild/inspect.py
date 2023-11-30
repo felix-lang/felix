@@ -1,5 +1,6 @@
 from inspect import *
 import linecache
+import re
 
 def findsource(object):
     """Return the entire source file and starting line number for an object.
