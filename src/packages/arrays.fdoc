@@ -933,6 +933,11 @@ open class Varray
     varray[T] (l,l,g)
   ;
 
+  fun as_list[T] (x:varray[T]): List::list[T]  {
+    var y = List::Empty[T];
+    for elt in x perform y = List::Snoc(y,elt);
+    return y.rev.unbox; 
+  }
 }
 
 instance[T with Show[T]] Str[Varray::varray[T]] {

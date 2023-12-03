@@ -1,3 +1,4 @@
+// GRAMMAR TREE SYNTAX using polymorphic variants
 SCHEME """(define  (mklist es)`(ast_apply ,_sr (,(nos "list") (ast_tuple ,_sr ,es))))""";
 
 syntax grammar {
@@ -5,14 +6,14 @@ x[let_pri]:= "grammar" xproduction* "endgrammar" =>#
   """`(ast_variant ("grammar" ,(mklist _2)))"""
 ;
 
-xproduction := sname ":=" (xnonterminal | xterminal)* ";" =># 
+xproduction := sname ":=" (xnonterminal | xterminal)* "=>#" sstring ";" =># 
   """
     (let*
       (
         (cast (lambda (sym)`(ast_coercion ,_sr (,sym ,(nos "sym_t")))))
         (mapcast (map cast _3))
       )
-       `(ast_variant ("production" (ast_tuple ,_sr (,(stringof _1) ,(mklist  mapcast)))))
+       `(ast_variant ("production" (ast_tuple ,_sr (,(stringof _1) ,(mklist  mapcast) ,(stringof _5)))))
     )
   """
 ;
@@ -24,51 +25,99 @@ xnonterminal := sname =>#
 xterminal := sstring =># // a string, to be interpreted as a regexp
   """`(ast_variant ("terminal" ,(stringof _1))))""";
 }
- 
-open syntax grammar;
-println$ "Grammar test";
-var s = grammar
-  start := x y;
-  x := "Jello";
-  y := "world";
-endgrammar;
-println$ "Grammar spec parsed";
+//----------------------------------------------------------
+// TREE TYPES
 typedef gram_t = (
   | `grammar of list[prod_t]
 );
 typedef prod_t = ( 
-  | `production of string * list[sym_t]
+  | `production of string * list[sym_t] * string
 );
 typedef sym_t = (
   | `terminal of string 
   | `nonterminal of string 
 );
 
+//----------------------------------------------------------
+// TREE PRETTY PRINTS
 instance Str[sym_t] {
   fun str(x:sym_t):string => 
     match x with
-    | `terminal s => "(terminal " + s + ")"
-    | `nonterminal s => "(nonterminal " + s + ")"
+    | `terminal s => s.repr
+    | `nonterminal s => s
     endmatch
   ;
 }
 instance Str[prod_t] {
   fun str(x:prod_t):string => 
     match x with
-    | `production (name, ls) => "  production " name + " := " + List::cat "," (List::map (str of sym_t) ls) + ";"
+    | `production (name, symbols, action) => 
+      "  " + name + " := " + List::cat "," (List::map (str of sym_t) symbols) +" =># " +  action.repr + ";"
     endmatch
   ;
 }
 instance Str[gram_t] {
   fun str(x:gram_t):string => 
     match x with
-    | `grammar ls => "grammar" + List::cat "\n" (List::map (str of prod_t) ls) +"\nendgrammar\n"
+    | `grammar ls => "grammar\n" + List::cat "\n" (List::map (str of prod_t) ls) +"\nendgrammar\n"
     endmatch
   ;
 }
 
 
-println$ s.str;
+//----------------------------------------------------------
+// ARRAY FORMAT
+typedef aprod_t = (
+  | `aproduction of string * varray[sym_t] * string
+);
+typedef agram_t = (
+  | `agrammar of varray[aprod_t]
+);
+
+fun make_aprod: prod_t -> aprod_t =
+  | `production (name,symbols,action) => 
+    let new_symbols = varray symbols in 
+    `aproduction(name,new_symbols,action) 
+;
+
+fun make_agram: gram_t -> agram_t =
+  | `grammar productions  => 
+    let new_productions = varray(List::map make_aprod productions) in 
+    `agrammar new_productions
+;
+
+instance Str[aprod_t] {
+  fun str(p:aprod_t) =>
+    match p with
+    | `aproduction (name, symbols, action) => 
+      "  " + name + " := " + List::cat "," (List::map (str of sym_t) symbols.as_list) +" =># " +  action.repr + ";"
+    endmatch
+  ;  
+}
+instance Str[agram_t] {
+  fun str(x:agram_t):string => 
+    match x with
+    | `agrammar productions => "grammar\n" + List::cat "\n" (List::map (str of aprod_t) productions.as_list) +"\nendgrammar\n"
+    endmatch
+  ;
+}
+
+//----------------------------------------------------------
+// TEST CASE
+ 
+open syntax grammar;
+println$ "Grammar test";
+var s = grammar
+  start := x y =># "act1";
+  x := "Jello" =># "act2";
+  y := "world" =># "act3";
+endgrammar;
+println$ "Grammar spec parsed";
+
+var a = make_agram s;
+
+println$ "tree format\n" + s.str;
+println$ "array format\n" + a.str;
 
 
   

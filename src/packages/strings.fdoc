@@ -34,7 +34,7 @@ class Str [T] {
 }
 
 class Repr [T with Str[T]] {
-  virtual fun repr (t:T) : string => str t;
+  virtual fun repr: T -> string;
 }
 
 class Show [T] {
