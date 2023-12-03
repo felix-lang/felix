@@ -165,7 +165,58 @@ fun tmap (g:agram_t) : tdefs_t {
   return tdefs; 
 }
 
+//----------------------------------------------------------
+// Produce an array of terminal string names
+// and a reverse map from string names to the assigned indices
 
+typedef tindices_t = varray[string] * strdict[size];
+fun get_tindices  (tmap : tdefs_t) : tindices_t {
+  var nts = 0uz;
+  for data in tmap perform ++nts; // hacky!
+  var tnames = varray[string] nts;
+  var tindices = strdict[size]();
+  for data in tmap do
+    var name = data.0;
+    tindices.add name tnames.len;
+    push_back (tnames, data.0);
+  done
+  return tnames, tindices;
+}
+
+//----------------------------------------------------------
+// Rebuild the grammar using indices for the symbols
+// Terminals indices are negated instead of using a constructor,
+//   so as to make the representation compact
+typedef bsym_t = int;
+struct bprod_t { nt: int; syms: varray[bsym_t]; act: string; }
+typedef bgram_t = varray[bprod_t];
+instance Str[bprod_t] { fun str (x:bprod_t) => x.nt.str + " => " + x.syms.str + x.act.repr; }
+
+fun make_bgram (a: agram_t, nts: strdict[size], ts: strdict[size]) : bgram_t {
+  match a with 
+  | `agrammar ps =>
+    var g = varray[bprod_t] ps.len;
+    for p in ps do
+      match p with
+      | `aproduction (name, syms, act) =>
+        var s = varray[bsym_t] syms.len;
+        var ntindex = match nts.get name with | Some x=> x.int | None => 0 endmatch;
+        for sym in syms do
+          var six = 
+            match sym with
+            | `terminal x => -match (ts.get x) with | Some x=> x.int | None => 0 endmatch
+            | `nonterminal x => match (nts.get x) with | Some x => x.int | None => 0 endmatch
+            endmatch
+          ;
+          push_back (s, six); 
+        done
+        var new_prod = bprod_t(ntindex,s,act); 
+        push_back(g,new_prod);
+      endmatch;
+    done
+    return g;
+  endmatch;
+}
 
 //----------------------------------------------------------
 // TEST CASE
@@ -197,4 +248,10 @@ println$ "tdefs\n" + ts.str;
 var ntnames, ntindices = get_ntindices nts;
 println$ "ntnames\n" + ntnames.str;
 println$ "ntindices\n" + ntindices.str;
- 
+var tnames, tindices = get_tindices ts;
+println$ "tnames\n" + tnames.str;
+println$ "tindices\n" + tindices.str;
+
+var bgram = make_bgram (a, ntindices, tindices);
+println$ bgram.str;
+

@@ -1224,7 +1224,7 @@ open Set[Judy::J1Array,Judy::word];
 //$ Scales to terabytes.
 //$ No other data structure can do this.
 
-open class StrDict[T] {
+class StrDict[T] {
    open Judy;
 
    //$ Type of a strdict.
@@ -1465,6 +1465,8 @@ open class StrDict[T] {
   inherit Set[strdict,string];
 
 }
+
+open[T] StrDict[T];
 
 // map from string to list of strings
 open class Str2StrList
