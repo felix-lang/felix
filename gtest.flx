@@ -103,6 +103,24 @@ instance Str[agram_t] {
 }
 
 //----------------------------------------------------------
+// MAP SYMBOLS
+typedef ntdefs_t = strdict[list[size]];
+fun ntmap (g:agram_t) : ntdefs_t {
+  var ntdefs = strdict[list[size]]();
+  match g with
+  | `agrammar productions =>
+    for index in 0uz ..< productions.len do
+      var key = match (get(productions,index)) with | `aproduction (name,_,_) => name endmatch;
+      var dflt = Empty[size];
+      var data = ntdefs.get_dflt (key, dflt);
+      var new_data = Snoc (data, index); 
+      ntdefs.add key new_data;
+    done
+  endmatch;
+  return ntdefs; 
+}
+
+//----------------------------------------------------------
 // TEST CASE
  
 open syntax grammar;
@@ -110,6 +128,7 @@ println$ "Grammar test";
 var s = grammar
   start := x y =># "act1";
   x := "Jello" =># "act2";
+  x := "Jello2" =># "act2a";
   y := "world" =># "act3";
 endgrammar;
 println$ "Grammar spec parsed";
@@ -119,5 +138,6 @@ var a = make_agram s;
 println$ "tree format\n" + s.str;
 println$ "array format\n" + a.str;
 
-
+var nts = ntmap a;
+println$ "ntdefs\n" + nts.str;
   

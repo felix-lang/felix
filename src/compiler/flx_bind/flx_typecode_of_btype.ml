@@ -1,8 +1,8 @@
 open Flx_btype
 open Flx_ast
 
-let typecode_of_btype ?sym_table:(sym_table=None) bsym_table counter sr t0 = 
-  let rec tc depth mutrail t =
+let typecode_of_btype ?sym_table:(sym_table=None) bsym_table counter sr (t0:Flx_btype.t) = 
+  let rec tc depth mutrail t : typecode_t =
     let isrecursive = Flx_btype_rec.is_recursive_type t in
     let mutrail = 
       if isrecursive then 
@@ -11,7 +11,7 @@ let typecode_of_btype ?sym_table:(sym_table=None) bsym_table counter sr t0 =
         (depth,label)::mutrail
       else mutrail
     in
-    let tc t = tc (depth + 1) mutrail t in
+    let tc (t:Flx_btype.t) = tc (depth + 1) mutrail t in
     let r = match t with
       | BTYP_record flds -> `TYP_record (List.map (fun (s,t) -> s,tc t) flds) 
       | BTYP_tuple ts -> `TYP_tuple (List.map tc ts)
@@ -54,11 +54,17 @@ let typecode_of_btype ?sym_table:(sym_table=None) bsym_table counter sr t0 =
           end
         end
 *)
+      | BTYP_variant ls -> 
+        let cvt (name,t) = (`Ctor (name, (tc t)) :> variant_item_t) in
+        let ls = List.map cvt ls in 
+        `TYP_variant ls 
+
       | _ -> failwith ("typecode_of_btype can't handle type : " ^ Flx_print.sbt bsym_table t)
 
     in
     if isrecursive then 
        let label = match mutrail with (_,label)::_ -> label | _ -> assert false in
+       let r = (r :> typecode_t) in
        `TYP_as (r,label,KND_type)
     else r
   in
