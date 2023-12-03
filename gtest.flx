@@ -104,6 +104,8 @@ instance Str[agram_t] {
 
 //----------------------------------------------------------
 // MAP SYMBOLS
+//
+// Map the string name of a non-terminal to a list of productions for that symbol
 typedef ntdefs_t = strdict[list[size]];
 fun ntmap (g:agram_t) : ntdefs_t {
   var ntdefs = strdict[list[size]]();
@@ -121,6 +123,51 @@ fun ntmap (g:agram_t) : ntdefs_t {
 }
 
 //----------------------------------------------------------
+// Produce an array of non-terminal string names
+// and a reverse map from string names to the assigned indices
+
+typedef ntindices_t = varray[string] * strdict[size];
+fun get_ntindices  (ntmap : ntdefs_t) : ntindices_t {
+  var nnts = 0uz;
+  for data in ntmap perform ++nnts; // hacky!
+  var ntnames = varray[string] nnts;
+  var ntindices = strdict[size]();
+  for data in ntmap do
+    var name = data.0;
+    ntindices.add name ntnames.len;
+    push_back (ntnames, data.0);
+  done
+  return ntnames, ntindices;
+}
+
+// Map the string name of a terminal to a list of locations for that symbol
+// A location is a pair, the production index and the location in the production.
+ 
+typedef tdefs_t = strdict[list[size * size]];
+fun tmap (g:agram_t) : tdefs_t {
+  var tdefs = strdict[list[size * size]]();
+  match g with
+  | `agrammar productions =>
+    for pindex in 0uz ..< productions.len do
+      var symbols = match (get(productions,pindex)) with | `aproduction (_,symbols,_) => symbols endmatch;
+      for sindex in 0uz ..< symbols.len do
+        match symbols.sindex with
+        | `terminal name => 
+          var dflt = Empty[size * size];
+          var data = tdefs.get_dflt (name, dflt);
+          var new_data = Snoc (data, (pindex,sindex)); 
+          tdefs.add name new_data;
+       | _ => ;
+       endmatch;
+     done
+    done
+  endmatch;
+  return tdefs; 
+}
+
+
+
+//----------------------------------------------------------
 // TEST CASE
  
 open syntax grammar;
@@ -130,6 +177,7 @@ var s = grammar
   x := "Jello" =># "act2";
   x := "Jello2" =># "act2a";
   y := "world" =># "act3";
+  z := "Jello" "world" =># "act4"; 
 endgrammar;
 println$ "Grammar spec parsed";
 
@@ -140,4 +188,13 @@ println$ "array format\n" + a.str;
 
 var nts = ntmap a;
 println$ "ntdefs\n" + nts.str;
-  
+
+var ts = tmap a;
+instance Repr[size * size] { fun repr(x:size,y:size) => "(" + x.str + ", " + y.str + ")"; }
+println$ "tdefs\n" + ts.str;
+
+
+var ntnames, ntindices = get_ntindices nts;
+println$ "ntnames\n" + ntnames.str;
+println$ "ntindices\n" + ntindices.str;
+ 
