@@ -60,7 +60,10 @@ def guess_platform(ctx, arch=None):
     if arch is None:
         # If we're on Windows, then don't even try uname
         if os.name == 'nt':
-            res = archmap[platform.system().lower()]
+            if os.getenv('MSYSTEM') is not None:
+                res = archmap['mingw']
+            else:
+                res = archmap[platform.system().lower()]
             ctx.logger.passed(res)
             return frozenset(res)
         # Let's see if uname exists
