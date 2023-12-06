@@ -1745,7 +1745,7 @@ print_endline ("`EXPR_match_variant_subtype");
 
   | `EXPR_variant_subtype_match_coercion (sr,(e,t)) ->
 (*
-print_endline ("`EXPR_variant_subtype_match_coercion");
+print_endline ("`EXPR_variant_subtype_match_coercion e=" ^ Flx_print.string_of_expr e ^ ", t=" ^ Flx_print.string_of_typecode t );
 *)
     (* we need to do TWO coercions here! The first one is the unsafe
        coercion that the pattern match checked was safe. This is a flat
@@ -1763,9 +1763,9 @@ print_endline ("`EXPR_variant_subtype_match_coercion");
       | BTYP_variant ts ->
         let intersection = List.filter (fun (s,t) -> List.mem_assoc s ls) ts in
         let narrowed_src_type = Flx_btype.btyp_variant intersection in
+
         (* this case is safe because the match checker ensure it *)
         let narrowed_argument = bexpr_reinterpret_cast (e,narrowed_src_type) in
-
         (* this coercion may not be safe, it should be a coercion to
         a supertype. We don't bother checking that here because the coercion
         expander should do it anyhow

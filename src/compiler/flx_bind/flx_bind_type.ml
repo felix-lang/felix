@@ -152,12 +152,9 @@ print_endline ("\n******\nTrying to bind variant " ^ string_of_typecode t);
        []
        ts 
      in 
-(*
-print_endline("Bound variant components = " ^ catmap "," (fun (s,t) -> "`" ^ s ^ " of " ^ Flx_btype.st t) flds);
-*)
      let t = btyp_polyvariant flds in
 (*
-print_endline ("Bound variant = " ^ Flx_btype.st t);
+print_endline ("[flx_bind_type] Bound polyvariant = " ^ Flx_btype.st t);
 *)
      t
 

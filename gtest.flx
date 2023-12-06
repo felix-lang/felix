@@ -190,7 +190,7 @@ fun get_tindices  (tmap : tdefs_t) : tindices_t {
 typedef bsym_t = int;
 struct bprod_t { nt: int; syms: varray[bsym_t]; act: string; }
 typedef bgram_t = varray[bprod_t];
-instance Str[bprod_t] { fun str (x:bprod_t) => x.nt.str + " => " + x.syms.str + x.act.repr; }
+instance Str[bprod_t] { fun str (x:bprod_t) => "\n  " + x.nt.str + " := " + x.syms.str + " =># " + x.act.repr + ";"; }
 
 fun make_bgram (a: agram_t, nts: strdict[size], ts: strdict[size]) : bgram_t {
   match a with 
@@ -204,7 +204,7 @@ fun make_bgram (a: agram_t, nts: strdict[size], ts: strdict[size]) : bgram_t {
         for sym in syms do
           var six = 
             match sym with
-            | `terminal x => -match (ts.get x) with | Some x=> x.int | None => 0 endmatch
+            | `terminal x => -1-match (ts.get x) with | Some x=> x.int | None => 0 endmatch
             | `nonterminal x => match (nts.get x) with | Some x => x.int | None => 0 endmatch
             endmatch
           ;

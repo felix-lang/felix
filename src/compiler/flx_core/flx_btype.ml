@@ -1314,7 +1314,13 @@ and btyp_polyvariant ls =
     ([],[])
     ls
   in
+(* NOTE: this does NOT WORK!!! Because a PV can include another in two different ways,
+and indeed,you can manually put the components a base represents in, and, you can
+include using an alias as well, IN OTHER WORDS stable sorting doesn't mnake the same
+underlying variants have  the same polyvariant representation .. DUH!!!
+*)
   let ctors, bases = split ls in
+  let ctors = List.fold_left (fun ls elt -> Flx_list.uniq_add elt ls) [] ctors in
   if List.length bases = 0 then
     btyp_variant ctors
   else

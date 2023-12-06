@@ -151,7 +151,9 @@ and variant_coercion new_table bsym_table counter parent remap ((srcx,srct) as s
     bexpr_reinterpret_cast (e,dstt)
   with 
   | Not_found -> 
+(*
   print_endline ("SPECIAL Variant coercion " ^ Flx_btype.st srct ^ " => " ^ Flx_btype.st dstt); 
+*)
   (* OK, now lets handle the special case where there's no choice
      because the target has only ONE constructor with a given name
      In fact, I am going to cheat, and just use the first name
@@ -195,23 +197,31 @@ and variant_coercion new_table bsym_table counter parent remap ((srcx,srct) as s
       ) counts;
       let coercions = List.map (fun (name, ltyp) ->
         let condition = bexpr_match_variant (name,srce) in
+(*
 print_endline ("ltyp1 = " ^ Flx_btype.st ltyp);
+*)
         let extracted = bexpr_variant_arg ltyp (name,srce) in
         (* just use first one .. later we could try next one if it fails *)
+(*
 print_endline ("ltyp2 = " ^ Flx_btype.st ltyp);
+*)
         let rtyp =  
            try List.assoc name rs 
            with Not_found -> print_endline ("NOt FoUnD but rtyp cal"); assert false
         in
         let coerced = coerce parent extracted rtyp in
+(*
 print_endline ("dstt = " ^ Flx_btype.st dstt);
+*)
         (* this is required if dstt was recursive and unfolded,
            since the hash requires a minimised type.
            Should be enforced in the hash routine but Ocaml compilation
            model has got in the way.
         *)
         let dstt = Flx_fold.minimise bsym_table counter dstt in
+(*
 print_endline ("MINIMISED dstt = " ^ Flx_btype.st dstt);
+*)
         let new_variant = bexpr_variant dstt (name, coerced) in 
         condition, new_variant
         ) ls 
