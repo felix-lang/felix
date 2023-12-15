@@ -55,7 +55,7 @@ second bit = 1 -> layout char after are allowed  *)
 module Ordered_non_ter =
 struct
   type t = non_ter
-  let compare = compare
+  let compare = Stdlib.compare
 end
 module Nt_map = Map.Make(Ordered_non_ter)
 
@@ -75,7 +75,7 @@ let dummy_lexbuf_position _ = (Lexing.dummy_pos, Lexing.dummy_pos)
 module Ordered_int =
 struct
   type t = int
-  let compare = compare
+  let compare = Stdlib.compare
 end
 module Int_set = Set.Make(Ordered_int)
 module Int_map = Map.Make(Ordered_int)
@@ -97,7 +97,7 @@ module Ordered_rhs =
    (* the int tells whether the rule allows layout characters
     inside or afterwards (see rule options) *)
   let compare l1 l2 =
-    compare l1 l2
+    Stdlib.compare l1 l2
 end
 module Map_rhs = Map.Make (Ordered_rhs)
 
@@ -108,21 +108,21 @@ type item_rhs = rhs * int
 module Ordered_items =
 struct
   type t = item
-  let compare = compare
+  let compare = Stdlib.compare
 end
 module Item_map = Map.Make(Ordered_items)
 
 module Ordered_token_name =
 struct
   type t = token_name
-  let compare = compare
+  let compare = Stdlib.compare
 end
 module TNS = Set.Make (Ordered_token_name)
 
 module Ordered_intc =
 struct
   type t = int * int
-  let compare = compare
+  let compare = Stdlib.compare
 end
 module Intc_map = Map.Make(Ordered_intc)
 module Intc_set = Set.Make(Ordered_intc)
@@ -130,7 +130,7 @@ module Intc_set = Set.Make(Ordered_intc)
 module Ordered_predict =
 struct
   type t = (non_ter * (priority nt_prio))
-  let compare = compare
+  let compare = Stdlib.compare
 end
 module Predict = Set.Make(Ordered_predict)
 
@@ -196,7 +196,7 @@ let compare_is is1 is2 =
     if c<>0 then c else
     let c = Intc_set.compare is1.kernel_nt is2.kernel_nt in
     if c<>0 then c else
-    let c = compare is1.non_kernel is2.non_kernel in
+    let c = Stdlib.compare is1.non_kernel is2.non_kernel in
     if c<>0 then c else Predict.compare is1.predict is2.predict
 
 let soc c = Char.escaped c
@@ -300,7 +300,7 @@ let rec print_pretty_regexp = function
 module Ordered_ntp =
 struct
   type t = priority nt_prio
-  let compare = compare
+  let compare = Stdlib.compare
 end
 module Ntp_map = Map.Make(Ordered_ntp)
 
@@ -322,7 +322,7 @@ let lit_trans (symb:(lit_nt,int) psymbol) = match symb with
 module Ordered_lit_trans=
 struct
   type t = lit_trans
-  let compare = compare
+  let compare = Stdlib.compare
 end
 
 module Map_lit_trans = Map.Make(Ordered_lit_trans)
@@ -338,7 +338,7 @@ struct
     let c = Intc_set.compare is1.kernel_nt is2.kernel_nt in
     if c<>0 then c else
     Intc_set.compare is1.kernel_t is2.kernel_t
-    (*else compare
+    (*else Stdlib.compare
       (is1.reducible,is1.kernel_nt,is1.kernel_t)
       (is2.reducible,is2.kernel_nt,is2.kernel_t)*)
 end
@@ -359,7 +359,7 @@ module Map_is = Map.Make(Ordered_item_set)
   module Ordered_States =
   struct
     type t = state
-    let compare s1 s2 = compare s1.number s2.number
+    let compare s1 s2 = Stdlib.compare s1.number s2.number
       (*compare_is s1.items s2.items*)
   end
   module State_set = Set.Make(Ordered_States)

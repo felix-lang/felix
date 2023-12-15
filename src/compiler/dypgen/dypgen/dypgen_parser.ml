@@ -784,7 +784,7 @@ let empty_ppi = {
 module Ordered_string =
 struct
   type t = string
-  let compare = Pervasives.compare
+  let compare = Stdlib.compare
 end
 
 module String_set = Set.Make(Ordered_string)

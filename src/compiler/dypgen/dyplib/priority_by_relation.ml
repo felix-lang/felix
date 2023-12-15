@@ -32,12 +32,12 @@ let start_priority = No_priority
 module OrdPrio =
 struct
   type t = priority
-  let compare = compare
+  let compare = Stdlib.compare
 end
 module Ordered_string =
 struct
   type t = string
-  let compare = compare
+  let compare = Stdlib.compare
 end
 
 module Prio_set = Set.Make(OrdPrio)

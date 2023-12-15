@@ -61,7 +61,7 @@ let rec str_expr exp = match exp with
 module Ordered_string =
 struct
   type t = string
-  let compare = Pervasives.compare
+  let compare = Stdlib.compare
 end
 
 module String_map = Map.Make(Ordered_string)
@@ -113,7 +113,7 @@ let rec substitute env expr = match expr with
 module Ordered_op =
 struct
   type t = string
-  let compare = Pervasives.compare
+  let compare = Stdlib.compare
 end
 
 module Op_map = Map.Make(Ordered_op)

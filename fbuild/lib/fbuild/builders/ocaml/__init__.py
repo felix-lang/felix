@@ -680,22 +680,6 @@ class Ocamlc(BytecodeBuilder):
 
 # ------------------------------------------------------------------------------
 
-class Ocamlcp(BytecodeBuilder):
-    def __init__(self, ctx, exe=None, *args, profile_flags=(), **kwargs):
-        exe = fbuild.builders.find_program(ctx,
-            [exe] if exe else ['ocamlcp.opt', 'ocamlcp'])
-
-        self.profile_flags = tuple(profile_flags)
-
-        super().__init__(ctx, exe, *args, **kwargs)
-
-    def _run(self, *args, flags=(), profile_flags=None, **kwargs):
-        """Add the profile flags."""
-        if profile_flags is None:
-            profile_flags = self.profile_flags
-
-        return super()._run(*args, flags=tuple(flags) + profile_flags, **kwargs)
-
 # ------------------------------------------------------------------------------
 
 class Ocamlopt(Builder):
@@ -827,11 +811,9 @@ class Ocaml(fbuild.builders.AbstractCompilerBuilder):
     def __init__(self, ctx, *,
             ocamldep=None,
             ocamlc=None,
-            ocamlcp=None,
             ocamlopt=None,
             make_ocamldep=Ocamldep,
             make_ocamlc=Ocamlc,
-            make_ocamlcp=Ocamlcp,
             make_ocamlopt=Ocamlopt,
             profile=False,
             linker=None,
@@ -842,12 +824,6 @@ class Ocaml(fbuild.builders.AbstractCompilerBuilder):
         self.ocamlc = make_ocamlc(ctx,
             ocamldep=ocamldep,
             exe=ocamlc,
-            make_ocamldep=make_ocamldep,
-            **kwargs)
-
-        self.ocamlcp = make_ocamlcp(ctx,
-            ocamldep=ocamldep,
-            exe=ocamlcp,
             make_ocamldep=make_ocamldep,
             **kwargs)
 

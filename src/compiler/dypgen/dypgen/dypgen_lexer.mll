@@ -56,7 +56,7 @@ let char_for_backslash = function
   | 'r' -> '\r'
   | c   -> c
 
-let string_of_char c = String.make 1 c
+let string_of_char c = String.init 1 (fun _ -> c)
 
 }
 

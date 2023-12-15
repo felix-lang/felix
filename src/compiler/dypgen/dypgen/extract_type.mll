@@ -10,7 +10,7 @@ end
 module String_map = Map.Make(Ordered_string)
 
 let string_buf = Buffer.create 20
-let byte_of_char c = Bytes.get (Bytes.of_string (String.make 1 c )) 0
+
 }
 
 let newline = ('\010' | '\013' | "\013\010")
@@ -66,15 +66,14 @@ and extract_type_2 = parse
 and extract_pp_type = parse
   | ' ' * "val __dypgen_dummy_marker_5 : unit" newline
       { Buffer.add_string string_buf "\n";
-      let s = Buffer.contents string_buf in
+      let s = (*TODO String.copy*) (Buffer.contents string_buf) in
       Buffer.clear string_buf;
       let lexbuf2 = Lexing.from_string s in
       let slist = List.rev (remove_tpar [] lexbuf2) in
       let s = String.concat "" slist in
       let lexbuf2 = Lexing.from_string s in
-      let b = Bytes.of_string s in
-      fix_variant b lexbuf2;
-      Bytes.to_string b }
+      fix_variant s lexbuf2;
+      s }
   | [^'\010''\013'] * newline
       { Buffer.add_string string_buf (Lexing.lexeme lexbuf);
       extract_pp_type lexbuf }
@@ -88,9 +87,7 @@ and fun_type_2 map curr_val = parse
         let slist = List.rev (remove_tpar [] lexbuf2) in
         let s = String.concat "" slist in
         let lexbuf2 = Lexing.from_string s in
-        let b = Bytes.of_string s in
-        fix_variant b lexbuf2;
-        let s = Bytes.to_string b in
+        fix_variant s lexbuf2;
         String_map.add curr_val s map
       else map in
     Buffer.clear string_buf;
@@ -100,7 +97,7 @@ and fun_type_2 map curr_val = parse
     { let m =
       if curr_val <> "" then
         String_map.add curr_val
-        (Buffer.contents string_buf) map
+        ((*TODO String.copy*) (Buffer.contents string_buf)) map
       else map in
     Buffer.clear string_buf;
     Buffer.add_string string_buf s;
@@ -120,16 +117,16 @@ and remove_tpar slist = parse
 and replace_tpar oldtp newtp = parse
   | [^'''] * eof { Buffer.add_string string_buf (Lexing.lexeme lexbuf) }
   | ''' ['a'-'z'] ['0'-'9']* [' ''\010''\013'','')']
-    { let r = Lexing.lexeme lexbuf in
-    let len = String.length r in
-    let s = Bytes.of_string (String.sub r 1 (len-2)) in
-    if s = Bytes.of_string oldtp then
+    { let r = Bytes.of_string(Lexing.lexeme lexbuf) in
+    let len = Bytes.length r in
+    let s = (Bytes.sub r 1 (len-2)) in
+    if s = oldtp then
       (let s = Bytes.of_string ("'"^newtp^" ") in
       let len2 = Bytes.length s in
-      Bytes.set s (len2-1) r.[len-1];
+      Bytes.set s (len2-1) (Bytes.get r (len-1));
       Buffer.add_bytes string_buf s)
     else
-      Buffer.add_string string_buf r;
+      Buffer.add_bytes string_buf r;
     replace_tpar oldtp newtp lexbuf }
   | [^'''] + { Buffer.add_string string_buf (Lexing.lexeme lexbuf);
     replace_tpar oldtp newtp lexbuf }
@@ -140,12 +137,14 @@ and fix_variant fun_typ = parse
   | [^'_''['] * eof { () }
   | "_[" ['<''>']
     { let i = Lexing.lexeme_start lexbuf in
-    Bytes.set fun_typ i ' '; Bytes.set fun_typ (i+2) ' ';
-    fix_variant fun_typ lexbuf}
+    let fun_typ2 = Bytes.of_string fun_typ in
+    Bytes.set fun_typ2 i  ' '; Bytes.set fun_typ2 (i+2)  ' ';
+    fix_variant (Bytes.to_string fun_typ2) lexbuf}
   | "[" ['<''>']
     { let i = Lexing.lexeme_start lexbuf in
-    Bytes.set fun_typ (i+1) ' ';
-    fix_variant fun_typ lexbuf}
+    let fun_typ2 = Bytes.of_string fun_typ in
+    Bytes.set fun_typ2 (i+1)  ' ';
+    fix_variant (Bytes.to_string fun_typ2) lexbuf}
   | [^'_''['] + { fix_variant fun_typ lexbuf }
   | ['_''['] { fix_variant fun_typ lexbuf }
 

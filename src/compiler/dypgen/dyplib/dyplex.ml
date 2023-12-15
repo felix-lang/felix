@@ -220,7 +220,7 @@ let print_disjoint_tl_res res =
 module Ordered_node =
 struct
   type t = node
-  let compare n1 n2 = compare n1.id n2.id
+  let compare n1 n2 = Stdlib.compare n1.id n2.id
 end
 module Node_set = Set.Make(Ordered_node)
 
@@ -442,7 +442,7 @@ let make_lexer build_nfa_table =
         (function ([ci],n1) -> write_interval ci n.id dec_table n1.id
           | _ -> assert false)
         trans_l);
-      final.(n.id) <- List.sort compare (list_of_set n.matched)
+      final.(n.id) <- List.sort Stdlib.compare (list_of_set n.matched)
       (* Is it necessary to sort the list or doesn't
        list_of_set already do it? *))
     sl in
@@ -497,7 +497,7 @@ let extend_lexer main_lexer_start regexp_list build_nfa_table node_nb regexp_nb 
         (function ([ci],n1) -> write_interval ci n.id dec_table n1.id
           | _ -> assert false)
         trans_l);
-      final.(n.id) <- List.sort compare (list_of_set n.matched)
+      final.(n.id) <- List.sort Stdlib.compare (list_of_set n.matched)
       (* Is it necessary to sort the list or doesn't
        list_of_set already do it? *))
     sl in
@@ -595,7 +595,7 @@ let lex_engine is_main_lexer tbl_list (lexbuf:Lexing.lexbuf) reset_start_pos =
           (Printf.fprintf !log_channel
           "lex_engine reads: `%c'\n" (Bytes.get lexbuf.lex_buffer p));
         try Char.code (Bytes.get lexbuf.lex_buffer p)
-        with Invalid_argument("index out of bounds")
+        with Invalid_argument _(*"index out of bounds"*)
         -> (Printf.printf "%d, %d, %s, %d, %d\n"
          lexbuf.lex_curr_pos lexbuf.lex_buffer_len
          (string_of_bool reset_start_pos)

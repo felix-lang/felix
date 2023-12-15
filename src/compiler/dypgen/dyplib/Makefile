@@ -4,7 +4,7 @@ REP=
 CAMLC=ocamlc
 OCAMLFIND=ocamlfind
 
-all: dyp opt prof
+all: dyp opt 
 
 dyp: dyp.cmi priority_by_relation.cmo automaton.cmo dyplex.cmo dyp.cmo
 	$(CAMLC) -a -o dyp.cma priority_by_relation.cmo automaton.cmo dyplex.cmo dyp.cmo
@@ -12,11 +12,8 @@ dyp: dyp.cmi priority_by_relation.cmo automaton.cmo dyplex.cmo dyp.cmo
 ifdef CAMLOPT
 opt: dyp.cmi priority_by_relation.cmx automaton.cmx dyplex.cmx dyp.cmx
 	$(CAMLOPT) -a -o dyp.cmxa priority_by_relation.cmx automaton.cmx dyplex.cmx dyp.cmx
-prof: dyp.cmi priority_by_relation.p.cmx automaton.p.cmx dyplex.p.cmx dyp.p.cmx
-	$(CAMLOPT) -a -o dyp.p.cmxa priority_by_relation.p.cmx automaton.p.cmx dyplex.p.cmx dyp.p.cmx
 else
 opt:
-prof:
 endif
 
 install: uninstall
@@ -42,7 +39,7 @@ install_opt:
 endif
 
 ifdef CAMLOPT
-.SUFFIXES: .ml .mli .cmo .cmi .cmx .p.cmx
+.SUFFIXES: .ml .mli .cmo .cmi .cmx 
 else
 .SUFFIXES: .ml .mli .cmo .cmi
 endif
@@ -56,8 +53,6 @@ endif
 ifdef CAMLOPT
 .ml.cmx:
 	$(CAMLOPT) $(REP) -c $<
-.ml.p.cmx:
-	$(CAMLOPT) $(REP) -p -c -o $*.p.cmx $<
 endif
 
 clean:
