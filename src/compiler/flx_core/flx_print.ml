@@ -189,6 +189,7 @@ and string_of_expr (e:expr_t) =
   | `EXPR_deref (_,e) -> "*(" ^ se e ^ ")"
   | `EXPR_ref (_,e) -> "&" ^ "(" ^ se e ^ ")"
   | `EXPR_rref (_,e) -> "rref" ^ "(" ^ se e ^ ")"
+  | `EXPR_vref (_,e) -> "rref" ^ "(" ^ se e ^ ")"
   | `EXPR_wref (_,e) -> "wref" ^ "(" ^ se e ^ ")"
 
   | `EXPR_likely (_,e) -> "likely" ^ "(" ^ se e ^ ")"
@@ -574,6 +575,7 @@ and st prec tc : string =
 
     | `TYP_pointer t -> 1,"&" ^ st 1 t
     | `TYP_rref t -> 1,"rref[" ^ st 1 t ^ "]"
+    | `TYP_vref t -> 1,"vref[" ^ st 1 t ^ "]"
     | `TYP_wref t -> 1,"wref[" ^ st 1 t ^ "]"
     | `TYP_uniq t -> 1,"uniq[" ^ st 0 t ^ "]"
     | `TYP_borrowed t -> 1,"borrowed[" ^ st 0 t ^ "]"
@@ -2306,6 +2308,7 @@ and string_of_bound_expression' bsym_table se e =
   | BEXPR_identity_function t -> "identity_function["^sbt bsym_table t^"]"
   | BEXPR_ref (i,ts) -> "&" ^ sid i ^ string_of_inst "ref" bsym_table ts
   | BEXPR_rref (i,ts) -> "rref(" ^ sid i ^ string_of_inst "rref" bsym_table ts^")"
+  | BEXPR_vref (i,ts) -> "vref(" ^ sid i ^ string_of_inst "vref" bsym_table ts^")"
   | BEXPR_wref (i,ts) -> "wref(" ^ sid i ^ string_of_inst "wref" bsym_table ts^")"
   (* | BEXPR_uniq e -> "uniq(" ^ se e ^ ")" *)
   | BEXPR_new e -> "new " ^ se e

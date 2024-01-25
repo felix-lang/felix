@@ -15,6 +15,7 @@ type pmode = [
  | `R (* read only *)
  | `W (* write only *)
  | `N (* pointer to unit : no read or write *)
+ | `V (* view only: propagating read *)
 ]
 
 let str_of_pmode  = function
@@ -22,6 +23,7 @@ let str_of_pmode  = function
   | `R -> "R"
   | `W -> "W"
   | `N -> "NULL"
+  | `V -> "V"
 
 type instkind_t = [
   | `Nominal of variance_list_t (* nominal type: primitive or user defined *)
@@ -860,6 +862,7 @@ let reduce_ptr m t ts =
 
 let btyp_pointer t       = btyp_ptr `RW t []
 let btyp_rref t          = btyp_ptr `R t []
+let btyp_vref t          = btyp_ptr `V t []
 let btyp_wref t          = btyp_ptr `W t []
 let btyp_cltpointer d c  = btyp_ptr `RW c [d]
 let btyp_cltrref d c     = btyp_ptr `R c [d]

@@ -1316,6 +1316,18 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
     | _ -> clierr sr ("Read pointer requires argument be variable")
     end
 
+  | `EXPR_vref (_,e) -> 
+(*
+    print_endline ("Binding vref");
+*)
+    let x = be e in
+    begin match x with
+    | BEXPR_varname (index,ts),vt ->
+      let pt = btyp_vref vt in
+      bexpr_vref pt (index, ts)  
+    | _ -> clierr sr ("View pointer requires argument be variable")
+    end
+
   | `EXPR_wref (_,e) -> 
 (*
     print_endline ("Binding rref");
@@ -1345,6 +1357,8 @@ print_endline ("Binding _deref .. " ^ string_of_expr e);
     begin match unfold "flx_lookup" t with
     | BTYP_ptr (`R,t',_) 
     | BTYP_ptr (`RW,t',_) -> bexpr_deref t' (e,t)
+    | BTYP_ptr (`V,t',_) -> bexpr_deref t' (e,t)
+
     | _ -> clierrx "[flx_bind/flx_lookup.ml:4856: E207] " sr 
      ("[bind_expression'] Dereference non pointer, type " ^ sbt bsym_table t)
     end

@@ -219,6 +219,8 @@ syntax types {
   t[sthename_pri] := "_uniq"       t[sthename_pri] =># "`(typ_uniq ,_sr ,_2)";
   t[sthename_pri] := "_borrowed"   t[sthename_pri] =># "`(typ_borrowed ,_sr ,_2)";
   t[sthename_pri] := "_rref"       t[sthename_pri] =># "`(typ_rref ,_sr ,_2)";
+  t[sthename_pri] := "_vref"       t[sthename_pri] =># "`(typ_vref ,_sr ,_2)";
+  t[sthename_pri] := "&<<"         t[sthename_pri] =># "`(typ_vref ,_sr ,_2)";
   t[sthename_pri] := "&<"          t[sthename_pri] =># "`(typ_rref ,_sr ,_2)";
   t[sthename_pri] := "_wref"       t[sthename_pri] =># "`(typ_wref ,_sr ,_2)";
   t[sthename_pri] := "&>"          t[sthename_pri] =># "`(typ_wref ,_sr ,_2)";
@@ -581,8 +583,10 @@ syntax expressions {
   x[sthename_pri] := "&" x[sthename_pri] =># "`(ast_ref ,_sr ,_2)";
 
   x[sthename_pri] := "_rref" x[sthename_pri] =># "`(ast_rref ,_sr ,_2)";
-  x[sthename_pri] := "&<" x[sthename_pri] =># "`(ast_rref ,_sr ,_2)";
+  x[sthename_pri] := "_vref" x[sthename_pri] =># "`(ast_vref ,_sr ,_2)";
   x[sthename_pri] := "_wref" x[sthename_pri] =># "`(ast_wref ,_sr ,_2)";
+  x[sthename_pri] := "&<<" x[sthename_pri] =># "`(ast_vref ,_sr ,_2)";
+  x[sthename_pri] := "&<" x[sthename_pri] =># "`(ast_rref ,_sr ,_2)";
   x[sthename_pri] := "&>" x[sthename_pri] =># "`(ast_wref ,_sr ,_2)";
 
 

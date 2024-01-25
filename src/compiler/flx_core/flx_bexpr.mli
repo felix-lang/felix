@@ -7,6 +7,7 @@ type bexpr_t = private
   | BEXPR_varname of bid_t * Flx_btype.t list
   | BEXPR_ref of bid_t * Flx_btype.t list
   | BEXPR_rref of bid_t * Flx_btype.t list
+  | BEXPR_vref of bid_t * Flx_btype.t list
   | BEXPR_wref of bid_t * Flx_btype.t list
 
   | BEXPR_cltpointer of Flx_btype.t * Flx_btype.t * t * int list 
@@ -97,6 +98,9 @@ val bexpr_wref :
   Flx_btype.t -> bid_t * Flx_btype.t list -> t
 val bexpr_rref :
   Flx_btype.t -> bid_t * Flx_btype.t list -> t
+val bexpr_vref :
+  Flx_btype.t -> bid_t * Flx_btype.t list -> t
+
 
 (* val bexpr_uniq: t -> t *)
 val bexpr_cltpointer_of_pointer:

@@ -46,6 +46,10 @@
 \def\Hom{\mathit{Hom}}
 \def\ALU{\mathit{ALU}}
 \def\MMU{\mathit{MMU}}
+\def\leftangle{\left<}
+\def\rightangle{\right>}
+\def\leftsquare{\left[}
+\def\rightsquare{\right]}
 
 % minted
 \usemintedstyle{friendly}
@@ -100,8 +104,8 @@ processes (even at the local level).
 \end{xcomment}
 
 Today, early vectorisation in supercomputers, primarily to compute
-inner prodcts rapidly, has be superceded by more general and 
-capable GPUs, capable of running thousands of threads concurrently.
+inner prodcts rapidly, has been superceded by more general and 
+capable GPUs, able to running thousands of threads concurrently.
 Although these devices were originally for improving graphics display
 rendering speeds, they have rapidly been adopted for more general
 applications amendable to parellel processing. Yet mostly they're
@@ -115,8 +119,8 @@ theory providing the basic types, and category theory providing ways to
 construct new types from the base, abstraction, polymorphism, and modularity.
 \end{ycomment}
 
-
 \chapter{Category Theory}
+\section{Categories}
 \begin{definition}
 A {\em category} is a directed multi-graph whose vertices are called {\em objects,}
 and whose edges are termed {\em arrows} or {\em morphisms},
@@ -161,8 +165,9 @@ arrow for each vertex.
 
 \begin{definition}
 A {\em subcategory} of a category is a subset of objects and arrows
-which forms a category. This means, objects and identity arrows
-correspond, and the set of arrows must be closed under composition.
+which forms a category using the same composition operation. 
+This means, objects and identity arrows correspond, 
+and the set of arrows must be closed under composition.
 \end{definition}
 
 \begin{definition}
@@ -177,6 +182,7 @@ The {\em dual}, or {\em opposite} of a category $X$ is the same
 category with all the arrows reversed, usually written $X^{\mathit{op}}$.
 \end{definition}
 
+\section{Functors}
 \begin{definition}
 A {\em covariant functor} is a structure preserving map
 $F:A\rightarrow B$ from
@@ -206,8 +212,148 @@ can be extended to any finite number of categories.
 A functor from a pair of categories is sometimes called a {\em bifunctor}.
 In computer science, a functor is also known as a {\em type constructor}
 or simply a {\em polymorphic type}.
-\chapter{Type System}
-\section{Theory}
+
+\section{Products}
+\begin{definition}
+An object $I$ is {\em terminal} 
+for any object $X$, there is exactly
+one function from $X$ to $I$.
+\end{definition}
+
+In the categpry of sets, any one element set is terminal.
+In $\Nat$ (defined below) the set $\{0\}$ is the unique terminal.
+
+If there is more than one terminal in a category it is sometimes
+useful to pick one and label it as {\em canonical} or special
+and call it {\em unit}. In $Nat$, there is only one terminal
+so unit is unambiguously determined.
+
+\begin{definition}
+Given two objects $A$ and $B$ of some category, a {\em product} of $A$ and $B$
+is an object $P$ called the {\em product object} and a 
+pair of arrows $\pi_A:P \rightarrow A$ and $\pi_B: P \rightarrow B$ called {\em projections}, 
+usually written $A \times B$ such that for any pair of arrows $f_A:X \rightarrow A$ and
+$f_B: X \rightarrow B$ there exists a unique arrow  
+$\leftangle f_A, f_B \rightangle: X \rightarrow P$ forming the {\em product of functions
+with a common domain} such that
+$$f_A = \leftangle f_A, f_B \rightangle \odot \pi_A$$ 
+and
+$$f_B = \leftangle f_A, f_B \rightangle \odot \pi_B$$ 
+\end{definition}
+The construction 
+$\leftangle \_, \_ \rightangle$ is a {\em universal construction} the existence 
+of which, with the above properties, defines what a product is. Note our 
+construction differs from the usual notation in that a product $A\times B$
+is a pair of functions $(\pi_A, \pi_B)$ with a common domain $C$, and this
+is the product (not the common domain $C$). We emphasise this very strongly
+because in our system we will have products like $4\times4$ and $2\times8$
+which are distinct but have the same common domain, namely $16$.
+
+Note that the core is the universal and unique existence of the product of the arrow $f_A$ and
+$F_B$: that is the constraint on the projections that ensures they form a product.
+Whilst the product of funcions with a common domain varies according to the choice 
+of functions, the pair of projections is independent of this choice, depending only
+on the choice of codomains $A$ and $B$. 
+
+The notion can be extended to any finite number of components
+by selecting an index set $J$ for the categories, and using the 
+same indicies in appropriate positions for the projections and
+test functions. A common choice is in fact $N_n$; the subrange of integers
+from 0 to $n-1$; in this case
+the product is called a {\em tuple}: tuples allow the index
+to be positionally determined when using notation such as $A\times B$,
+where the index of the left most component is 0 and increases going
+from left to right.
+
+Another common kind of index set to use is a finite set of strings called
+labels, in which case the product is called a {\em record}.
+
+Every object $P$ is already, trivially, a 1-ary product, with the identity function $1_P$ as
+the projection and any chosen arrow $f:X\rightarrow P$ is also the required
+universal arrow.
+
+Every terminal is a nullary product where the universal arrow from $X$
+of the product construction is the unique arrow from $X$ required
+by the definition of a terminal. There are no projections
+so it satisfies the other requirements in vaccuuo.
+
+\begin{definition}
+An object $O$ is {\em initial} if
+for any object $X$, there is exactly
+one function from $O$ to $X$.
+\end{definition}
+
+In $\Set$ and $\Nat$ the empty set is initial.
+Note the empty function from the empty set to any
+set: the set of pairs of elements from the domain to
+codomain is empty, but that is a legitimate set.
+
+As with terminals, it is useful to pick a canonical initial
+object if there is more than one and
+call it {\em void} and sometimes denote it by the symbol 0.
+
+The existence of the void object causes all sorts of issues.
+\begin{definition}
+A categopry is {\em positive} if it does not contain an initial object.
+\end{definition}
+For any category there is a unique full subcategory which is positive formed
+by removing the initial objects, if any. We will call this {\em the positive}
+subcategory.
+
+\begin{definition}
+A category is said to be {\em Cartesian} if the positive subcategory has products
+of every finite sequence of objects.
+\end{definition}
+
+We should note that products are not necessarily unique, 
+even if we fix the index set. Indeed our system will require
+at least two distinct kinds of tuples, compact ones that fit
+into a single integer, and non-compact one that span multiple
+memory locations.
+
+So far we've said how to use products but not create them.
+For an n-ary product of a particular kind we simply use an n-ary functor
+to construct the product. The functor is split into two pieces.
+We first use a domain with only postive subcategories, so there
+are no products involving initials. Then all the rest of the 
+mapping maps to a particular initial in the codomain.
+The positive subcategory constraint in the first part ensures an
+n-functor produces n projections. In particular, products involving initial
+objects do not exist.
+
+\section{Coproducts}
+{\em Coproducts,} or {\em sums} are dual to products. We give the full
+definition anyhow:
+\begin{definition}
+Given two objects $A$ and $B$ of some category, a {\em coproduct} of $A$ and $B$
+is an object $S$ called the {\em coproduct object} and a 
+pair of arrows $i_A:A \rightarrow S$ and $i_B: B \rightarrow S$ called {\em injections}, 
+usually written $A + B$ such that for any pair of arrows $f_A:A \rightarrow Y$ and
+$f_B: B \rightarrow Y$ there exists a unique arrow  
+$\leftsquare f_A, f_B \rightsquare: X \rightarrow P$ forming the {\em coproduct of functions
+with a common codomain} such that
+$$f_A = i_a \odot \leftsquare f_A, f_B \rightsquare$$ 
+and
+$$f_B = i_B \odot \leftsquare f_A, f_B \rightsquare$$ 
+\end{definition} 
+
+If all finite coproducts exist, we can define a functor
+to find the injections. Notice that coproducts are created by
+the injections, and it remains to figure a way to decode them.
+WE need at least two pieces of data from the decoder: we need
+to know {\em which} injection was used, and also its argument.
+This is usually done with a case analysis.
+
+
+
+\chapter{Systems Programming}
+\begin{definition}
+{\em Systems programming} is programming exclusively with a bounded subset of natural numbers.
+\end{definition}
+
+As a consequence, all systems programs must reduce to finite state machines.
+
+\section{Base}
 Let $\Set$ be the usual distributive category consisting of all small sets and functions.
 Let $\Set_n$ be the full subcategory containing only sets of size less than $n$.
 
@@ -252,7 +398,40 @@ It's usual in algebra to use embeddings: for example, the integers are embedded
 in the rationals, but an integer $3$ is {\em not the same} as the rational $3/1$ 
 it corresponds to.
  
+\section{Representation} 
+We will start with an example. Consider a family of abstract data types
+called enumerations that look like this:
+\begin{minted}{C++}
+enum fruit {apple, orange, pear};
+enum tool {hammer, wrench};
+\end{minted}
+and, apart from equality assume there is a \verb$succ$ function that 
+returns the next value, from right to left, going back to the start 
+at the end. If we put all these things in a category \verb$Enum$
+how would we represent them?
+
+The obvious answer is that each type with $n$ values
+can be put in correspondence with $N_n$, with 0 for the first
+value, adding one going from left to right. The \verb$succ$ function
+can then be modelled by
+$$\mathrm{succ}(x:N_n) = x + 1 \mod n$$
+We can therefor us a functor from \verb$Enum$ to $\Nat$ to reify the
+abstraction. However this is not the only possible functor: we might have 
+assigned the values from right to left and used subtraction instead
+of addition. 
+
+We could try to add 2 instead of 1 and this would work for odd
+enumerations, but not even ones. Luckily this choice is excluded
+because the resulting mapping is not structure preserving.
+Consider an enum size 4, then succ composed with itself is not
+the identity, but in the add 2 implementation it is, so the
+implementation is not functorial.
+
+On the other hand, we could just map all the values to
+0 and define the successor as the identity on 0. 
+This would be unsatsifactory but the mapping is a functor!
  
+
 The fundamental theorem of our construction is
 \begin{lemma}
 Every object $X$ of size $k<n$ in $\mathit{Set_n}$ is isomorphic to the unique object $N_k$

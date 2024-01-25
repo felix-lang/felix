@@ -11,6 +11,7 @@ type bexpr_t =
 
   | BEXPR_ref of bid_t * Flx_btype.t list
   | BEXPR_rref of bid_t * Flx_btype.t list
+  | BEXPR_vref of bid_t * Flx_btype.t list
   | BEXPR_wref of bid_t * Flx_btype.t list
 
   (* Compact linear pointer:
@@ -171,10 +172,23 @@ let bexpr_false = bexpr_bool false
 let bexpr_label i = BEXPR_label (i), Flx_btype.btyp_label ()
 
 
-let bexpr_deref t e : t = 
+let bexpr_deref t ((_,(pt:Flx_btype.t)) as e) : t = 
   match Flx_btype.trivorder t with
   | Some k -> bexpr_unitptr k
-  | _ -> BEXPR_deref e, complete_check "bexpr_deref" t
+  | _ -> 
+  match pt with
+  | BTYP_ptr (mode,base,_) ->
+    if base <> t then
+      print_endline ("Flx_bexpr: Warning deref of pointer to type " ^ Flx_btype.st base ^ 
+      "given type " ^ Flx_btype.st t)
+    ;
+    if mode = `N || mode = `W then
+      print_endline ("Flx_bexpr: ERROR: deref non readable pointer of type " ^ Flx_btype.st pt)
+    ;
+
+    BEXPR_deref e, complete_check "bexpr_deref" t
+  | _ ->
+    BEXPR_deref e, complete_check "bexpr_deref" t
 
 (* bexpr lambda i vt e allows an expression e containing a variable
 index i of type vt to be used as a function, by treating the 
@@ -212,6 +226,12 @@ let bexpr_rref t (bid, ts) =
   match Flx_btype.trivorder t with
   | Some k -> bexpr_unitptr k
   | _ -> BEXPR_rref (bid, complete_check_list ts), complete_check "bexpr_rref" t
+
+let bexpr_vref t (bid, ts) = 
+  match Flx_btype.trivorder t with
+  | Some k -> bexpr_unitptr k
+  | _ -> BEXPR_vref (bid, complete_check_list ts), complete_check "bexpr_rref" t
+
 
 let bexpr_wref t (bid, ts) = 
   match Flx_btype.trivorder t with
@@ -980,6 +1000,7 @@ let get_ts (e,_) =
   | BEXPR_closure (_, ts)
   | BEXPR_ref (_, ts)
   | BEXPR_rref (_, ts)
+  | BEXPR_vref (_, ts)
   | BEXPR_wref (_, ts)
   | BEXPR_apply_prim (_, ts, _)
   | BEXPR_apply_direct (_, ts, _)
@@ -1022,6 +1043,7 @@ let rec cmp ((a,_) as xa) ((b,_) as xb) =
   | BEXPR_varname (i,ts),BEXPR_varname (i',ts')
   | BEXPR_ref (i,ts),BEXPR_ref (i',ts')
   | BEXPR_rref (i,ts),BEXPR_rref (i',ts')
+  | BEXPR_vref (i,ts),BEXPR_vref (i',ts')
   | BEXPR_wref (i,ts),BEXPR_wref (i',ts')
   | BEXPR_closure (i,ts),BEXPR_closure (i',ts') ->
      i = i' && List.length ts = List.length ts' &&
@@ -1134,6 +1156,7 @@ let flat_iter
       f_bid i;
       List.iter f_btype ts
   | BEXPR_wref (i,ts)
+  | BEXPR_vref (i,ts)
   | BEXPR_rref (i,ts) ->
       f_bid i;
       List.iter f_btype ts
@@ -1261,6 +1284,7 @@ let map
 
   | BEXPR_deref e -> bexpr_deref t (f_bexpr e)
   | BEXPR_ref (i,ts) -> bexpr_ref t (f_bid i, List.map f_btype ts)
+  | BEXPR_vref (i,ts) -> bexpr_vref t (f_bid i, List.map f_btype ts)
   | BEXPR_rref (i,ts) -> bexpr_rref t (f_bid i, List.map f_btype ts)
   | BEXPR_wref (i,ts) -> bexpr_wref t (f_bid i, List.map f_btype ts)
 

@@ -55,6 +55,7 @@ print_endline "Apply pointer projection to pointer";
   let ctor = match mode with  
     | `RW | `W -> "::flx::rtl::clptr_t" 
     | `R -> "::flx::rtl::const_clptr_t"
+    | `V -> "::flx::rtl::const_clptr_t"
     | `N -> assert false 
   in
   match target with
@@ -348,6 +349,7 @@ end;
     let ctor = match mode with  
       | `RW | `W -> "::flx::rtl::clptr_t" 
       | `R -> "::flx::rtl::const_clptr_t"
+      | `V -> "::flx::rtl::const_clptr_t"
       | `N -> assert false 
     in
 if debug then begin
@@ -383,6 +385,7 @@ end;
     let ctor = match mode with  
       | `RW | `W -> "::flx::rtl::clptr_t" 
       | `R -> "::flx::rtl::const_clptr_t"
+      | `V -> "::flx::rtl::const_clptr_t"
       | `N -> assert false 
     in
 (*

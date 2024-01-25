@@ -7,6 +7,7 @@ type pmode = [
  | `R (* read only *)
  | `W (* write only *)
  | `N (* pointer to unit : no read or write *)
+ | `V (* pointer to unit : no read or write *)
 ]
 
 val str_of_pmode: pmode -> string
@@ -161,6 +162,7 @@ val btyp_ptr: pmode -> t -> t list -> t
 val reduce_ptr: pmode -> t -> t list -> t
 val btyp_pointer : t -> t
 val btyp_rref : t -> t
+val btyp_vref : t -> t
 val btyp_wref : t -> t
 
 val btyp_cltpointer : t -> t -> t

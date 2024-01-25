@@ -394,6 +394,7 @@ print_endline ("Flx_bind_type. structural mode: TYP_typeof fixpoint metatype hac
   | `TYP_cfunction (d,c) -> btyp_cfunction (bt d, bt c)
   | `TYP_pointer t -> btyp_pointer (bt t)
   | `TYP_rref t -> btyp_rref (bt t)
+  | `TYP_vref t -> btyp_vref (bt t)
   | `TYP_wref t -> btyp_wref (bt t)
   | `TYP_uniq t -> btyp_uniq (bt t)
   | `TYP_borrowed t -> btyp_borrowed (bt t)

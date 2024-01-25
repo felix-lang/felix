@@ -617,6 +617,7 @@ and expand_expr recursion_limit local_prefix seq (macros:macro_dfn_t list) (e:ex
   | `EXPR_deref (sr, e1) -> `EXPR_deref (sr, me e1)
   | `EXPR_ref (sr, e1) ->  `EXPR_ref (sr, me e1)
   | `EXPR_rref (sr, e1) ->  `EXPR_rref (sr, me e1)
+  | `EXPR_vref (sr, e1) ->  `EXPR_vref (sr, me e1)
   | `EXPR_wref (sr, e1) ->  `EXPR_wref (sr, me e1)
   | `EXPR_likely (sr, e1) ->  `EXPR_likely (sr, me e1)
   | `EXPR_unlikely (sr, e1) ->  `EXPR_unlikely (sr, me e1)

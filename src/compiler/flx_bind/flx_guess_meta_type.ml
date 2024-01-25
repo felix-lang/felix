@@ -141,6 +141,7 @@ print_endline (" ** BOUND mata type is " ^ Flx_kind.sk bmt);
   | `TYP_cfunction _
   | `TYP_pointer _
   | `TYP_rref _
+  | `TYP_vref _
   | `TYP_wref _
   | `TYP_type_extension _
   | `TYP_array _ -> kind_type

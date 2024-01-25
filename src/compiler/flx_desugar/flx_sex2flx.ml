@@ -228,6 +228,7 @@ print_endline ("sex2flx:type] " ^ Sex_print.string_of_sex x);
  (* pointers *)
  | Lst [Id "typ_ref"; sr; e] -> `TYP_pointer (ti e)
  | Lst [Id "typ_rref"; sr; e] -> `TYP_rref (ti e)
+ | Lst [Id "typ_vref"; sr; e] -> `TYP_vref (ti e)
  | Lst [Id "typ_wref"; sr; e] -> `TYP_wref (ti e)
  | Lst [Id "typ_pclt"; sr; d; c] -> `TYP_pclt (ti d, ti c)
  | Lst [Id "typ_rpclt"; sr; d; c] -> `TYP_rpclt (ti d, ti c)
@@ -480,6 +481,7 @@ print_endline ("sex2flx:expr] " ^ Sex_print.string_of_sex x);
  | Lst [Id "ast_ref"; sr; e] -> `EXPR_ref (xsr sr,ex e)
 
  | Lst [Id "ast_rref"; sr; e] -> `EXPR_rref(xsr sr, ex e)
+ | Lst [Id "ast_vref"; sr; e] -> `EXPR_vref(xsr sr, ex e)
  | Lst [Id "ast_wref"; sr; e] -> `EXPR_wref(xsr sr, ex e)
 
  | Lst [Id "ast_label_ref"; sr; id] -> `EXPR_label (xsr sr,xid id)

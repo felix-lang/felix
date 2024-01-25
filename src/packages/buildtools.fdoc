@@ -285,6 +285,7 @@ println$ "-" * 20;
           // link files into executable
           println$ "Linking executable " + tmpdir/lib;
           var result = Shell::system$ "ocamlopt.opt" + list(
+            '-I', '+unix', '-I', '+str',
             '-o',tmpdir/lib ) + spec.external_libs + sorted_libs +
             unbox (map 
               (fun (s:string) => entmp (Filename::strip_extension s) + ".cmx") 
@@ -620,6 +621,7 @@ println$ "-" * 20;
     );
 
     var external_libs = list('unix.cmxa', 'str.cmxa');
+
     C_hack::ignore$ libs;
     var path ='src'/'compiler'/'flxg';
     var exe = ocaml_build_exe (path,'flxg',

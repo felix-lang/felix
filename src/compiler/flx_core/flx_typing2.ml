@@ -101,6 +101,7 @@ let string_of_type_name (t:typecode_t) = match t with
   | `TYP_cfunction _ -> "`TYP_cfunction"
   | `TYP_pointer _ -> "`TYP_pointer"
   | `TYP_rref _ -> "`TYP_rref"
+  | `TYP_vref _ -> "`TYP_vref"
   | `TYP_wref _ -> "`TYP_wref"
   | `TYP_uniq _-> "`TYP_uniq"
   | `TYP_borrowed _-> "`TYP_borrowed"

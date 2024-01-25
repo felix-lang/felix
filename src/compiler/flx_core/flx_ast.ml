@@ -122,6 +122,7 @@ and typecode_t = [
   | `TYP_cfunction of typecode_t * typecode_t   (** C function type *)
   | `TYP_pointer of typecode_t                  (** pointer type *)
   | `TYP_rref of typecode_t                     (** read pointer type *)
+  | `TYP_vref of typecode_t                     (** propagating read pointer type *)
   | `TYP_wref of typecode_t                     (** write pointer type *)
   | `TYP_uniq of typecode_t                     (** uniq type *)
   | `TYP_borrowed of typecode_t                     (** uniq type *)
@@ -219,6 +220,7 @@ and expr_t = [
   | `EXPR_deref of Flx_srcref.t * expr_t
   | `EXPR_ref of Flx_srcref.t * expr_t
   | `EXPR_rref of Flx_srcref.t * expr_t
+  | `EXPR_vref of Flx_srcref.t * expr_t
   | `EXPR_wref of Flx_srcref.t * expr_t
   | `EXPR_likely of Flx_srcref.t * expr_t
   | `EXPR_unlikely of Flx_srcref.t * expr_t
@@ -880,6 +882,7 @@ let src_of_expr (e : expr_t) = match e with
   | `EXPR_new (s,_)
   | `EXPR_ref (s,_)
   | `EXPR_rref (s,_)
+  | `EXPR_vref (s,_)
   | `EXPR_wref (s,_)
   | `EXPR_likely (s,_)
   | `EXPR_unlikely (s,_)

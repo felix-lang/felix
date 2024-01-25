@@ -275,6 +275,7 @@ let rec gen_expr'
     let ctor = match mode with
      | `RW ->"::flx::rtl::clptr_t" 
      | `R ->"::flx::rtl::const_clptr_t" 
+     | `V ->"::flx::rtl::const_clptr_t" 
      | _ -> assert false
     in
     let divisor = cal_divisor d v 1 in
@@ -1300,6 +1301,7 @@ print_endline ("Generating class new for t=" ^ ref_type);
 
   (* downgraded semantics, rvalue reference is same as pointer now *)
   | BEXPR_rref (index,ts') 
+  | BEXPR_vref (index,ts') 
   | BEXPR_wref (index,ts') 
   | BEXPR_ref (index,ts') ->
     let ts = map tsub ts' in
@@ -1357,6 +1359,7 @@ print_endline ("Handling coercion in egen " ^ sbt bsym_table srct ^ " ===> " ^ s
 
     (* assume this coercion is implicit in C *)
     | BTYP_ptr (`RW,t1,_),BTYP_ptr(`R,t2,_) when t1 = t2 -> ce_atom ("static_cast<"^tn dstt^">("^ge srce^")")
+    | BTYP_ptr (`RW,t1,_),BTYP_ptr(`V,t2,_) when t1 = t2 -> ce_atom ("static_cast<"^tn dstt^">("^ge srce^")")
     | BTYP_ptr (`RW,t1,_),BTYP_ptr(`W,t2,_) when t1 = t2 -> ge' srce
 
     | BTYP_variant ls, BTYP_variant rs -> 

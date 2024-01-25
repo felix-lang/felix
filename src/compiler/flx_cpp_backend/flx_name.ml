@@ -259,11 +259,13 @@ print_endline ("Flx_tgen.cpp_type_classname " ^ sbt bsym_table t);
   | BTYP_ptr (`N,t',[]) -> assert false (* should be NULL .. *)
   | BTYP_ptr (`RW,t',[]) -> cpp_type_classname syms bsym_table t' ^ "*"
   | BTYP_ptr (`R,t',[]) -> cpp_type_classname syms bsym_table t' ^ " const*"
+  | BTYP_ptr (`V,t',[]) -> cpp_type_classname syms bsym_table t' ^ " const*"
   | BTYP_ptr (`W,t',[]) -> cpp_type_classname syms bsym_table t' ^ " *"
 
   | BTYP_ptr (`N,c,[d]) -> assert false
   | BTYP_ptr (`RW,c,[d]) -> "::flx::rtl::clptr_t";
   | BTYP_ptr (`R,c,[d]) -> "::flx::rtl::const_clptr_t";
+  | BTYP_ptr (`V,c,[d]) -> "::flx::rtl::const_clptr_t";
   | BTYP_ptr (`W,c,[d]) -> "::flx::rtl::clptr_t";
 
   | BTYP_lineareffector (d,e,c)
@@ -439,6 +441,7 @@ and cpp_structure_name syms bsym_table t =
 
   | BTYP_ptr (`RW,t',[]) -> cpp_type_classname syms bsym_table t' ^ "*"
   | BTYP_ptr (`R,t',[]) -> cpp_type_classname syms bsym_table t' ^ " const*"
+  | BTYP_ptr (`V,t',[]) -> cpp_type_classname syms bsym_table t' ^ " const*"
   | BTYP_ptr (`W,t',[]) -> cpp_type_classname syms bsym_table t' ^ " *"
   | BTYP_ptr (_,c,[d]) -> "::flx::rtl::clptr_t";
  
@@ -560,6 +563,7 @@ and cpp_typename syms bsym_table t =
   | BTYP_cfunction _ -> cpp_type_classname syms bsym_table t ^ "*"
   | BTYP_ptr (`RW,t,[]) -> cpp_typename syms bsym_table t ^ "*"
   | BTYP_ptr (`R,t,[]) -> cpp_typename syms bsym_table t ^ " const*"
+  | BTYP_ptr (`V,t,[]) -> cpp_typename syms bsym_table t ^ " const*"
   | BTYP_ptr (`W,t,[]) -> cpp_typename syms bsym_table t ^ "*"
   | _ -> cpp_type_classname syms bsym_table t
 
