@@ -1192,8 +1192,6 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
     let x = Flx_strr.apl2 sr "lnot" [e]  in
     be x
 
-  | `EXPR_ref (_,(`EXPR_deref (_,e))) -> be e
-
   | `EXPR_ref (srr,e) ->
       (* Helper function to look up a property in a symbol. *)
       let has_property bid property =
@@ -1219,7 +1217,6 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
       let e = be e in
       begin match e with
       | _,t when Flx_btype.istriv t -> bexpr_address e
-      | BEXPR_deref e,_ -> e
 
       | BEXPR_varname (index,ts),_ ->
           (* Look up the type of the name, and make sure it's addressable. *)
@@ -1339,15 +1336,6 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
       bexpr_wref pt (index, ts)  
     | _ -> clierr sr ("Write pointer reference requires argument be variable")
     end
-
-  | `EXPR_deref (_,(`EXPR_ref (sr,e) as x)) ->
-    begin 
-      try ignore (be x) 
-      with err -> 
-      print_endline ("WARNING: binding address of expression " ^ string_of_expr x ^ 
-      " gave error: \n" ^ Printexc.to_string err  ^ "\n" ^ Flx_srcref.long_string_of_src sr )
-    end;
-    be e
 
   | `EXPR_deref (sr,e') ->
 (*

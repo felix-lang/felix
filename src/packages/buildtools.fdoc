@@ -245,6 +245,8 @@ println$ "-" * 20;
                "-w", "@8", /* bug out partial matches */
                "-w", "@11", /* bug out unused cases */
                "-w", "-21", /* shut up about non-returning statments like assert false */
+               "-I", "+unix",
+               "-I", "+str",
                "-I",tmpdir, 
                "-I",tmpdir/dir, 
                "-I", entmp (Filename::dirname file)) +
@@ -269,6 +271,7 @@ println$ "-" * 20;
           println$ "Linking library " + tmpdir/lib + ".cmxa";
           sorted_libs = sorted_libs + (tmpdir/lib+ ".cmxa");
           var result = Shell::system$ "ocamlopt.opt" + list(
+            "-I","+unix","-I","+str",
             "-a", 
             '-o',tmpdir/lib + ".cmxa") +
             unbox (map 

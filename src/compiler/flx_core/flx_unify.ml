@@ -13,6 +13,7 @@ open Flx_btype_subst
 open Flx_bid
 
 let mode_supertype m1 m2 = match m1,m2 with
+  | `V, `R
   | `R, `RW
   | `W, `RW
   | `N, _ -> ()

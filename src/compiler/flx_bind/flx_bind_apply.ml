@@ -30,42 +30,8 @@ let generic_function_dispatcher bsym_table counter sr f a =
   (* ---------------------------------------------------------- *)
   | "lrbrack" -> Some (Flx_bind_lrbrack.try_bind_lrbrack bsym_table counter a)
 
-  | "_deref" ->
-    (* FIXME: Move this codeto a separate file *)
-    begin
-      let t = snd a in
-      print_endline ("System function _deref");
-      match t with
-      (* FIXME: more work needed here
-         This code only handles pointers to pointers, but has to apply
-         to tuples, arrays, records, abstract typesm, variants and everything!
-         to do this we have to rebuild every term, replacing R and RW pointers
-         universally with V pointers. This requires recursive remapping from
-         the bottom up and reconstructing the types of aggregate terms because
-         Felix attaches the type type every expression and subexpression.
-      *)
-      | BTYP_ptr (mode,base,_) ->
-        begin match base with
-        | BTYP_ptr (mode2, base2, kk) ->
-          let mode2 = 
-            match mode2 with 
-            | `N -> `N
-            | `R -> `V
-            | `RW -> `V
-            | `W -> `N
-            | `V -> `V
-          in
-          let base = Flx_btype.btyp_ptr mode2 base2 kk in 
-          let a = match a with (x,t) -> x,base in (* should check the type of a is correct ... *)
-          Some (bexpr_deref base a)
-        | _ ->
-          Some (bexpr_deref base a)
-        end
-      | _ -> Flx_exceptions.clierr sr ("Dereferemce value of non pointer type " ^ Flx_btype.st t)
-    end 
 
   | _ -> None
-
 
 (* Note: the exception chaining machinery below is a superior HACK
 

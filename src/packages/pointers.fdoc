@@ -32,7 +32,8 @@ open class MachinePointers
   proc storeat[T:LINEAR] ( p: &>T, v: T) = { _storeat (p,v); }
 
   //$ Dereference a Felx pointer.
-  //fun _deref[T:LINEAR]: &<T -> T = "*$t";
+  fun _deref[T:LINEAR]: &<T -> T = "*$t";
+  fun _deref[T:LINEAR]: &<<T -> T = "*$t";
   fun deref[T:LINEAR] (p:&<T) => _deref p;
   fun deref[T:LINEAR] (p:&<<T) => _deref p;
 }
