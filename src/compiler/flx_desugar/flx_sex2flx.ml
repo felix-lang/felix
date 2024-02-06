@@ -66,6 +66,7 @@ and kind_of_sex sr x : kindcode_t =
   | Lst [Id "knd_name"; Str "NAT"] ->  KND_nat
   | Lst [Id "knd_name"; Str "TYPESET"] ->  KND_typeset
   | Lst [Id "knd_name"; Str "COMPACTLINEAR"] ->  KND_compactlinear
+  | Lst [Id "knd_name"; Str "VIEW"] ->  KND_view
 
   (* Combinators *)
   | Lst [Id "knd_arrow"; Lst[dom; cod]] -> KND_function (ki dom, ki cod)
@@ -477,6 +478,8 @@ print_endline ("sex2flx:expr] " ^ Sex_print.string_of_sex x);
    )
 
  | Lst [Id "ast_deref"; sr; e] -> 
+(* print_endline ("Flx_sex2flx: ast_deref " ^ Flx_print.string_of_expr (ex e)); *)
+
    `EXPR_deref (xsr sr,ex e)
  | Lst [Id "ast_ref"; sr; e] -> `EXPR_ref (xsr sr,ex e)
 

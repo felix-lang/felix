@@ -18,12 +18,28 @@ type pmode = [
  | `V (* view only: propagating read *)
 ]
 
+let viewify_mode = function
+  | `RW 
+  | `R
+  | `V -> `V
+  | `N
+  | `W -> `N
+
+type tvmode = [
+  | `N
+  | `V
+]
+
 let str_of_pmode  = function
   | `RW -> "RW"
   | `R -> "R"
   | `W -> "W"
   | `N -> "NULL"
   | `V -> "V"
+
+let str_of_tvmode = function
+  | `N -> "normal"
+  | `V -> "view"
 
 type instkind_t = [
   | `Nominal of variance_list_t (* nominal type: primitive or user defined *)
@@ -88,7 +104,7 @@ and t =
 
   | BTYP_type_tuple of t list
   | BTYP_type_function of (bid_t * kind) list * kind * t
-  | BTYP_type_var of bid_t * kind
+  | BTYP_type_var of bid_t * tvmode * kind
   | BTYP_type_apply of t * t 
 
   (* type_map is NOT a map over a kind, the argument should
@@ -174,7 +190,7 @@ let flat_iter
       (* The first argument of [its] is an index, not a bid. *)
       (* List.iter (fun (_,t) -> f_btype t) its; *)
       f_btype b
-  | BTYP_type_var (_,t) -> ()
+  | BTYP_type_var (_,_,t) -> ()
       (* The first argument of [BTYP_type_var] is just a unique integer, not a
        * bid. *)
   | BTYP_type_apply (a,b) -> f_btype a; f_btype b
@@ -335,7 +351,7 @@ and str_of_btype typ =
       String.concat "," (List.map (fun (i,t)->string_of_int i^":"^sk t) ps)^"):"^
       sk r^"=("^ s b ^"))"
 
-  | BTYP_type_var (i,t) -> "BTYP_type_var("^string_of_int i^":"^sk t^")"
+  | BTYP_type_var (i,m, t) -> "BTYP_type_var("^string_of_int i^ "-" ^ str_of_tvmode m ^ ":"^sk t^")"
   | BTYP_type_apply (f,x) -> "BTYP_type_apply("^s f^","^s x^ ")"
   | BTYP_type_match (v,pats) -> 
     let sa (i,t) = string_of_int i ^ " <- " ^ s t in
@@ -385,7 +401,7 @@ let rec islinear_type t =
   | BTYP_type_apply (BTYP_inst (_,_,_,KIND_function (_,k)),_)
   | BTYP_typeop (_,_,k)
   | BTYP_inst (_,_,_,k)
-  | BTYP_type_var (_,k) -> kind_ge2 KIND_compactlinear k
+  | BTYP_type_var (_,_,k) -> kind_ge2 KIND_compactlinear k
 
   | _ -> false
 
@@ -395,7 +411,7 @@ let rec islinear_type t =
 let iscopyable_type t = 
   let rec f t = 
     match t with
-    | BTYP_type_var (_,k) -> 
+    | BTYP_type_var (_,_,k) -> 
       (* this rule says all kinds are copyable except run time values (LINEAR)
          which are not shareable (TYPE)
 
@@ -638,7 +654,14 @@ let btyp_compactsum ts =
 
 
 let btyp_inst (it,bid, ts,mt) =
-  BTYP_inst (it,bid, ts,mt)
+  let t = BTYP_inst (it,bid, ts,mt) in
+(*
+  begin match it,mt with
+  | _,KIND_type -> ()
+  | _,_ -> print_endline ("Flx_btype:btyp_inst " ^ st t);
+  end;
+*)
+  t
 
 let btyp_finst (bid, ks,dom, cod) =
   BTYP_finst (bid, ks,dom,cod)
@@ -893,6 +916,13 @@ let btyp_cfunction (args, ret) =
 
 (** Construct a BTYP_fix type. *)
 let btyp_fix i mt =
+(*
+  begin match mt with
+  | KIND_type -> ()
+  | _ -> 
+    print_endline ("$$$$$$$$$ Constructing fixpoint " ^ string_of_int i ^ " kind " ^ sk mt);
+  end;
+*)
   BTYP_fix (i, mt)
 
 (** Construct a BTYP_type_tuple type. *)
@@ -911,7 +941,15 @@ let btyp_type_var (bid, t) =
 if bid = 7141 then print_endline ("Flx_btype: Binding type variable " ^ string_of_int bid ^
   ", kind=" ^ Flx_kind.sk t);
 *)
-  BTYP_type_var (bid, t)
+  BTYP_type_var (bid, `N, t)
+
+let btyp_type_varm (bid, m, t) =
+(*
+if bid = 7141 then print_endline ("Flx_btype: Binding type variable " ^ string_of_int bid ^
+  ", kind=" ^ Flx_kind.sk t);
+*)
+  BTYP_type_var (bid, m, t)
+
 
 (** Construct a BTYP_type_apply type. *)
 let btyp_type_apply (f, a) =
@@ -965,6 +1003,7 @@ let rec bmt msg mt = match mt with
   (* this is wrong, we actually need to examine the pattern to find the kind *)
   | Flx_ast.KND_tpattern t -> kind_type (*  print_endline ("BMT tpattern fail " ^ msg); assert false *)
   | Flx_ast.KND_generic -> kind_type (* requied at least for GADTs to work *) 
+  | Flx_ast.KND_view -> kind_view
 
 (* -------------------------------------------------------------------------- *)
 
@@ -1109,19 +1148,24 @@ let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) ?(f_kind=fun k->k) = funct
   | BTYP_borrowed t -> btyp_borrowed (f_btype t)
 
   | BTYP_void as x -> x
-  | BTYP_fix (i,k) -> btyp_fix i (f_kind k)
+
+  | BTYP_fix (i,k) -> 
+    let k' = f_kind k in
+    if k <> k' then print_endline ("Flx_btype.map changing metatype from " ^ Flx_kind.sk k ^ " to " ^ Flx_kind.sk k');
+    btyp_fix i (f_kind k')
+
   | BTYP_tuple_cons (a,b) -> btyp_tuple_cons (f_btype a) (f_btype b)
   | BTYP_tuple_snoc (a,b) -> btyp_tuple_snoc (f_btype a) (f_btype b)
   | BTYP_type_tuple ts -> btyp_type_tuple (List.map f_btype ts)
   | BTYP_type_function (its, a, b) ->
       btyp_type_function (List.map (fun (i,k) -> f_bid i,f_kind k) its, f_kind a, f_btype b)
-  | BTYP_type_var (i,k) -> btyp_type_var (f_bid i,f_kind k)
+  | BTYP_type_var (i,m,k) -> btyp_type_varm (f_bid i,m, f_kind k)
   | BTYP_type_apply (a, b) -> btyp_type_apply (f_btype a, f_btype b)
   | BTYP_type_map (a, b) -> btyp_type_map (f_btype a, f_btype b)
   | BTYP_type_match (t,ps) ->
       let ps =
         List.map begin fun (tp, t) ->
-          { tp with
+          { (* tp with *)
             pattern = f_btype tp.pattern;
             pattern_vars = BidSet.map f_bid tp.pattern_vars;
             assignments = List.map (fun (i, t) -> f_bid i, f_btype t) tp.assignments
@@ -1415,4 +1459,15 @@ let rec contains_alias' t : unit =
 let contains_alias t : bool = 
   try contains_alias' t; false with | Not_found -> true 
 
+
+let rec viewify_type' t =
+  let f_btype t = viewify_type' t in
+  match t with 
+  | BTYP_type_var (i,m,k) -> BTYP_type_var (i, `V, k)
+  | BTYP_ptr (pm, t, x) -> BTYP_ptr (viewify_mode pm,f_btype t, x)
+  | t -> map ~f_btype t
+
+let viewify_type t =
+  (* print_endline ("Viewify tyype " ^ st t); *)
+  viewify_type' t
 

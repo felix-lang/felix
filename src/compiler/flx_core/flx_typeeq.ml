@@ -202,7 +202,8 @@ let rec type_eq' sbt counter ltrail ldepth rtrail rdepth trail t1 t2 =
   | BTYP_void,BTYP_void
     -> true
 
-  | BTYP_type_var (i,_), BTYP_type_var (j,_) ->
+  (* NOTE: ignoring tvmode *)
+  | BTYP_type_var (i,_,_), BTYP_type_var (j,_,_) ->
     let result = i = j in
     (*
     print_endline ("Type variables compared " ^ (if result then "TRUE" else "FALSE"));
@@ -220,7 +221,7 @@ let rec type_eq' sbt counter ltrail ldepth rtrail rdepth trail t1 t2 =
     print_endline ("Check fixpoint " ^ si i ^ " vs " ^ si j);
     *)
     if i = j then begin 
-      if t1 <> t2 then print_endline "[type_eq] Fix points at same level have different metatypes";
+      if t1 <> t2 then print_endline "[type_eq] WARNING: Fix points at same level have different metatypes, judging not equal!";
 (*
       true
 *)

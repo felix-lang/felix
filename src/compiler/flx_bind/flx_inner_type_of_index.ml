@@ -49,7 +49,6 @@ if debug then
   if List.mem index rs.idx_fixlist then begin
 if debug then
 print_endline "inner_typeof+index returning fixpoint";
-    (* btyp_fix (-rs.depth) (btyp_type 0) *)
     btyp_fix (-rs.depth) (Flx_kind.kind_type) 
   end else
 

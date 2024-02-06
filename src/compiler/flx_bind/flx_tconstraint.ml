@@ -38,6 +38,7 @@ print_endline ("Build type constraints for type variable " ^string_of_int i ^": 
   | KND_borrowed
   | KND_unitsum (* well this is wrong, it IS a constraint! *) 
   | KND_compactlinear  
+  | KND_view
   | KND_function _ 
   | KND_tuple _ -> bbool true
 

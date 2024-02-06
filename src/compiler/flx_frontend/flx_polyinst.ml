@@ -91,6 +91,15 @@ let flat_poly_fixup_expr syms bsym_table polyinst sr (e,t) =
   | BEXPR_ref (i,ts)  ->
     let i,ts = polyinst sr i ts in
     bexpr_ref t (i,ts)
+  | BEXPR_rref (i,ts)  ->
+    let i,ts = polyinst sr i ts in
+    bexpr_rref t (i,ts)
+  | BEXPR_wref (i,ts)  ->
+    let i,ts = polyinst sr i ts in
+    bexpr_wref t (i,ts)
+  | BEXPR_vref (i,ts)  ->
+    let i,ts = polyinst sr i ts in
+    bexpr_vref t (i,ts)
 
   | BEXPR_varname (i',ts') ->
     let i,ts = polyinst sr i' ts' in

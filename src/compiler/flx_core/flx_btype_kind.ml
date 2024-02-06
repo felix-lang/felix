@@ -14,6 +14,11 @@ and metatype' sr typ : kind =
   let mt t = metatype' sr t in
   if not (Flx_btype.iscopyable_type typ) then kind_linear else
   match typ with
+  (* pointers that cannoot write *)
+  | BTYP_ptr (`V,v,_) when mt v = KIND_view -> KIND_view
+  | BTYP_ptr (`R,v,_) when mt v = KIND_view -> KIND_view
+  | BTYP_ptr (`N,v,_) when mt v = KIND_view -> KIND_view
+
   | BBOOL _ -> KIND_bool
   | BTYP_in _ -> KIND_bool
 
@@ -102,7 +107,7 @@ print_endline ("Flx_btype_kind.metatype' case type_apply: " ^ Flx_btype.st typ);
         );
         KIND_type (* HACK *)
     end
-  | BTYP_type_var (i,k) -> k
+  | BTYP_type_var (i,m,k) -> k
   | BTYP_vinst (index,ts,k) -> k
   | BTYP_inst (_,index,ts,k) -> k
   | BTYP_finst (index,ks,dom,cod) -> kind_function (dom, cod)
@@ -119,21 +124,24 @@ print_endline ("Flx_btype_kind.metatype' case type_apply: " ^ Flx_btype.st typ);
     
 
   (* Ordinary type expressions *)
-  | BTYP_tuple _
-  | BTYP_array _
-  | BTYP_sum _ 
-  | BTYP_rptsum _
+  | BTYP_sum  ts
+  | BTYP_tuple ts -> kind_max (kind_type::(List.map mt ts))
+
+  | BTYP_array (base,index) -> kind_max [kind_type; (mt base); (mt index)] (* not clear index counts here *)
+  | BTYP_rptsum (rpt, base) -> kind_max [kind_type; (mt rpt); (mt base)]
+
+  | BTYP_cfunction (d,c)
+  | BTYP_linearfunction (d,c)
+  | BTYP_lineareffector (d,_,c)
+  | BTYP_function (d,c) 
+  | BTYP_effector (d,_,c) -> kind_type
+
+  | BTYP_record vs
+  | BTYP_variant vs -> kind_type 
 
   | BTYP_typeof _
-  | BTYP_cfunction _
-  | BTYP_function _
-  | BTYP_effector _
-  | BTYP_linearfunction _
-  | BTYP_lineareffector _
-  | BTYP_ptr _
-  | BTYP_variant _
-  | BTYP_polyvariant _
-  | BTYP_record _
+  | BTYP_ptr _ (* we already handled the read/write case *)
+  | BTYP_polyvariant _ (* Too hard lol *)
   | BTYP_rev _
 
   | BTYP_label

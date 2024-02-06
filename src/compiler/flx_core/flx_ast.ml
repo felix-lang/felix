@@ -79,6 +79,7 @@ and kindcode_t =
   | KND_tpattern of typecode_t
   (* | KND_special of string *)
   | KND_var of string
+  | KND_view
 
 
 and sortcode_t = 

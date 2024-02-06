@@ -80,7 +80,8 @@ let fold (bsym_table: Flx_bsym_table.t) counter t =
     | BBOOL _ -> ()
   in
     try aux [] 0 t; t
-    with Found t -> t
+    with 
+      | Found t -> t
 (* produces a unique minimal representation of a type
 by folding at every node *)
 

@@ -520,7 +520,7 @@ syntax expressions {
   x[srefr_pri] := "*" x[srefr_pri] =># "(prefix 'deref)";
 
   //$ Deref primitive.
-  //x[srefr_pri] := "_deref" x[srefr_pri] =># "`(ast_deref ,_sr ,_2)";
+  x[srefr_pri] := "_deref" x[srefr_pri] =># "`(ast_deref ,_sr ,_2)";
 
   //$ Operator new.
   x[srefr_pri] := "new" x[srefr_pri] =># "`(ast_new ,_sr ,_2)";

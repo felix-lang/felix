@@ -45,8 +45,6 @@ print_endline ("+++++++++++++++++++++++++++++");
 print_endline ("Cal ret type of " ^ id ^ "<" ^ string_of_int index ^ "> at " ^ Flx_srcref.short_string_of_src sr);
 print_endline ("+++++ UNBOUND return type is " ^ string_of_typecode rt');
     begin match rt' with | `TYP_var j when j = index -> print_endline ("RETURN TYPE UNSPECIFIED") | _ -> () end;
-*)
-(*
 print_endline ("Trying to bind type .. if function index variable, we get a recurse?");
 *)
     let declared_ret = not (index = (match rt' with `TYP_var k -> k | _ -> 0)) in

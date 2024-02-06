@@ -30,20 +30,19 @@ let cal_apply'
   build_env
   state bsym_table be sr ((be1,t1) as tbe1) ((be2,t2) as tbe2) =
   let original_argument_type = t2 in
-(*
-  if t1 <> t1' || t2 <> t2' then begin
-print_endline ("cal_apply' BEFORE NORMALISE, fn = " ^ sbt bsym_table t1' ^ " arg=" ^ sbt bsym_table t2');
-print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=" ^ sbt bsym_table t2);
-  end
-  ;
-*)
 
+(*
+print_endline ("\n%%%%%%%%\nFlx_cal_apply: Function type \n" ^ Flx_btype.st t1 ^ "\nArgument type\n`" ^ Flx_btype.st t2 ^ "\n");
+*)
   let t1 = Flx_beta.beta_reduce "Flx_cal_apply:cal_apply'" state.counter bsym_table sr t1 in
   let t2 = Flx_beta.beta_reduce "Flx_cal_apply:cal_apply'" state.counter bsym_table sr t2 in
- 
+
+(*
+print_endline ("\n%%%%%%%%\nFlx_cal_apply AFTER BETA: Function type \n" ^ Flx_btype.st t1 ^ "\nArgument type\n`" ^ Flx_btype.st t2 ^ "\n");
+*) 
   let result_type,reorder =
-    let argt = unfold "flx_cal_apply" t1 in 
-    match argt with
+    let funt = (* unfold "flx_cal_apply" *) t1 in  (* the UNFOLD IS BUGGED IT PUTS THE WRONG KIND ON THE FIXPOINT *)
+    match funt with
     | BTYP_lineareffector(paramt,_,result_type)
     | BTYP_linearfunction (paramt,result_type)
     | BTYP_effector(paramt,_,result_type)
@@ -55,7 +54,7 @@ print_endline ("cal_apply', AFTER NORMALISE, fn = " ^ sbt bsym_table t1 ^ " arg=
 *)
       let rel = Flx_unify.compare_sigs bsym_table state.counter paramt t2 in
 (*
-      print_endline ("Function domain " ^ sbt bsym_table paramt ^ " " ^str_of_cmp rel ^ " argument type " ^ sbt bsym_table t2);
+      print_endline ("Function domain " ^ sbt bsym_table paramt ^ "\n " ^str_of_cmp rel ^ "\n argument type " ^ sbt bsym_table t2);
 *)
       match rel with
       | `Equal -> 

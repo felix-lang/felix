@@ -14,6 +14,7 @@ open Flx_bid
 
 let mode_supertype m1 m2 = match m1,m2 with
   | `V, `R
+  | `V, `RW
   | `R, `RW
   | `W, `RW
   | `N, _ -> ()
@@ -295,6 +296,11 @@ print_endline ("Adding inequality " ^ Flx_btype.st lhs ^ " > " ^ Flx_btype.st x)
     add_eq (l,r);
     add_eq (machl, machr);
 
+  | BTYP_fix (i,ml),BTYP_fix (j,mr) ->
+    if i <> j then raise Not_found;
+    (* is this right? because below, the reverse order is tested .. *)
+print_endline ("Checking fixpoint kinds " ^ Flx_kind.sk ml ^ " >= " ^ Flx_kind.sk mr);
+    if not (Flx_kind.kind_ge2 ml mr) then raise Not_found
 
   | BTYP_function (dl,cl), BTYP_linearfunction (dr,cr)
   | BTYP_linearfunction (dl,cl), BTYP_linearfunction (dr,cr)
@@ -358,11 +364,13 @@ and solve_subsumption bsym_table counter lhs rhs  dvars (s:vassign_t option ref)
    In fact we need to extra the kind level MGU and return that
    too ......
 *)
-      | (BTYP_type_var (i,mi) as ti), (BTYP_type_var (j,mj) as tj)->
+      (* FIXME: ignore tvmode for  the moment *)
+      | (BTYP_type_var (i,_,mi) as ti), (BTYP_type_var (j,_,mj) as tj)->
         (* meta type have to agree *)
         if i <> j then
           if BidSet.mem i dvars then
           begin
+(* isn't this backwards?? *)
             if not (Flx_kind.kind_ge [mi, mj]) then
             begin
               raise Not_found;
@@ -381,8 +389,14 @@ and solve_subsumption bsym_table counter lhs rhs  dvars (s:vassign_t option ref)
         else () (* same variable .. we should check kinds agree .. *)
 
       (* TO DO: calculate the smallest metatype of the type and do a kinding check *)
-      | BTYP_type_var (i,mt), t
-      | t,BTYP_type_var (i,mt) ->
+(* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ *)
+      (* FIXME: ignore tvmode for  the moment *)
+      (* What SHOULD happen: the assignment Some (i,t) should viewify t if the
+         tvmode is view and i is dependent. This means internal subtitutions
+         will be viewified and so will the MGU
+       *) 
+      | BTYP_type_var (i,_,mt), t
+      | t,BTYP_type_var (i,_,mt) ->
         if not (BidSet.mem i dvars) then raise Not_found;
         if var_i_occurs i t
         then begin
@@ -407,8 +421,8 @@ and solve_subsumption bsym_table counter lhs rhs  dvars (s:vassign_t option ref)
        * therefore this operation cannot cause an infinite loop
        * note the laws rev(rev x) = x and rev x = y implies x = rev y
        *)
-      | BTYP_rev (BTYP_type_var (i,m) as tvar),t 
-      | t,BTYP_rev (BTYP_type_var (i,m) as tvar) ->
+      | BTYP_rev (BTYP_type_var (i,_,m) as tvar),t 
+      | t,BTYP_rev (BTYP_type_var (i,_,m) as tvar) ->
         add_eqn (tvar,btyp_rev t)
  
       | BTYP_uniq t1, BTYP_uniq t2 -> add_eqn (t1,t2)

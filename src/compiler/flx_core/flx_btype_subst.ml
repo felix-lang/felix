@@ -7,7 +7,7 @@ let si x = string_of_int x
 let var_subst t (i, j) =
   let rec f_btype t =
     match t with
-    | BTYP_type_var (k,t) when i = k -> btyp_type_var (j,t)
+    | BTYP_type_var (k,m,kind) when i = k -> btyp_type_varm (j,m,kind)
     | t -> Flx_btype.map ~f_btype t
   in
   f_btype t
@@ -17,7 +17,10 @@ let vars_subst ls t = List.fold_left var_subst t ls
 let term_subst counter src i arg =
   let rec aux level t =
     match t with
-    | BTYP_type_var (k,_) when k = i -> widen_fixgap level arg 
+    | BTYP_type_var (k,`N,_) when k = i -> widen_fixgap level arg 
+    | BTYP_type_var (k,`V,_) when k = i -> 
+print_endline ("TERMS SUBST VIEW VARIABLE");
+      widen_fixgap level (viewify_type arg)
 
     | BTYP_type_match (tt, pts) ->
         let tt =  aux level tt in
@@ -44,9 +47,13 @@ let list_subst counter ls t =
 let varmap0_subst varmap t =
   let rec f_btype t =
     match Flx_btype.map ~f_btype t with
-    | BTYP_type_var (i,_) as x ->
+    | BTYP_type_var (i,m,_) as x ->
         if Hashtbl.mem varmap i
-        then Hashtbl.find varmap i
+        then 
+          let t = Hashtbl.find varmap i in
+          match m with
+          | `N -> t
+          | `V -> viewify_type t
         else x
     | x -> x
   in
@@ -55,9 +62,13 @@ let varmap0_subst varmap t =
 let varmap_subst varmap t =
   let rec f_btype t =
     match Flx_btype.map ~f_btype t with
-    | BTYP_type_var (i,_) as x ->
+    | BTYP_type_var (i,m,_) as x ->
         if Hashtbl.mem varmap i
-        then Hashtbl.find varmap i
+        then 
+          let t = Hashtbl.find varmap i in
+          match m with
+          | `N -> t
+          | `V -> viewify_type t
         else x
     | BTYP_type_function (p,r,b) ->
         let

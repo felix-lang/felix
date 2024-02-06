@@ -87,8 +87,8 @@ print_endline ("Inst " ^ string_of_int j ^" function: " ^ id ^
      let assigns, rest = fold_left 
         (fun (assigns,rest) (l,r) -> 
          match l,r with
-         | BTYP_type_var (x,KIND_type), other
-         | other, BTYP_type_var (x,KIND_type) -> (x,other) :: assigns, rest
+         | BTYP_type_var (x,_,KIND_type), other
+         | other, BTYP_type_var (x,_,KIND_type) -> (x,other) :: assigns, rest
 
          | _ -> assigns, (l,r) :: rest
         )

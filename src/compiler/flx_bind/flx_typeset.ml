@@ -13,7 +13,7 @@ let is_typeset tss1 =
     p1.assignments = [] &&
     BidSet.cardinal p1.pattern_vars = 1 &&
     match p1.pattern,v1 with 
-    | BTYP_type_var (i,KIND_type), BTYP_void
+    | BTYP_type_var (i,_,KIND_type), BTYP_void
       when i = BidSet.choose p1.pattern_vars ->
       begin try 
         List.iter (fun (p,v) -> match p,v with

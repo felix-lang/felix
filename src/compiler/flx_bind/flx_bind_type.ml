@@ -491,7 +491,12 @@ print_endline ("  ***** Bound `TYP_apply: " ^ Flx_btype.st x );
 
   | `TYP_name (sr,s,[]) when List.mem_assoc s rs.as_fixlist ->
     let level, kind = List.assoc s rs.as_fixlist in
-    btyp_fix (level - rs.depth) kind 
+    let fx = btyp_fix (level - rs.depth) kind in
+(*
+print_endline ("######################## Flx_bind_type.TYP_name fixpoint from 'as' name `"^s^"`: " ^ Flx_btype.st fx);
+*)
+    fx
+
 
   | `TYP_name (sr,s,[]) when List.mem_assoc s params ->
     let t = List.assoc s params in

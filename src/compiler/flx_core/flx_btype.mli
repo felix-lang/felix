@@ -10,7 +10,15 @@ type pmode = [
  | `V (* pointer to unit : no read or write *)
 ]
 
+type tvmode = [
+  | `N
+  | `V
+]
+
+
 val str_of_pmode: pmode -> string
+val str_of_tvmode: tvmode -> string
+
 type instkind_t = [
   | `Nominal of Flx_ast.variance_list_t (* nominal type: primitive or user defined *)
   | `Alias (* type alias, to be eliminated *)
@@ -63,7 +71,7 @@ and t = private
   | BTYP_borrowed of t
   | BTYP_type_tuple of t list
   | BTYP_type_function of (bid_t * kind) list * kind * t
-  | BTYP_type_var of bid_t * kind
+  | BTYP_type_var of bid_t * tvmode * kind
   | BTYP_type_apply of t * t
   | BTYP_type_map of t * t
   | BTYP_type_match of t * (btpattern_t * t) list
@@ -179,6 +187,7 @@ val btyp_fix : int -> kind -> t
 val btyp_type_tuple : t list -> t
 val btyp_type_function : (bid_t * kind) list * kind * t -> t
 val btyp_type_var : bid_t * kind -> t
+val btyp_type_varm : bid_t * tvmode * kind -> t
 val btyp_type_apply : t * t -> t
 val btyp_type_map : t * t -> t
 val btyp_type_match : t * (btpattern_t * t) list -> t
@@ -228,4 +237,6 @@ val eval_typeop:
     Flx_kind.kind ->
     t
   ) option ref
+
+val viewify_type: t -> t
 

@@ -129,7 +129,7 @@ let cal_bind_apply
     *)
     let (ea,ta as a) = be a' in
 (*
-    print_endline ("[bind_expression] GENERAL APPLY " ^ 
+    print_endline ("[bind_apply] GENERAL APPLY " ^ 
       Flx_print.string_of_expr f' ^ " to " ^  Flx_print.string_of_expr a' ^ ", type= " ^ Flx_print.sbt bsym_table ta
     );
 *)
@@ -143,6 +143,8 @@ let cal_bind_apply
 (*
     if not (complete_type ta) then
       print_endline ("*************>>>>>>>>> reduced Apply argument type is not complete!!" ^ sbt bsym_table ta);
+*)
+(*
     print_endline ("Bound argument " ^ Flx_print.sbe bsym_table a ^ " type=" ^ Flx_btype.st ta);
 *)
       (* ---------------------------------------------------------- *)
@@ -180,22 +182,24 @@ let cal_bind_apply
       with Flx_exceptions.TryNext ->
 
 
-      (*
-        print_endline ("Can't interpret apply function "^string_of_expr f'^" as projection, trying as an actual function");
-      *)
+(*
+      print_endline ("Can't interpret apply function "^Flx_print.string_of_expr f'^" as projection, trying as an actual function");
+*)
       try begin (* as a function *)
       try
         let bt,tf as f =
           match Flx_typing2.qualified_name_of_expr f' with
           | Some name ->
 (*
-print_endline ("Checking if " ^ Flx_print.string_of_qualified_name name ^ " is a function");
 if match name with | `AST_name (_,"accumulate",_) -> true | _ -> false then begin
   print_endline "Trying to bind application of accumulate";
 end;
 *)
             let srn = src_of_qualified_name name in
             begin 
+(*
+print_endline ("Checking if " ^ Flx_print.string_of_qualified_name name ^ " is a function with lookup_qn_with_sig'");
+*)
               try  
                  let result = (lookup_qn_with_sig' state bsym_table sr srn env rs name (ta::sigs)) in
 (*
@@ -205,14 +209,17 @@ print_endline ("  WITH TYPE " ^ Flx_print.sbt bsym_table (snd result));
                  result
               with 
               | Not_found -> failwith "lookup_qn_with_sig' threw Not_found"
-              | exn -> raise exn 
+              | exn -> (* print_endline ("NOPE, lookup_qn_with_sig' barfed"); *) raise exn 
             end
           | None ->
             begin 
+(*
+print_endline ("Lookup qn with sig' failed to find a function, lets try bind expression directly in case the name is a variable of function type");
+*)
               try bind_expression' state bsym_table env rs f' (a :: args) 
               with 
               | Not_found -> failwith "bind_expression' XXX threw Not_found"
-              | exn -> raise exn 
+              | exn -> (* print_endline ("Nope, bind expression also failed"); *) raise exn 
             end
         in
 (*
@@ -229,17 +236,15 @@ print_endline ("  WITH TYPE " ^ Flx_print.sbt bsym_table (snd result));
           ->
           begin try
 (*
-           print_endline (" ** Bound LHS of application as function!");
+           print_endline (" ** Bound LHS of application as function! Calling cal_apply to bind it!");
 *)
            let result =  cal_apply state bsym_table sr rs f a  in
 (*
-           print_endline (" ** application of function done!");
+           print_endline (" ** (after cal_apply): application of function done!\n");
 *)
            result
           with exn -> 
-(*
-            print_endline ("!!! cal_apply failed");
-*)
+            (* print_endline ("!!! cal_apply failed"); *) (* NOTE: this isn't necessarily an error if used in tentative binding *)
             raise exn
           end
         (* NOTE THIS CASE HASN'T BEEN CHECKED FOR POLYMORPHISM YET *)

@@ -116,7 +116,9 @@ print_endline ("Bind type index ts adjusted");
   then begin
     let mt = Flx_guess_meta_type.guess_meta_type state bsym_table bt index in
 (*
-    print_endline ("Flx_bind_type_index: fixpoint, meta type calculated by guess_meta_type!"); 
+    print_endline ("@@@@@@@@@@@@@ Flx_bind_type_index: fixpoint, meta type calculated by guess_meta_type!" ^ Flx_kind.sk mt); 
+    let mt = Flx_kind.kind_max2 mt Flx_kind.kind_type in
+    (* A fix point has to at least be kind type! *)
 *)
     let fixated = btyp_fix ((List.assoc index rs.type_alias_fixlist)-rs.depth) mt in
     fixated

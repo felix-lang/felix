@@ -158,7 +158,9 @@ and fixup counter ps body =
      && i + depth +1  = 0 (* looking inside application, one more level *)
      -> print_endline "SPECIAL REDUCTION";
 (* HACK: meta type of fixpoint guessed *)
+(*
 print_endline ("Flx_beta:fixup:aux: hacking meta type of fixpoint!");
+*)
      btyp_fix (i+2) (kind_type) (* elide application AND skip under lambda abstraction *)
 
    | BTYP_type_function (a,b,c) ->
@@ -372,7 +374,7 @@ print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
   | BTYP_ellipsis -> btyp_ellipsis (* not a value type! *)
   | BTYP_none -> assert false
   | BTYP_fix _ -> (* print_endline "Returning fixpoint"; *)  t
-  | BTYP_type_var (i,_) -> t
+  | BTYP_type_var (i,_,_) -> t
   | BBOOL _ -> t
 
   | BTYP_type_function (p,r,b) -> t

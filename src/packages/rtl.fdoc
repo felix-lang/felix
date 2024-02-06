@@ -830,6 +830,9 @@ inline const_clptr_t applyprj (const_clptr_t cp, clprj_t d)  {
 // dereference
 inline cl_t clt_deref(clptr_t q) { return *q.p / q.divisor % q.modulus; }
 inline cl_t clt_deref(const_clptr_t q) { return *q.p / q.divisor % q.modulus; }
+inline cl_t operator*(clptr_t q) { return *q.p / q.divisor % q.modulus; }
+inline cl_t operator*(const_clptr_t q) { return *q.p / q.divisor % q.modulus; }
+
 
 // storeat
 // NOTE: not available for const version

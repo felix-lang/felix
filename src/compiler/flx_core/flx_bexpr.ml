@@ -178,7 +178,7 @@ let bexpr_deref t ((_,(pt:Flx_btype.t)) as e) : t =
   | _ -> 
   match pt with
   | BTYP_ptr (mode,base,_) ->
-    if base <> t then
+    if base <> t && mode <> `V then
       print_endline ("Flx_bexpr: Warning deref of pointer to type " ^ Flx_btype.st base ^ 
       "given type " ^ Flx_btype.st t)
     ;

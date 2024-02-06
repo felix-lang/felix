@@ -179,7 +179,7 @@ let rec gen_type_name syms bsym_table (index,typ) =
     "typedef ::flx::rtl::cl_t " ^ cntyp ^ ";\n"
 
   | BTYP_fix (i,_) -> ""
-  | BTYP_type_var (i,mt) -> failwith "[gen_type_name] Can't gen name of type variable"
+  | BTYP_type_var (i,_,mt) -> failwith "[gen_type_name] Can't gen name of type variable"
 
   | BTYP_ptr _ -> ""
     (* NEW *)

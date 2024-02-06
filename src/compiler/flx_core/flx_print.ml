@@ -382,6 +382,7 @@ and str_of_kindcode (k:kindcode_t) : string =
   (* | KND_special s -> s *)
   | KND_tpattern t -> "TPATTERN(" ^ st 0 t ^ ")"
   | KND_var s -> "kvar_" ^ s
+  | KND_view -> "VIEW"
 
 
 and st prec tc : string =
@@ -739,7 +740,7 @@ and sb bsym_table depth fixlist counter prec tc =
            lab
        )
 
-    | BTYP_type_var (i,mt) -> 0,"<T" ^ string_of_bid i ^
+    | BTYP_type_var (i,m,mt) -> 0,"<T" ^ string_of_bid i ^ "-" ^ str_of_tvmode m ^
       (match mt with KIND_type ->"" | _ -> ":"^Flx_kind.sk mt)^
       ">"
 

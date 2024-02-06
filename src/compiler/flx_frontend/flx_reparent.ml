@@ -78,6 +78,15 @@ let remap_expr
     | BEXPR_ref (i,ts) as x,t ->
         let i,ts = fixup i ts in
         bexpr_ref (t) (i,ts)
+    | BEXPR_rref (i,ts) as x,t ->
+        let i,ts = fixup i ts in
+        bexpr_rref (t) (i,ts)
+    | BEXPR_wref (i,ts) as x,t ->
+        let i,ts = fixup i ts in
+        bexpr_wref (t) (i,ts)
+    | BEXPR_vref (i,ts) as x,t ->
+        let i,ts = fixup i ts in
+        bexpr_vref (t) (i,ts)
 
     | BEXPR_closure (i,ts),t ->
         let i,ts = fixup i ts in

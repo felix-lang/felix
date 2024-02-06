@@ -163,7 +163,7 @@ then
   (*
   | BTYP_type_var (i,mt) -> clierrx "[flx_frontend/flx_treg.ml:126: E358] " sr ("Attempt to register type variable " ^ si i ^":"^sbt sym_table mt)
   *)
-  | BTYP_type_var (i,mt) ->
+  | BTYP_type_var (i,_,mt) ->
     (*
     print_endline ("Attempt to register type variable " ^ string_of_bid i ^
       ":" ^ sbt bsym_table mt);

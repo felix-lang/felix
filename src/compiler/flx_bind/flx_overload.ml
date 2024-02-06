@@ -329,6 +329,7 @@ print_endline (" .. found tpattern .. analysing .. " ^ string_of_typecode t);
         | KND_unitsum
         | KND_compactlinear
         | KND_function _ 
+        | KND_view
         | KND_tuple _ -> `TYP_var j',[],[],[],[]
         | _ -> 
          print_endline ("Flx_overload. Expected KND_tpattern, got " ^ str_of_kindcode tp);

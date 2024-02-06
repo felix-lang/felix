@@ -584,7 +584,7 @@ assert false
   | `EXPR_case_index (sr,e) ->
     let (e',t) as e  = be e in
     begin match t with
-      | BTYP_type_var (_,k) 
+      | BTYP_type_var (_,_,k) 
       | BTYP_inst (_,_,_,k)
         when Flx_kind.kind_ge2 Flx_kind.KIND_compactlinear k
         -> () 
@@ -669,7 +669,7 @@ print_endline ("Evaluating EXPPR_typed_case index=" ^ si v ^ " type=" ^ string_o
 *)
         bexpr_unitsum_case v k  (* const ctor *)
       end
-    | BTYP_type_var (_,Flx_kind.KIND_unitsum) ->
+    | BTYP_type_var (_,_,Flx_kind.KIND_unitsum) ->
       bexpr_const_case (v, t)  (* const ctor *)
 
     | BTYP_compactsum ls
@@ -1338,14 +1338,14 @@ print_endline ("LOOKUP 9A: varname " ^ si i);
     end
 
   | `EXPR_deref (sr,e') ->
-(*
-print_endline ("Binding _deref .. " ^ string_of_expr e);
-*)
     let e,t = be e' in
     begin match unfold "flx_lookup" t with
     | BTYP_ptr (`R,t',_) 
     | BTYP_ptr (`RW,t',_) -> bexpr_deref t' (e,t)
-    | BTYP_ptr (`V,t',_) -> bexpr_deref t' (e,t)
+    | BTYP_ptr (`V,t',_) -> 
+      (* print_endline ("deref of V mode pointer detected");  *)
+      let vt = Flx_btype.viewify_type t' in
+      bexpr_deref vt (e,t)
 
     | _ -> clierrx "[flx_bind/flx_lookup.ml:4856: E207] " sr 
      ("[bind_expression'] Dereference non pointer, type " ^ sbt bsym_table t)

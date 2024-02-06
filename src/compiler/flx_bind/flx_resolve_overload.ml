@@ -257,7 +257,7 @@ end;
     Hashtbl.iter (fun i j -> print_endline ("  Rebind index " ^ si i ^ " -> " ^ si j)) remap_table;
 *)
     let rec fbt t = match t with
-      | Flx_btype.BTYP_type_var (i,mt) ->
+      | Flx_btype.BTYP_type_var (i,tvm,mt) ->
 (*
 print_endline ("Examining bound type variable index " ^ si i);
 *)
@@ -273,7 +273,7 @@ print_endline ("Replaced by vmap: " ^ sbt bsym_table r);
 (*
 print_endline ("Not found in vmap, remaping with index remapper: " ^ si j);
 *)
-            Flx_btype.btyp_type_var (j, mt)
+            Flx_btype.btyp_type_varm (j, tvm, mt)
         end
       | x -> Flx_btype.map ~f_bid:fi ~f_btype:fbt x
     in

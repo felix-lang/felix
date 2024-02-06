@@ -183,6 +183,8 @@ let guess_meta_type state bsym_table bt index : kind =
       k
 
     | SYMDEF_type_alias t  -> 
-      guess_metatype sr t
+      let mt = guess_metatype sr t in
+      print_endline ("Guess meta type of " ^ Flx_print.string_of_typecode t ^ " as " ^ Flx_kind.sk mt);
+      mt
     | _ -> print_endline ("Dunno, assume a type " ^ string_of_symdef entry id vs); assert false
 

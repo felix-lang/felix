@@ -32,10 +32,15 @@ open class MachinePointers
   proc storeat[T:LINEAR] ( p: &>T, v: T) = { _storeat (p,v); }
 
   //$ Dereference a Felx pointer.
-  fun _deref[T:LINEAR]: &<T -> T = "*$t";
-  fun _deref[T:LINEAR]: &<<T -> T = "*$t";
-  fun deref[T:LINEAR] (p:&<T) => _deref p;
-  fun deref[T:LINEAR] (p:&<<T) => _deref p;
+  //fun _deref[T:LINEAR]: &<T -> T = "*$t";
+  //fun _deref[T:LINEAR]: &<<T -> T = "*$t";
+  // NOTE: at present we need all these cases because overload resolution
+  // does not "rank" kinds .. hmm .. but even this doesn't work!
+  // adding the RW case changes the ambiguity from the view and read only case
+  // to the view and read/write case
+  // looks like a problem in unification not ranking the modes
+  fun deref[T:LINEAR] (p:&<T) => /* { println$ "deref R"; return */ _deref p; /* }(); */
+  fun deref[T:LINEAR] (p:&<<T) => /* { println$ "deref V"; return */ _deref p; /* }(); */
 }
 
 open class CompactLinearPointers 
@@ -44,7 +49,8 @@ open class CompactLinearPointers
   proc storeat[D,C] ( p:_wpclt< D, C >, v: C) = { _storeat (p,v); }
 
   // deref a pointer to compact linear component
-  fun _deref[mach,clv]: _rpclt<mach,clv> -> clv = "::flx::rtl::clt_deref($t)";
+  //fun _deref[mach,clv]: _rpclt<mach,clv> -> clv = "::flx::rtl::clt_deref($t)";
+  //fun _deref[mach,clv]: _rpclt<mach,clv> -> clv = "*($t)"; // operator * added to C++
   fun deref[mach,clv] (p: _rpclt<mach,clv>) => _deref p;
 }
 

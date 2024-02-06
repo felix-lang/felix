@@ -6,8 +6,8 @@ let remap map i = try List.assoc i map with Not_found -> i
 
 let rec alpha counter map t = 
   match t with
-  | BTYP_type_var (i, knd) -> 
-    btyp_type_var (remap map i, knd)
+  | BTYP_type_var (i, m, knd) -> 
+    btyp_type_varm (remap map i, m, knd)
 
   | BTYP_type_function (ps,r,b) ->
     let map = List.fold_left (fun acc (i,_) -> (i, fresh_bid counter)::acc) map ps in

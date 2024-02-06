@@ -238,7 +238,7 @@ print_endline ("Flx_tgen.cpp_type_classname " ^ sbt bsym_table t);
   | BTYP_ptr (_,_,(_::_::_)) -> assert false
   | BTYP_ellipsis -> "..."
 
-  | BTYP_type_var (i,mt) ->
+  | BTYP_type_var (i,_,mt) ->
       failwith ("[cpp_type_classname] Can't name type variable " ^
         string_of_bid i ^ ":"^ Flx_kind.sk mt)
   | BTYP_fix (i,_) -> "void" (* failwith "[cpp_type_classname] Can't name type fixpoint" *)
@@ -431,7 +431,7 @@ and cpp_structure_name syms bsym_table t =
   let t = Flx_fold.fold bsym_table syms.counter t in
   let t' = unfold "flx_name: cpp_structure_name" t in
   try match t' with
-  | BTYP_type_var (i,mt) ->
+  | BTYP_type_var (i,_,mt) ->
       failwith ("[cpp_type_classname] Can't name type variable " ^
         string_of_bid i ^ ":"^ Flx_kind.sk mt)
   | BTYP_fix (i,_) -> "_fix<"^string_of_int (-i)^">" (* failwith "[cpp_type_classname] Can't name type fixpoint" *)

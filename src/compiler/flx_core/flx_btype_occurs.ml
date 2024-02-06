@@ -6,7 +6,7 @@ open Flx_bid
 let var_i_occurs i t =
   let rec f_btype t =
     match t with
-    | BTYP_type_var (j,_) when i = j -> raise Not_found
+    | BTYP_type_var (j,_,_) when i = j -> raise Not_found
     | _ -> Flx_btype.flat_iter ~f_btype t
  in
    try
@@ -19,7 +19,7 @@ let rec vars_in t =
   let add_var i = vs := BidSet.add i !vs in
   let rec f_btype t =
     match t with
-    | BTYP_type_var (i,_) -> add_var i
+    | BTYP_type_var (i,_,_) -> add_var i
     | _ -> Flx_btype.flat_iter ~f_btype t
   in
   f_btype t;
@@ -79,7 +79,7 @@ let var_occurs bsym_table t =
     | BTYP_void
     | BTYP_fix _ -> ()
 
-    | BTYP_type_var (k,_) -> if not (List.mem k excl) then raise Not_found
+    | BTYP_type_var (k,_,_) -> if not (List.mem k excl) then raise Not_found
     | BTYP_type_function (p,r,b) ->
       aux' (List.map fst p @ excl) b
     

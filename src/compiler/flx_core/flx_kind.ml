@@ -16,6 +16,7 @@ type kind =
   | KIND_tuple of kind list
   | KIND_function of kind * kind (* the kind of a type function from domain to codomain kinds *)
   | KIND_var of string
+  | KIND_view (* same as linear with write pointers removed *)
 
 let rec sk k =
   match k with
@@ -30,6 +31,7 @@ let rec sk k =
   | KIND_tuple ks -> "(" ^ Flx_util.catmap ", " sk ks ^")"
   | KIND_function (d,c) -> sk d ^ " -> " ^ sk c
   | KIND_var s -> s
+  | KIND_view  -> "VIEW"
 
 
 let map f (k:kind):kind = match k with
@@ -69,6 +71,7 @@ let kind_typeset = KIND_typeset
 let kind_function (d, c) = KIND_function (d,c)
 let kind_tuple ks = KIND_tuple ks
 let kind_var s = KIND_var s
+let kind_view = KIND_view 
 
 (* this probably doesn't belong here .. *)
 type bv_t = string * Flx_bid.bid_t * kind
@@ -84,6 +87,7 @@ type keqns_t = keqn_t list
 
 type kmgu_t = (string * kind) list
 
+(* NOTE: here the rhs is a subtype of the lhs *)
 let ksolve_subtypes add_eqn lhs rhs (mgu:kmgu_t ref) =
   match lhs, rhs with
   | KIND_borrowed, KIND_borrowed
@@ -110,6 +114,15 @@ let ksolve_subtypes add_eqn lhs rhs (mgu:kmgu_t ref) =
   | KIND_nat, KIND_nat
   | KIND_typeset, KIND_typeset
   | KIND_bool, KIND_bool
+ 
+  (* A view is basically the types not allowing mutation *)
+  | KIND_view, KIND_view
+  | KIND_borrowed, KIND_view
+  | KIND_linear, KIND_view
+  | KIND_type, KIND_view
+  | KIND_view, KIND_compactlinear
+  | KIND_view, KIND_unitsum
+
     -> ()
 
   (* depth covariant *)
@@ -192,22 +205,22 @@ let kind_eq2 a b =
 (* returns the most specialised kind *)
 (* FIXME: should throw exception which can be trapped by caller *)
 let kind_min2 a b =
-  if kind_ge [a, b] then b else if kind_ge [b, a] then a
+  if kind_ge2 a b then b else if kind_ge2 b a then a
   else failwith ("Flx_kind: kind_unify, " ^ sk a ^ " doesn't unify with " ^ sk b)
 
 (* returns most general kind *)
 let kind_max2 a b =
-  if kind_ge [a, b] then a else if kind_ge [b, a] then b
+  if kind_ge2 a b then a else if kind_ge2 b a then b
   else failwith ("Flx_kind: kind_unify, " ^ sk a ^ " doesn't unify with " ^ sk b)
 
 let kind_min ks = 
   match ks with
-  | [] -> assert false (* should return BOTTOM *)
+  | [] -> assert false (* should return TOP *)
   | h::t -> List.fold_left kind_min2 h t
 
 let kind_max ks = 
   match ks with
   | [] -> assert false (* should return BOTTOM *)
-  | h::t -> List.fold_left kind_min2 h t
+  | h::t -> List.fold_left kind_max2 h t
 
 
