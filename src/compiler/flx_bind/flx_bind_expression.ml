@@ -585,7 +585,7 @@ assert false
     let (e',t) as e  = be e in
     begin match t with
       | BTYP_type_var (_,_,k) 
-      | BTYP_inst (_,_,_,k)
+      | BTYP_inst (_,_,_,_,k)
         when Flx_kind.kind_ge2 Flx_kind.KIND_compactlinear k
         -> () 
       | BTYP_unitsum _
@@ -596,14 +596,14 @@ assert false
       | BTYP_tuple []
         -> ()
 
-      | BTYP_inst (_,i,_,_) when 
+      | BTYP_inst (_,_,i,_,_) when 
         begin match hfind "lookup" state.sym_table i with
         | { Flx_sym.symdef=SYMDEF_union _} -> true
         | _ -> false
         end  -> ()
       | BTYP_typeop (_,_,Flx_kind.KIND_compactlinear)
       | BTYP_type_apply (BTYP_type_function (_,Flx_kind.KIND_compactlinear,_),_)
-      | BTYP_type_apply (BTYP_inst(_,_,_,KIND_function (_,Flx_kind.KIND_compactlinear)),_)
+      | BTYP_type_apply (BTYP_inst(_,_,_,_,KIND_function (_,Flx_kind.KIND_compactlinear)),_)
         -> ()
       | _ -> clierrx "[Flx_bind_expression:595: E182] " sr ("Argument of caseno must be sum or union type, got " ^ sbt bsym_table t)
     end
@@ -1794,7 +1794,7 @@ print_endline ("`EXPR_variant_subtype_match_coercion e=" ^ Flx_print.string_of_e
       let ut = rt ut in
       let ut = match ut with | BTYP_uniq t -> t | t -> t in
       begin match ut with
-      | BTYP_inst (_,i,ts',_) ->
+      | BTYP_inst (_,_,i,ts',_) ->
         begin match hfind "lookup" state.sym_table i with
         | { Flx_sym.id=id; symdef=SYMDEF_union (ls,_) } ->
           let vidx =
@@ -1944,16 +1944,19 @@ print_endline ("match ho ctor, binding expr = " ^ string_of_expr e);
      end
 
   | `EXPR_ctor_arg (sr,(qn,e)) ->
+(*
+print_endline ("Binding ctor_arg " ^ Flx_print.string_of_qualified_name qn ^ " of " ^ string_of_expr e);
+*)
     let (_,ut) as ue = be e in
     let ut = rt ut in
     let ut = match ut with BTYP_uniq t -> t |  t -> t in
     begin match qn with
     | `AST_name (sr,name,ts) ->
 (*
-      print_endline ("ctor_arg: Constructor to extract: " ^ name ^ "[" ^ catmap "," string_of_typecode ts ^ "]"); 
+      print_endline ("ctor_arg: Simple name: Constructor to extract: " ^ name ^ "[" ^ catmap "," string_of_typecode ts ^ "]"); 
 *)
       begin match ut with
-      | BTYP_inst (_,i,ts',_) ->
+      | BTYP_inst (_,view_mode,i,ts',_) ->
         begin match hfind "lookup" state.sym_table i with
         | { Flx_sym.id=id; symdef=SYMDEF_union (ls,_) } ->
           let _,vs,_  = find_split_vs state.sym_table bsym_table i in
@@ -2019,6 +2022,11 @@ print_endline ("AST_name(BTYP_inst): "^name^"=T<"^string_of_int i^">");
           print_endline ("Bound polymorphic union value type = " ^ sbt bsym_table ut);
           print_endline ("-----+++>>");
 *)
+          let vct = match view_mode with | `N | `P -> vct | `V -> Flx_btype.viewify_type vct in
+(*
+          print_endline ("Bound polymorphic VIEWIFIED ctor result type = " ^ sbt bsym_table vct);
+*)
+
 (*
 print_endline ("Unification of result type with union value type\n");
 *)
@@ -2035,7 +2043,10 @@ print_endline ("Dependent variables to solve for = ");
             with Not_found -> None
           in
           begin match maybe_mgu with
-          | None -> raise GadtUnificationFailure
+          | None -> 
+            (* print_endline ("GADT UNIFICATION FAILURE"); *)
+            raise GadtUnificationFailure
+
           | Some mgu ->
 (*
             print_endline ("Flx_lookup unification manual: MGU=");

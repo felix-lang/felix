@@ -30,7 +30,7 @@ let rec is_pod bsym_table t =
   | BTYP_vinst (k,ts,_) -> assert false
   | BTYP_finst _ -> assert false
 
-  | BTYP_inst (`Nominal _, k,ts,_) ->
+  | BTYP_inst (`Nominal _, _, k,ts,_) ->
     let bsym = Flx_bsym_table.find bsym_table k in
     let bbdcl = Flx_bsym.bbdcl bsym in
   begin match Flx_bsym_table.find_bbdcl bsym_table k with

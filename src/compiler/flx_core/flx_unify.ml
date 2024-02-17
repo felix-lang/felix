@@ -21,6 +21,18 @@ let mode_supertype m1 m2 = match m1,m2 with
   | x,y when x = y -> ()
   | _ -> raise Not_found
 
+let vmode_supertype (m1:tvmode)  (m2:tvmode) = match m1,m2 with
+  | `N,`V -> raise Not_found
+  | _ -> ()
+
+(* you cannot pass a functional view argument to an ordinary parameter *)
+(* However an ordinary instance can be coerced to be a view *)
+let imode_supertype (m1:imode)  (m2:imode) = match m1,m2 with
+  | `N,`V -> raise Not_found
+  | _ -> ()
+
+
+
 let unit_t = btyp_tuple []
 
 let check_recursion bsym_table t =
@@ -43,8 +55,9 @@ print_endline ("Solve subtypes " ^ Flx_btype.str_of_btype lhs ^ " >=? " ^ Flx_bt
     if l <> r && not (Flx_bsym_table.is_indirect_supertype bsym_table l r)
     then raise Not_found
 *)
-  | BTYP_inst (`Nominal variance,l,lts,_),BTYP_inst(`Nominal _,r,rts,_) when l = r -> (* same polymorphic nominal type *)
+  | BTYP_inst (`Nominal variance,lvmode,l,lts,_),BTYP_inst(`Nominal _,rvmode,r,rts,_) when l = r -> (* same polymorphic nominal type *)
     assert (List.length lts = List.length rts);
+    imode_supertype lvmode rvmode;
     let t2 = List.combine lts rts in
     assert(List.length variance <= List.length lts);
     let variance = (Flx_list.repeat `invariant (List.length lts - List.length variance)) @ variance in
@@ -61,7 +74,8 @@ print_endline ("Solve subtypes " ^ Flx_btype.str_of_btype lhs ^ " >=? " ^ Flx_bt
      So coercion from RHS to LHS
      which means the argument is the RHS and the domain of the coercion.
   *)
-  | BTYP_inst (`Nominal variance,l,lts,knd),BTYP_inst(`Nominal _,r,rts,_)  -> (* distinct polymorphic nominal type *)
+  | BTYP_inst (`Nominal variance,lvmode,l,lts,knd),BTYP_inst(`Nominal _,rvmode,r,rts,_)  -> (* distinct polymorphic nominal type *)
+    imode_supertype lvmode rvmode;
     let chains = Flx_bsym_table.find_coercion_chains bsym_table l r in
     let n = List.length chains in
 (*
@@ -89,9 +103,10 @@ print_endline ("Input argument ats = " ^ Flx_util.catmap "," Flx_btype.st ats);
 (*
 print_endline ("Coercion " ^ Flx_btype.st (btyp_function (dom,cod)));
 *)
+           (* NOTE: ignoring vmode *)
            match dom,cod with
              (* Dom=Derived[vs]->Cod=Base[ts(vs)] *)
-             | BTYP_inst (`Nominal _, d,dts,_), BTYP_inst (`Nominal _, c, cts,_) ->
+             | BTYP_inst (`Nominal _, _, d,dts,_), BTYP_inst (`Nominal _, _, c, cts,_) ->
                (* the pts MUST be the sequence of type variables in bvs, the subtype *)
 (*
 print_endline ("[derived] ats = " ^ Flx_util.catmap "," Flx_btype.st ats);
@@ -107,7 +122,7 @@ print_endline ("[base] cts = " ^ Flx_util.catmap "," Flx_btype.st mapped_cts);
         ) 
         rts (List.rev chain)
       in
-      let x = btyp_inst (`Nominal variance, l, ts, knd) in
+      let x = btyp_instm (`Nominal variance, lvmode, l, ts, knd) in
 (*
 print_endline ("Adding inequality " ^ Flx_btype.st lhs ^ " > " ^ Flx_btype.st x);
 *)
@@ -115,7 +130,10 @@ print_endline ("Adding inequality " ^ Flx_btype.st lhs ^ " > " ^ Flx_btype.st x)
     end    
 
 
-  | BTYP_ptr (`RW,BTYP_inst (`Nominal variance,l,lts,knd),[]),BTYP_ptr(`RW,BTYP_inst(`Nominal _,r,rts,_),[]) when l <> r  -> (* distinct polymorphic nominal type *)
+  (* FIXME: We only bothered to do this one with RW pointers ... why??? *)
+  | BTYP_ptr (`RW,BTYP_inst (`Nominal variance,lvmode,l,lts,knd),[]),
+    BTYP_ptr(`RW,BTYP_inst(`Nominal _,rvmode,r,rts,_),[]) when l <> r  -> (* distinct monomorphic nominal type *)
+    imode_supertype lvmode rvmode;
     let chains = Flx_bsym_table.find_pointer_coercion_chains bsym_table l r in
     let n = List.length chains in
 (*
@@ -143,9 +161,10 @@ print_endline ("Input argument ats = " ^ Flx_util.catmap "," Flx_btype.st ats);
 (*
 print_endline ("Coercion " ^ Flx_btype.st (btyp_function (dom,cod)));
 *)
+           (* FIXME: gave up figuring out how views work in this point *)
            match dom,cod with
              (* Dom=Derived[vs]->Cod=Base[ts(vs)] *)
-             | BTYP_ptr (`RW,BTYP_inst (`Nominal _, d,dts,_),[]), BTYP_ptr (`RW, BTYP_inst (`Nominal _, c, cts,_),[]) ->
+             | BTYP_ptr (`RW,BTYP_inst (`Nominal _, _,d,dts,_),[]), BTYP_ptr (`RW, BTYP_inst (`Nominal _, _, c, cts,_),[]) ->
                (* the pts MUST be the sequence of type variables in bvs, the subtype *)
 (*
 print_endline ("[derived] ats = " ^ Flx_util.catmap "," Flx_btype.st ats);
@@ -161,7 +180,7 @@ print_endline ("[base] cts = " ^ Flx_util.catmap "," Flx_btype.st mapped_cts);
         ) 
         rts (List.rev chain)
       in
-      let x = btyp_ptr `RW (btyp_inst (`Nominal variance, l, ts, knd)) [] in
+      let x = btyp_ptr `RW (btyp_instm (`Nominal variance, lvmode, l, ts, knd)) [] in
 (*
 print_endline ("Adding inequality " ^ Flx_btype.st lhs ^ " > " ^ Flx_btype.st x);
 *)
@@ -581,26 +600,20 @@ print_endline ("Polyrecord/record unification " ^ sbt bsym_table lhs ^ " = " ^ s
         end
  
 
-      | BTYP_vinst (i1,ts1,mt1),BTYP_vinst (i2,ts2,mt2) 
-      | BTYP_inst (_,i1,ts1,mt1),BTYP_inst (_,i2,ts2,mt2) ->
-(*
-print_endline "Trying to unify instances (1)";
-*)
-        if i1 <> i2 then raise Not_found
-        else if List.length ts1 <> List.length ts2 then raise Not_found
-        else
-        begin
-(*
-print_endline "Trying to unify instances (2)";
-*)
-            List.iter2 (fun a b -> add_eqn (a,b)) ts1 ts2;
-            s := None
-        end
+      | BTYP_vinst (i1,ts1,mt1),BTYP_vinst (i2,ts2,mt2) ->
+        if i1 <> i2 then raise Not_found;
+        if List.length ts1 <> List.length ts2 then raise Not_found;
+        List.iter2 (fun a b -> add_eqn (a,b)) ts1 ts2;
+        s := None
 
-(*
-      | BTYP_fix (0,_),_
-      | _,BTYP_fix (0,_) -> ()
-*)
+
+      | BTYP_inst (_,vmode1,i1,ts1,mt1),BTYP_inst (_,vmode2,i2,ts2,mt2) ->
+        if vmode1 <> vmode2 then raise Not_found;
+        if i1 <> i2 then raise Not_found;
+        if List.length ts1 <> List.length ts2 then raise Not_found;
+        List.iter2 (fun a b -> add_eqn (a,b)) ts1 ts2;
+        s := None
+
       | BTYP_fix (i,t1),BTYP_fix (j,t2) ->
         if i <> j then raise Not_found;
         if t1 <> t2 then print_endline "unification: fix points at same level with unequal metatypes!";

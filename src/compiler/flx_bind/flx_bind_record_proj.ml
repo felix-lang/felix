@@ -14,7 +14,7 @@ because field names can't be polymorphic.
 exception Not_field
 
 let handle_field_name state bsym_table build_env env rs be bt cal_apply bind_type' mkenv 
-  sr e e2 name ts i ts' isptr
+  sr e e2 name ts i imode ts' pmode_opt 
 =
   let rt t = Flx_beta.beta_reduce "flx_bind_record_proj: handle_field_name" state.Flx_lookup_state.counter bsym_table sr t in
   let (_,t) as te = be e in
@@ -42,7 +42,16 @@ let handle_field_name state bsym_table build_env env rs be bt cal_apply bind_typ
     in
     let vs' = List.map (fun (s,i,tp) -> s,i, Flx_btype.bmt "Flx_dot" tp) vs in
     let ct = Flx_btype_subst.tsubst sr vs' ts' ct in
-    let ct = if isptr then btyp_pointer ct else ct in
+    (* NOTE: viewification is done here BEFORE handling pointer projection caseL
+       see notes below for why.
+    *)
+    let ct = match imode with | `N | `P -> ct | `V -> Flx_btype.viewify_type ct in 
+    let ct = match pmode_opt with
+      | None -> ct
+      | Some pmode ->
+        btyp_ptr pmode ct []
+    in
+
     (* messy .. we generalised get_n to accept any type instead
        of an integer selector. to replace integer n,
        we have to use case n of m where m is the number of
@@ -118,25 +127,61 @@ match unfold "flx_lookup" ta with
   end
 
 (* Instance type, possibly struct or cstruct.  *)
-| BTYP_inst (_,i,ts',_) ->
+| BTYP_inst (_,vmode, i,ts',_) ->
   begin try
   handle_field_name state bsym_table build_env env rs 
     be bt cal_apply bind_type' mkenv 
-    sr a' f' name ts i ts' false
+    sr a' f' name ts i vmode ts' None 
   with Not_field -> raise Flx_exceptions.TryNext
   end
 
 (* pointer to instance *)
-| BTYP_ptr (mode,(BTYP_inst (_,i,ts',_) as r),[]) ->
+(* NOTE: if the instance type of a value projection of a view mode nominal type
+i.e. a struct is applied, we should get the same result we would if it were a
+record which has been viewified, in other words we do a normal projection first,
+the viewify the result. Our canonical example is a nominally typed list node:
+
+struct Node { data:int; next: &Node; }
+
+We will write Node' for the viewified type which acts like
+
+struct Node' { data:int; next: &<<Node; }
+
+or maybe
+
+struct Node' { data:int; next: &<<Node'; }
+
+This second form would be required to get fixpoints right! But it isn't clear
+we need that (the copy doesn't have to be recursive)
+
+But what do we do with pointers?  We can store a viewified nominal type
+in a variable and take a RW pointer to it. Modifying a component changes the
+variable value .. it doesn't change the data structure it was copied out of!
+So you could happily modify next. In fact, an algorithm doing a search
+would in fact want to modify the whole variable! But it could just ignore
+the data value and modify next. So a pointer to a view mode instance
+can be RW, BUT whilst a  a pointer projection to a component 
+RETAINS the pointer mode, the type poinnted at must be viewified.
+So for examnple a RW pointer to Node' projected with "next" must
+be a RW pointer to a View mode pointer to Node (the type of next
+is a RW pointer in Node, but a V pointer in Node'.
+
+In Summary: the mode of a pointer obtained from a pointer projection
+remains the same as the source pointer, but the type POINTED AT
+must be viewified if the source is View mode.
+*)
+
+
+| BTYP_ptr (pmode,(BTYP_inst (_,vmode, i,ts',_) as r),[]) ->
 (* NOTE: This may not work, unfold doesn't penetrate into a struct!
 However, if the struct is complete but polymorphic, it should work
 by unfolding the ts values ..
 *)
-  begin match unfold "flx_bind_record_proj" r with | BTYP_inst (_,i,ts',_) ->
+  begin match unfold "flx_bind_record_proj" r with | BTYP_inst (_,vmode,i,ts',_) ->
     begin try
     handle_field_name state bsym_table build_env env rs 
       be bt cal_apply bind_type' mkenv 
-      sr a' f' name ts i ts' true 
+      sr a' f' name ts i vmode ts' (Some pmode) 
     with Not_field -> raise Flx_exceptions.TryNext
     end
   | _ -> assert false (* can't happen due to double pattern match *)

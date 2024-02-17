@@ -141,7 +141,8 @@ print_endline ("Flx_bind/flx_coerce:coerce] Binding coercion " ^ sbe bsym_table 
     let t' = unfold "flx_coerce1" t' in
     let t'' = unfold "flx_coerce1" t'' in
     begin match t',t'' with
-    | BTYP_inst (_,i,[],_),t when Flx_btype.islinear_type t->
+    (* NOTE: ignoring vmode *)
+    | BTYP_inst (_,_,i,[],_),t when Flx_btype.islinear_type t->
       let n = Flx_btype.sizeof_linear_type bsym_table  t in
 (*
 print_endline ("Trying to coerce value of type " ^ si i ^ " to linear type " ^ Flx_btype.st t ^ " size " ^ si n);
@@ -185,7 +186,8 @@ print_endline ("Coercion from int expression result is " ^ sbe bsym_table r);
         ^" to unitsum " ^ si n)
       end
 
-    | t,(BTYP_inst (_,i,[],_) as inttype) when Flx_btype.islinear_type t->
+    (* NOTE: ignoring vmode *)
+    | t,(BTYP_inst (_,_,i,[],_) as inttype) when Flx_btype.islinear_type t->
       let n = Flx_btype.sizeof_linear_type bsym_table  t in
       begin match hfind "lookup" state.sym_table i with
       | { Flx_sym.id="int";

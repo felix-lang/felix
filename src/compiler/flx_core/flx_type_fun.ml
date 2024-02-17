@@ -62,7 +62,8 @@ let rec type_apply beta_reduce' calltag counter bsym_table sr depth (termlist: (
     end (* finst *)
 
 (* TYPEDEF REFERENCE *)
-  | Flx_btype.BTYP_inst (`Alias,index,ts,mt) ->
+  (* NOTE: ignoring vmode *)
+  | Flx_btype.BTYP_inst (`Alias,_,index,ts,mt) ->
     begin try 
       let bsym = Flx_bsym_table.find bsym_table index in
       let bbdcl = Flx_bsym.bbdcl bsym in

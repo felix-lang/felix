@@ -27,7 +27,7 @@ type device_descr_t = string * pin_descr_t list
 
 let cal_channel bsym_table (schannel,ischannel,oschannel) sr typ : int * string * Flx_btype.t =
   match typ with
-  | BTYP_inst (`Nominal _,i,[t],_) ->
+  | BTYP_inst (`Nominal _,_,i,[t],_) ->
      let direction = match i with
      | _ when i = schannel -> "io"
      | _ when i = oschannel -> "output"

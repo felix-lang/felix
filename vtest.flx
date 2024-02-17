@@ -1,0 +1,46 @@
+println$ "Vtesty";
+
+var x : uint = 1u;
+var p : &uint = &x;
+var pp : &(&uint) = &p;
+println$ * (* pp); 
+var tup = 1,pp;
+var vtup = &<<tup;
+var dtup  = * vtup;
+var q = *(dtup.1);
+//q  <- 2u; // this should FAIL because the deref should modify the target to be a view pointer
+println$ (* (* pp)).str;
+
+begin
+  struct Node { a:int; next: opt[&Node]; }
+  var px = unbox (new Node (1, None[&Node] ));
+  px = unbox (new Node (2, Some (px)));
+  px = unbox (new Node (3, Some (px)));
+
+  fun pNode (var px:&<<Node) =>
+    (px*.a).str + ", " +  
+    match /* C_hack::cast[opt[&Node]] */ px*.next with
+    | None => ";"
+    | Some px => pNode px
+    endmatch
+  ;
+
+  println$ px.pNode;
+end
+
+begin
+  struct X { x:int; py: &Y; }
+  struct Y { y:int; } 
+  var py = unbox$ new Y(42);
+  var px = unbox$ new X (99, py);
+
+  println$ px -> py -> y;
+  px -> py . y <- 44;
+  println$ px -> py -> y;
+
+  var vpx : &<<X = px; // coerce to vire pointer
+  //vpx -> py . y <- 48; // FAILS
+end
+
+
+ 

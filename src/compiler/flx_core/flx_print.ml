@@ -744,7 +744,7 @@ and sb bsym_table depth fixlist counter prec tc =
       (match mt with KIND_type ->"" | _ -> ":"^Flx_kind.sk mt)^
       ">"
 
-    | BTYP_inst (it,i,ts,mt) ->
+    | BTYP_inst (it,m,i,ts,mt) ->
       0, (
         match Flx_concordance.get_type_name i with
         | Some name -> name
@@ -752,7 +752,7 @@ and sb bsym_table depth fixlist counter prec tc =
         match bsym_table with 
         | Some tab -> let name = qualified_name_of_bindex tab i in
           (* print_endline ("DEBUG: flx_print: BTYP_inst " ^ si i ^ ": " ^ name);  *)
-          str_of_instkind it ^ " " ^ name
+          str_of_instkind it ^ (if m=`V then "-View" else "") ^" " ^ name
         | None -> str_of_instkind it ^ "<Prim " ^ si i^">") ^
       (if List.length ts = 0 then "" else
       "[" ^cat ", " (map (sbt 9) ts) ^ "]:" ^ Flx_kind.sk mt

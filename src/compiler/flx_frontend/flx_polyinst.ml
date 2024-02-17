@@ -38,7 +38,8 @@ let flat_poly_fixup_type syms bsym_table polyinst sr t =
       end
     | _ -> assert false; 
     end
-  | BTYP_inst (`Nominal variance,i,ts,_) ->
+  (* NOTE: ignoring vmode *)
+  | BTYP_inst (`Nominal variance,_,i,ts,_) ->
     let parent,bsym = Flx_bsym_table.find_with_parent bsym_table i in
     if debug then
     print_endline ("Inst: flat_poly_fixup_type is using polyinst to instantiate type " ^ Flx_bsym.id bsym ^

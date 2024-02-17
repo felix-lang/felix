@@ -834,6 +834,16 @@ and lookup_name_with_sig
     " of " ^ catmap "," (sbt bsym_table) t2)
   ;
 *)
+(* NOTE: this code CONSTRUCTS a projection function from a field name. It is NOT the same as the closely
+related code that APPLIES a field name as a projection, to be found in Flx_bind_record_proj which actually
+applies a field name as a projection NOR the code in Flx_bind_inline_projetion which handles using
+an integer literal as a tuple projection ... there's too much painful duplication .. but there we go!
+
+This code uses bexpr_prj which uses a NUMERICAL projection index for a struct rather than a name.
+Having two ways to do this is a pain. But there we go. The compiler needs a bit of refactoring ..
+We use bexpr_rprj for records and bexpr_aprj for arrays .. all a bit weird.
+*)
+
  let projection = 
    match t2 with
 (*
@@ -841,7 +851,7 @@ and lookup_name_with_sig
      print_endline ("projection of tuple cons not implemented yet"); assert false
 *)
 
-   | [BTYP_inst (`Nominal _,j,ts',_) as d] ->
+   | [BTYP_inst (`Nominal _,imode,j,ts',_) as d] ->
      let bsym = try Some (Flx_bsym_table.find bsym_table j) with Not_found -> None in
      begin match bsym with
      | Some bsym ->
@@ -862,6 +872,10 @@ and lookup_name_with_sig
              try tsubst (Flx_bsym.sr bsym) vs ts' ft 
              with _ -> print_endline "[lookup_name_with_sig] Hassle replacing vs with ts??"; assert false
            in
+           (* NOTE: If the projection codomain is hacked by viewifying it, it won't agree with the field type 
+              in this case
+           *)
+           let ft = match imode with |`P | `N -> ft | `V -> Flx_btype.viewify_type ft in
            Some (bexpr_prj k d ft) 
          | None -> None
          end
@@ -891,7 +905,7 @@ and lookup_name_with_sig
        end
      end
 
-   | [BTYP_ptr (mode,BTYP_inst (`Nominal _,j,ts',_) ,[]) as d] ->
+   | [BTYP_ptr (pmode,BTYP_inst (`Nominal _,imode,j,ts',_) ,[]) as d] ->
      let bsym = try Some (Flx_bsym_table.find bsym_table j) with Not_found -> None in
      begin match bsym with
      | Some bsym ->
@@ -912,7 +926,12 @@ and lookup_name_with_sig
              try tsubst (Flx_bsym.sr bsym) vs ts' ft 
              with _ -> print_endline "[lookup_name_with_sig] Hassle replacing vs with ts??"; assert false
            in
-           Some (bexpr_prj k d (btyp_ptr mode ft [])) 
+           (* NOTE: the codomain of a pointer projection retains its sources pmode,
+              but might viewify the pointer target is the source was a view
+           *)
+           let ft = match imode with | `P | `N -> ft | `V -> Flx_btype.viewify_type ft in
+           let codomain = btyp_ptr pmode ft [] in
+           Some (bexpr_prj k d codomain) 
          | None -> None
          end
        | _ -> None
@@ -1518,7 +1537,10 @@ let bind_expression state bsym_table env e  =
   inner_bind_expression state bsym_table env rsground e
   with 
   | Not_found -> failwith "xxxx bind expression raised Not_found [BUG]"
-  | GadtUnificationFailure as x -> raise x
+  | GadtUnificationFailure as x -> 
+    (* print_endline ("GADTUnificationFailure in Flx_lookup.bind_expression"); *)
+    raise x
+
   | exn ->  
     let sr = src_of_expr e in
     print_endline ("Error at:\n" ^ Flx_srcref.long_string_of_src sr);

@@ -19,7 +19,9 @@ let term_subst counter src i arg =
     match t with
     | BTYP_type_var (k,`N,_) when k = i -> widen_fixgap level arg 
     | BTYP_type_var (k,`V,_) when k = i -> 
+(*
 print_endline ("TERMS SUBST VIEW VARIABLE");
+*)
       widen_fixgap level (viewify_type arg)
 
     | BTYP_type_match (tt, pts) ->

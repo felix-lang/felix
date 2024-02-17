@@ -73,7 +73,7 @@ let rec uses_btype add bsym_table count_inits t =
  
   (* We only care about insts: NOTE: both nominal and alias instance count since aliases are only expanded by beta reduction now *)
   match t with
-  | BTYP_inst (`Nominal _, i,ts,_) ->
+  | BTYP_inst (`Nominal _, _, i,ts,_) ->
       add i;
       List.iter f_btype ts
 

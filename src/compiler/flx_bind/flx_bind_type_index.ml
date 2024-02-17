@@ -233,7 +233,7 @@ print_endline ("Flx_bind_type_index: btyp_inst, meta type calculated by guess_me
     end
 
     | SYMDEF_abs (_,_,_,variance) ->
-      btyp_inst (`Nominal variance, index,ts,Flx_kind.KIND_type)
+      btyp_instm (`Nominal variance, `P, index,ts,Flx_kind.KIND_type)
 
     | SYMDEF_virtual_type  ->
       btyp_vinst (index,ts,Flx_kind.KIND_type)

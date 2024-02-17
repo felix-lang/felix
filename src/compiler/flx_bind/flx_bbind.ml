@@ -276,14 +276,15 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
 (*
           print_endline ("Type of function " ^ string_of_int i ^ " is " ^ sbt bsym_table ft);
 *)
+          (* NOTE: ignoring view mode *)
           match ft with
-          | BTYP_function (BTYP_inst (`Nominal _, dom,_,_),BTYP_inst (`Nominal _, cod,_,_)) ->
+          | BTYP_function (BTYP_inst (`Nominal _, _, dom,_,_),BTYP_inst (`Nominal _, _, cod,_,_)) ->
 (*
             print_endline ("Domain index = " ^ string_of_int dom ^ " codomain index = " ^ string_of_int cod);
 *)
             Flx_bsym_table.add_supertype bsym_table ((cod,dom),i)
  
-          | BTYP_function (BTYP_ptr (`RW, BTYP_inst (`Nominal _, dom,_,_), []),BTYP_ptr(`RW, BTYP_inst (`Nominal _, cod,_,_),[])) ->
+          | BTYP_function (BTYP_ptr (`RW, BTYP_inst (`Nominal _, _, dom,_,_), []),BTYP_ptr(`RW, BTYP_inst (`Nominal _, _, cod,_,_),[])) ->
             print_endline ("Pointer coercion: Domain index = " ^ string_of_int dom ^ " codomain index = " ^ string_of_int cod);
 
             Flx_bsym_table.add_pointer_supertype bsym_table ((cod,dom),i)
@@ -326,13 +327,14 @@ print_endline ("[flx_bbind] bind_symbol " ^ sym.Flx_sym.id ^ "??");
 (*
           print_endline ("Type of function " ^ string_of_int i ^ " is " ^ sbt bsym_table ft);
 *)
+          (* NOTE: ignoring view mode .. *)
           match ft with
-          | BTYP_function (BTYP_inst (`Nominal _, dom,_,_),BTYP_inst (`Nominal _, cod,_,_)) ->
+          | BTYP_function (BTYP_inst (`Nominal _, _, dom,_,_),BTYP_inst (`Nominal _, _, cod,_,_)) ->
 (*
             print_endline ("Domain index = " ^ string_of_int dom ^ " codomain index = " ^ string_of_int cod);
 *)
             Flx_bsym_table.add_supertype bsym_table ((cod,dom),i)
-          | BTYP_function (BTYP_ptr (`RW, BTYP_inst (`Nominal _, dom,_,_), []),BTYP_ptr(`RW, BTYP_inst (`Nominal _, cod,_,_),[])) ->
+          | BTYP_function (BTYP_ptr (`RW, BTYP_inst (`Nominal _, _, dom,_,_), []),BTYP_ptr(`RW, BTYP_inst (`Nominal _, _, cod,_,_),[])) ->
             print_endline ("Pointer coercion: Domain index = " ^ string_of_int dom ^ " codomain index = " ^ string_of_int cod);
 
             Flx_bsym_table.add_pointer_supertype bsym_table ((cod,dom),i)

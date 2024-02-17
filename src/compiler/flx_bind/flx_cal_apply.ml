@@ -93,7 +93,7 @@ print_endline ("\n%%%%%%%%\nFlx_cal_apply AFTER BETA: Function type \n" ^ Flx_bt
     end (* functions *)
 
     (* HACKERY TO SUPPORT STRUCT CONSTRUCTORS *)
-    | BTYP_inst (_,index,ts,_) ->
+    | BTYP_inst (_,_,index,ts,_) ->
       begin match get_data state.sym_table index with
       { Flx_sym.id=id; symdef=entry } ->
         begin match entry with

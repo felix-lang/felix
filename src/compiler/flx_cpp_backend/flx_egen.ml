@@ -1181,7 +1181,7 @@ print_endline ("Generating class new for t=" ^ ref_type);
 
           | [BTYP_sum ls] 
           | [BTYP_tuple ls] -> let n = length ls in ce_atom (si n)
-          | [BTYP_inst (`Nominal _, i,_,_)] ->
+          | [BTYP_inst (`Nominal _, _, i,_,_)] ->
             begin match Flx_bsym_table.find_bbdcl bsym_table i with
               | BBDCL_struct (_,ls,_) -> let n = length ls in ce_atom (si n)
               | BBDCL_cstruct (_,ls,_,_) -> let n = length ls in ce_atom (si n)

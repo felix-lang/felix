@@ -45,7 +45,8 @@ let rec reduce_typeset bsym_table counter sr t =
   | BTYP_type_set_union tsets ->
      Flx_list.uniq_list (List.concat (List.map r tsets))
 
-  | BTYP_inst (`Alias,index,ts,mt) ->
+  (* NOTE: ignoring vmode !!! *)
+  | BTYP_inst (`Alias,_,index,ts,mt) ->
     begin try 
        let bsym = Flx_bsym_table.find bsym_table index in
        let bbdcl = Flx_bsym.bbdcl bsym in
@@ -309,7 +310,7 @@ print_endline "Type list index returned None";
   let st t = sbt bsym_table t in
   match t with
   (* STAND ALONE TYPEDEF *)
-  | BTYP_inst (`Alias, index,ts,mt) -> 
+  | BTYP_inst (`Alias, m, index,ts,mt) -> 
     (* let ts = List.map br ts in *)
     begin try 
       let bsym = Flx_bsym_table.find bsym_table index in
@@ -321,7 +322,14 @@ print_endline "Type list index returned None";
       | Flx_bbdcl.BBDCL_type_alias (bvs, alias) ->
        let alias = Flx_btype_subst.tsubst sr bvs ts alias in
        let alias = beta_reduce' calltag counter bsym_table sr  depth ((t,depth)::termlist) alias in
-       alias 
+       (* NOTE: Alias viewification performed here .. not sure it would ever be used .. *)
+       begin match m with 
+       | `P
+       | `N -> alias 
+       | `V -> 
+         print_endline ("Flx_beta: viewifying type alias " ^ Flx_bsym.id bsym); 
+         viewify_type alias 
+       end
       | _ ->  
 (*
 print_endline ("Found non-typedef" ^ Flx_bsym.id bsym ^ "<" ^ string_of_int k ^ ">");
@@ -363,7 +371,7 @@ print_endline ("processed ts = " ^ catmap "," Flx_btype.st ts);
       with Not_found -> assert false
       end
 
-  | BTYP_inst (`Nominal v, i,ts,mt) -> btyp_inst (`Nominal v,i, List.map br ts,mt)
+  | BTYP_inst (`Nominal v, m,i,ts,mt) -> btyp_instm (`Nominal v,m,i, List.map br ts,mt)
   | BTYP_typeop (op,t,k) -> 
 (*
 print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);

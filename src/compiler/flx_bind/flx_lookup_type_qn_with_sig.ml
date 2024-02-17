@@ -283,13 +283,6 @@ print_endline "Found function entry";
         print_endline ("return kind is " ^ sbt bsym_table ret);
         print_endline ("argument kind is " ^ sbt bsym_table t);
         print_endline ("MGU: " ^ catmap ", " (fun (i,t)-> si i ^ "->" ^ sbt bsym_table t) mgu);
-(* THIS IS WRONG!!!!! btyp_inst is ONLY for abstract types, never for type functions: 
-  if we get a type function we should returns its (specialised) body! Otherwise beta-reduce
-  wont work!
-*)
-(*
-        btyp_inst (index, ts)
-*)
 
         let sym = get_data state.sym_table index in
         begin match sym.Flx_sym.symdef with

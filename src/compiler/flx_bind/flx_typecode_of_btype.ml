@@ -32,7 +32,7 @@ let typecode_of_btype ?sym_table:(sym_table=None) bsym_table counter sr (t0:Flx_
           assert false
         end
 
-      | BTYP_inst (_,i,ts,mt) ->
+      | BTYP_inst (_,_,i,ts,mt) ->
         let id = Flx_bsym_table.find_id bsym_table i in 
         `TYP_name (sr,id, (List.map tc ts))
 

@@ -7,6 +7,23 @@ that handles explicit user coercions!
 *)
 let debug = false
 
+(* NOTE: This module totally ignores instance vmode at the moment. The reasoning is
+that V instances are actually the same type as N instances, it's just that
+we hack the result of field accesses. The only reason for doing this, and indeeed
+for view mode const propagation is for access restriction. Once the code type
+checks, we can ignore (erase) the view stuff.
+
+If there's something wrong in this module, it's that we ignore vmode,
+when we actually should be *erasing* coercions which merely change
+a structural type's vmode. The coercion is only put in there to
+shut the type system up and can be igored because it has no back
+end consequences. In other words a list node with a RW next pointer
+accessed via a V pointer simply prevents using next field to modify
+the next node in the list. Given we can't do this, then we don't do it,
+and so using ordinary RW pointers is just fine. Records behave differently,
+the types are distinct and actually coerced.
+*)
+
 exception Vfound (* for variants, Found already used elsewhere *)
 exception NameNotFound of string
 
@@ -343,7 +360,8 @@ print_endline ("Dst type " ^ Flx_print.sbt bsym_table dstt);
   let srct = unfold "expand_coercion srct" srct in
   let dstt = unfold "expand_coercion dstt" dstt in
   match srct,dstt with
-  | BTYP_inst (`Nominal _, src,lts,_), BTYP_inst (`Nominal _, dst,rts,_) when src = dst ->
+  (* NOTE: ignoring vmode *)
+  | BTYP_inst (`Nominal _, _, src,lts,_), BTYP_inst (`Nominal _, _, dst,rts,_) when src = dst ->
     let bsym = Flx_bsym_table.find bsym_table src in
 (*
 print_endline ("SAME instance coercion");
@@ -379,7 +397,7 @@ print_endline ("SAME instance coercion");
     end
 
     (* argument ......................  parameter *)
-  | BTYP_inst (`Nominal _, src,sts,_), BTYP_inst (`Nominal _, dst,dts,_) ->
+  | BTYP_inst (`Nominal _, _, src,sts,_), BTYP_inst (`Nominal _, _, dst,dts,_) ->
 (*
     if List.length sts > 0 || List.length dts > 0 then
        print_endline ("UNIMPLEMENTED POLYMORPHIC NOMINAL TYPE COERCION");
@@ -426,7 +444,7 @@ print_endline ("Selected chain " ^ Flx_util.catmap "," string_of_int shortest_ch
         in 
         match dom,cod with
           (* param=Dom=Derived[vs]->Cod=Base[ts(vs)] *)
-          | BTYP_inst (`Nominal pvar, p,pts,_), BTYP_inst (`Nominal avar, a, ats,knd) ->
+          | BTYP_inst (`Nominal pvar, _, p,pts,_), BTYP_inst (`Nominal avar, am, a, ats,knd) ->
 (*
   print_endline ("Coercion type = " ^ Flx_btype.st (Flx_btype.btyp_function (dom,cod)));
   print_endline ("Argument type = " ^ Flx_btype.st (snd acc));
@@ -442,7 +460,7 @@ print_endline ("Selected chain " ^ Flx_util.catmap "," string_of_int shortest_ch
   print_endline ("Coercion domain unifier ts = " ^ Flx_util.catmap "," Flx_btype.st xts);
 *)
             let d = snd acc in
-            let c = Flx_btype.btyp_inst (`Nominal avar, a, xts, knd) in
+            let c = Flx_btype.btyp_instm (`Nominal avar, am, a, xts, knd) in
 (*
   print_endline ("Coercion codomain = " ^ Flx_btype.st c);
 *)
@@ -469,7 +487,7 @@ print_endline ("FINAL RESULT " ^ Flx_print.sbe bsym_table result);
     end
 
   (* pointer to nominal type coercion *)
-  | BTYP_ptr (_,BTYP_inst (`Nominal _, src,sts,_),[]), BTYP_ptr (_, BTYP_inst (`Nominal _, dst,dts,_),[]) ->
+  | BTYP_ptr (_,BTYP_inst (`Nominal _, _, src,sts,_),[]), BTYP_ptr (_, BTYP_inst (`Nominal _, _, dst,dts,_),[]) ->
     bexpr_reinterpret_cast (srce, dstt) 
      
   | BTYP_linearfunction (ld,lc) , BTYP_function (rd,rc) ->

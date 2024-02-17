@@ -11,7 +11,7 @@ let fold (bsym_table: Flx_bsym_table.t) counter t =
     | BTYP_typeop (op,t,k) -> ax t 
     | BTYP_compactsum ls
     | BTYP_sum ls
-    | BTYP_inst (_,_,ls,_)
+    | BTYP_inst (_,_,_,ls,_)
     | BTYP_vinst (_,ls,_)
     | BTYP_compacttuple ls
     | BTYP_tuple ls -> List.iter ax ls

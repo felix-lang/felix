@@ -15,9 +15,17 @@ type tvmode = [
   | `V
 ]
 
+type imode = [
+  | `N
+  | `V
+  | `P
+]
+
+
 
 val str_of_pmode: pmode -> string
 val str_of_tvmode: tvmode -> string
+val str_of_imode: imode -> string
 
 type instkind_t = [
   | `Nominal of Flx_ast.variance_list_t (* nominal type: primitive or user defined *)
@@ -40,7 +48,7 @@ and t = private
   | BTYP_sum of t list
   | BTYP_compactsum of t list
   | BTYP_unitsum of int
-  | BTYP_inst of instkind_t * bid_t * t list * Flx_kind.kind
+  | BTYP_inst of instkind_t * imode * bid_t * t list * Flx_kind.kind
   | BTYP_finst of bid_t * kind list * kind * kind (* type function instance with kind args, domain, codomain kinds  *)
   | BTYP_vinst of bid_t * t list * Flx_kind.kind
   | BTYP_intersect of t list
@@ -146,6 +154,7 @@ val btyp_sum : t list -> t
 val btyp_compactsum : t list -> t
 val btyp_unitsum : int -> t
 val btyp_inst : instkind_t * bid_t * t list * kind -> t
+val btyp_instm : instkind_t * imode * bid_t * t list * kind -> t
 val btyp_finst : bid_t * kind list * kind * kind -> t
 val btyp_vinst : bid_t * t list * kind -> t
 val btyp_intersect : t list -> t

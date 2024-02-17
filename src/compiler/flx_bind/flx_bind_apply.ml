@@ -248,7 +248,7 @@ print_endline ("Lookup qn with sig' failed to find a function, lets try bind exp
             raise exn
           end
         (* NOTE THIS CASE HASN'T BEEN CHECKED FOR POLYMORPHISM YET *)
-        | BTYP_inst (_,i,ts',_) ->
+        | BTYP_inst (_,_,i,ts',_) ->
 (*
           print_endline (" ** Bound LHS of application and a nominal type");
 *)

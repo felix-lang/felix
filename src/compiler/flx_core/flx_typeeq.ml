@@ -58,7 +58,8 @@ let rec type_eq' sbt counter ltrail ldepth rtrail rdepth trail t1 t2 =
 
   | BTYP_label,BTYP_label -> true
   | BTYP_vinst (i1,ts1,_),BTYP_vinst (i2,ts2,_)
-  | BTYP_inst (_,i1,ts1,_),BTYP_inst (_,i2,ts2,_) ->
+  (* NOTE: ignores view mode flag *)
+  | BTYP_inst (_,_,i1,ts1,_),BTYP_inst (_,_,i2,ts2,_) ->
     (* kind should aqree already .. ? *)
     i1 = i2 &&
     List.length ts1 = List.length ts2 && (* should dangwell agree is index does *)

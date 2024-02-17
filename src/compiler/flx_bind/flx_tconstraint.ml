@@ -96,7 +96,7 @@ print_endline ("Build type constraints for type variable " ^string_of_int i ^": 
   | BTYP_type_set ls
   | BTYP_type_set_union ls ->
      uniq_list (concat (map fe ls))
-  | BTYP_inst (`Alias,index,ts,mt) ->
+  | BTYP_inst (`Alias,imode,index,ts,mt) ->
     begin try 
        let bsym = Flx_bsym_table.find bsym_table index in
        let bbdcl = Flx_bsym.bbdcl bsym in
@@ -104,6 +104,7 @@ print_endline ("Build type constraints for type variable " ^string_of_int i ^": 
        | Flx_bbdcl.BBDCL_type_alias (bvs, alias) ->
          let alias = Flx_btype_subst.tsubst sr bvs ts alias in
          let alias = Flx_beta.beta_reduce "Tconstraint" counter bsym_table bsym.Flx_bsym.sr alias in
+         let alias = match imode with | `P | `N -> alias | `V -> Flx_btype.viewify_type alias in
          fe alias
        | _ ->  assert false
        end

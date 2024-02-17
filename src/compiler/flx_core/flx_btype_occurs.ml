@@ -39,7 +39,7 @@ let var_occurs bsym_table t =
     | BTYP_type_set_union ls
     | BTYP_compactsum ls
     | BTYP_sum ls
-    | BTYP_inst (_,_,ls,_)
+    | BTYP_inst (_,_,_,ls,_)
     | BTYP_vinst (_,ls,_)
     | BTYP_compacttuple ls 
     | BTYP_intersect ls

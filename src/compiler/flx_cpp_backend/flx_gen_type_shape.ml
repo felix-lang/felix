@@ -129,7 +129,7 @@ let rec gen_type_shape module_name s h syms bsym_table need_int primitive_shapes
       bcat s "  ::flx::gc::generic::gc_flags_default,0ul,0ul\n";
       bcat s "};\n"
 
-    | BTYP_inst (`Nominal _, i,ts,_) ->
+    | BTYP_inst (`Nominal _, _, i,ts,_) ->
 (*
 print_endline ("NOMINAL TYPE " ^ sbt bsym_table btyp);
 *)

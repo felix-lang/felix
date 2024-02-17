@@ -103,7 +103,7 @@ print_endline ("Divisor = " ^ string_of_int divisor);
     ce_prefix "&" (ce_arrow (ge' a) (Flx_name.cid_of_flxid field_name))
 
   (* pointer to struct or cstruct projection *)
-  | (BTYP_inst (`Nominal _, i,_,_)) ->
+  | (BTYP_inst (`Nominal _, _, i,_,_)) ->
     begin match Flx_bsym_table.find_bbdcl bsym_table i with
     | BBDCL_cstruct (_,ls,_,_)
     | BBDCL_struct (_,ls,_) ->
@@ -248,7 +248,7 @@ let apply_value_prj syms bsym_table ge ge' sr (e,t) (ix:int) domain codomain (_,
     end
 
   (* struct or cstruct projection *)
-  | BTYP_inst (`Nominal _, i,_,_) ->
+  | BTYP_inst (`Nominal _, _, i,_,_) ->
     begin match Flx_bsym_table.find_bbdcl bsym_table i with
     | BBDCL_cstruct (_,ls,_,_)
     | BBDCL_struct (_,ls,_) ->

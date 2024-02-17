@@ -39,7 +39,7 @@ let fix i t =
       end
       else t
     | BTYP_instancetype sr -> btyp_instancetype sr
-    | BTYP_inst (it,k,ts,mt) -> btyp_inst (it,k, List.map aux ts,mt)
+    | BTYP_inst (it,m,k,ts,mt) -> btyp_instm (it,m,k, List.map aux ts,mt)
     | BTYP_vinst (k,ts,mt) -> btyp_vinst (k, List.map aux ts,mt)
     | BTYP_tuple ts -> btyp_tuple (List.map aux ts)
     | BTYP_intersect ts -> btyp_intersect (List.map aux ts)

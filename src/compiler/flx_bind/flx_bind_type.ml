@@ -180,7 +180,7 @@ print_endline ("[flx_bind_type] Bound polyvariant = " ^ Flx_btype.st t);
         match t with
         (* reverse the fields so the second one with a given name takes precedence *)
         | BTYP_record (fields) -> new_fields := List.rev fields @ (!new_fields)
-        | BTYP_inst (_,i,ts,_) -> (* should only happen during typedef binding in nominal type mode *)
+        | BTYP_inst (_,_,i,ts,_) -> (* should only happen during typedef binding in nominal type mode *)
           begin try
             let bsym = Flx_bsym_table.find bsym_table i in
             let bbdcl = Flx_bsym.bbdcl bsym in
@@ -514,13 +514,20 @@ print_endline ("Binding `TYP_name " ^s^ " via params to " ^ sbt bsym_table t);
       begin match sym.Flx_sym.symdef with
       | SYMDEF_struct (_,variance)
       | SYMDEF_cstruct (_,_,variance)
-      | SYMDEF_union (_,variance)
-      | SYMDEF_abs (_,_,_,variance) ->
+      | SYMDEF_union (_,variance) ->
           let ts = List.map
             (fun (s,i,mt) -> btyp_type_var (i, Flx_btype.bmt "Flx_bind_type1" mt))
             (fst sym.Flx_sym.vs)
           in
           btyp_inst (`Nominal variance,index,ts,Flx_kind.KIND_type)
+
+      | SYMDEF_abs (_,_,_,variance) ->
+          let ts = List.map
+            (fun (s,i,mt) -> btyp_type_var (i, Flx_btype.bmt "Flx_bind_type1" mt))
+            (fst sym.Flx_sym.vs)
+          in
+          btyp_instm (`Nominal variance,`P,index,ts,Flx_kind.KIND_type)
+
       | SYMDEF_typevar _ ->
           print_endline ("Synthetic name "^name ^ " is a typevar!");
           syserr sr ("Synthetic name "^name ^ " is a typevar!")
