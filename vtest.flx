@@ -19,7 +19,7 @@ begin
 
   fun pNode (var px:&<<Node) =>
     (px*.a).str + ", " +  
-    match /* C_hack::cast[opt[&Node]] */ px*.next with
+    match  px*.next with
     | None => ";"
     | Some px => pNode px
     endmatch
@@ -28,19 +28,17 @@ begin
   println$ px.pNode;
 end
 
-begin
+noinline proc g () {
   struct X { x:int; py: &Y; }
   struct Y { y:int; } 
-  var py = unbox$ new Y(42);
-  var px = unbox$ new X (99, py);
-
+  var pw = new Y(42);
+  var px = unbox$ new X (99, pw);
   println$ px -> py -> y;
   px -> py . y <- 44;
   println$ px -> py -> y;
 
-  var vpx : &<<X = px; // coerce to vire pointer
+  var vpx : &<<X = px; // coerce to view pointer
   //vpx -> py . y <- 48; // FAILS
-end
-
-
+}
+g();
  

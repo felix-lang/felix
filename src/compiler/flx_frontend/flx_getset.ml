@@ -90,6 +90,9 @@ print_endline ("Find once for expresssion " ^ Flx_print.sbe bsym_table e ^ ", ty
       if j = i then
         if Flx_list.has_prefix prefix path then 
           begin
+(*
+print_endline (" ** Found variable " ^ Flx_print.sbe bsym_table e );
+*)
             if BidSet.mem ix !b then raise (DuplicateGet (i,path))
             else b := BidSet.add ix !b
           end
@@ -107,28 +110,25 @@ print_endline ("Find once for expresssion " ^ Flx_print.sbe bsym_table e ^ ", ty
   | BEXPR_coerce ((_,BTYP_uniq t1), BTYP_borrowed t2),_  
     when t1 = t2
     ->  
-(*
     begin
       if t1 = t2 then
         print_endline ("Skipping expression type " ^Flx_print.sbt bsym_table t1 ^ " coerced to borrowed: " ^ Flx_print.sbe bsym_table e)
     else
         print_endline ("Skipping WEIRD expression coerced to borrowed or shared")
     end;
-*)
     ()
+(*
   | BEXPR_coerce ((_,BTYP_uniq t1), t2),_  
     when t1 = t2
     -> 
-(*
     begin
       if t1 = t2 then
         print_endline ("Skipping expression type uniq " ^Flx_print.sbt bsym_table t1 ^ " coerced to shared: " ^ Flx_print.sbe bsym_table e)
     else
         print_endline ("Skipping WEIRD expression coerced to borrowed or shared")
     end;
-*)
     ()
-
+*)
 (* 
   | BEXPR_apply_prim (i,_,(_,argt)),_
   | BEXPR_apply_stack (i,_,(_,argt)),_
@@ -307,6 +307,9 @@ let share_get_sets bsym_table chain2ix ix2chain bexe =
   !bidset
 
 let once_get_gets bsym_table chain2ix ix2chain bexe = 
+(*
+  print_endline ("\nGet gets in Instruction " ^ Flx_print.string_of_bexe bsym_table 0 bexe); 
+*)
   let bidset = ref BidSet.empty in
   let f_bexpr e = 
      match e with
