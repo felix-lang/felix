@@ -101,6 +101,20 @@ xlat_felix = Dynlink::load-plugin-func2 [bool * string, string, string] (
   dll-name="flx2html", setup-str="", entry-point="flx2html"
 );
 
+interface fdoc_t {
+  whatami : 1 -> string;
+  html_raw : 1 -> string;
+  html_page : 1 -> string;
+  html_title: 1 -> string;
+  mathjax_required: 1 -> bool;
+}
+
+
+var  xlat_fdoc = Dynlink::load-plugin-func2 [fdoc_t, string, string] (
+    dll-name="fdoc2html", setup-str="", entry-point="fdoc2html"
+  );
+
+
 
 var filename = System::argv 1;
 if filename == "--style" do
@@ -110,8 +124,26 @@ elif filename == "--mathjax" do
 else
   eprintln$ "Formatting file " + filename;
   var b = load filename;
-  needs_mathjax', txt := xlat_felix (b,"");
-  println$ "<pre class='flxbg'>\n"+txt+"\n</pre>";
+  match Filename::get_extension filename with
+  | ".flx" => 
+    def var needs_mathjax', var txt = xlat_felix (b,"");
+    println$ "<pre class='flxbg'>\n"+txt+"\n</pre>";
+  | ".fdoc" =>
+    var result = xlat_fdoc (b, filename);
+    var needs_mathjax = #(result.mathjax_required);
+    var html = #(result.html_page);
+    var title = #(result.html_title);
+    val data = 
+      "<html><head>"+Css4Html::flx_head+
+      if needs_mathjax then mathjax else "" endif +
+      if title != "" then "<title>"+title+"</title>" else "" endif +
+      "</head><body>"+
+      html+
+      "</body></html>\n\r"
+    ;
+    println$ data+"\n";
+  | _ => println "NO FILE";
+  endmatch;
 done
 
 @
