@@ -124,10 +124,12 @@ elif filename == "--mathjax" do
 else
   eprintln$ "Formatting file " + filename;
   var b = load filename;
+  var outfile = Filename::strip_extension filename + ".html";
   match Filename::get_extension filename with
   | ".flx" => 
     def var needs_mathjax', var txt = xlat_felix (b,"");
-    println$ "<pre class='flxbg'>\n"+txt+"\n</pre>";
+    save (outfile, "<pre class='flxbg'>\n"+txt+"\n</pre>")
+;
   | ".fdoc" =>
     var result = xlat_fdoc (b, filename);
     var needs_mathjax = #(result.mathjax_required);
@@ -141,7 +143,7 @@ else
       html+
       "</body></html>\n\r"
     ;
-    println$ data+"\n";
+    save(outfile,data+"\n");
   | _ => println "NO FILE";
   endmatch;
 done
@@ -1970,6 +1972,7 @@ fun lc (x:string) = {
 // Felix
 module Flx2Html {
 private val big_keywords = 
+  ("chip",'defines a coroutine using chip idiom'),
   ("export",'generate extern "C" wrapper'),
   ("macro","prefix for macro definitions"),
   ("module","Define a module namespace"),
@@ -2020,6 +2023,12 @@ private val big_keywords =
 ;
 
 private val small_keywords =
+  ("circuit",'defines the topology of chip connections'),
+  ("endcircuit",'defines the topology of chip connections'),
+  ("connect",'connects two pins with a channel'),
+  ("connector","the parameter of a chip"), 
+  ("pin","a field of the chip parameter"), 
+  ("device","a synonym for var to suit the chip idiom"), 
   ("if","conditional"), 
   ("then","conditional"), 
   ("else","conditional"), 
