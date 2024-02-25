@@ -82,15 +82,15 @@ code.inclusion {background-color:#D070D0; color:black; }
 """;
 }
 mathjax := '''
+<script type="text/javascript" async
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
 <script type="text/x-mathjax-config">
   MathJax.Hub.Config({
     tex2jax: {
         skipTags: ["script","noscript","style","textarea"]
     }
   });
-</script> 
-<script type="text/javascript"
-  src="http://cdn.mathjax.org/mathjax/latest/MathJax.jsconfig=TeX-AMS-MML_HTMLorMML">
 </script>
 ''';
 
@@ -122,9 +122,22 @@ if filename == "--style" do
 elif filename == "--mathjax" do
   println$ mathjax;
 else
+  if startswith filename "--outdir=" do
+    var outdir = filename.[9 to];
+println$ "Outdir is " + outdir;
+    C_hack::ignore(Directory::mkdir outdir);
+    filename = System::argv 2;
+    var outfile = Filename::join 
+    (
+      outdir, 
+      Filename::strip_extension (Filename::basename filename)
+    ) + ".html";
+  else
+    outfile = Filename::strip_extension filename + ".html";
+  done
   eprintln$ "Formatting file " + filename;
+  eprintln$ "Outfile is " + outfile;
   var b = load filename;
-  var outfile = Filename::strip_extension filename + ".html";
   match Filename::get_extension filename with
   | ".flx" => 
     def var needs_mathjax', var txt = xlat_felix (b,"");
