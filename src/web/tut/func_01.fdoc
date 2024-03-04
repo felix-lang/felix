@@ -183,8 +183,8 @@ fun f(x:int) = {
    return g;
 }
 @
-The function @{f} here has type {int -> (long -> long)}. This type is 
-the same as {int -> long -> long} since the arrow operator is right
+The function @{f} here has type @{int -> (long -> long)}. This type is 
+the same as @{int -> long -> long} since the arrow operator is right
 associative. There's a simpler way to write the function @{f}:
 @felix
 fun f(x:int) (y:long) => x.long + y;

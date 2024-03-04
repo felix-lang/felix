@@ -13,7 +13,7 @@ C bindings can be polymorphic too:
 type vector[T] = "::std::vector<?1>";
 proc push_back[T]: vector[T] * T = "$1.push_back($2)";
 @
-In the C code {?1}, {?2} represent the
+In the C code @{?1}, @{?2} represent the
 first and second type variables.
 
 @h2 Overloading

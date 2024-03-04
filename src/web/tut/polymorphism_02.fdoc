@@ -62,7 +62,7 @@ fun f: !integers * !integers -> int = "f($1, $2)" requires myf;
 
 The reason this is <em>so</em> useful is that if we just lifted the
 signature of @{f} from C, we'd be ignoring the fact that the C programmer
-has automatic conversions and can call {f(42L, 23u)}, which would
+has automatic conversions and can call @{f(42L, 23u)}, which would
 fail in Felix because it has no automatic conversions. The user
 would have to cast every argument to exactly the right type which is
 not practical. By using constrained polymorphism, we can make

@@ -13,6 +13,9 @@ open Flx_kind
 let adjust bsym_table t = Flx_btype_rec.adjust_fixpoint t
 
 let rec type_apply beta_reduce' calltag counter bsym_table sr depth (termlist: (Flx_btype.t * int) list) f arg = 
+(*
+print_endline ("Type apply " ^ Flx_btype.st f ^ " to " ^ Flx_btype.st arg);
+*)
   match f with 
 
 (* TYPEFUN REFERENCE *)
@@ -70,7 +73,7 @@ let rec type_apply beta_reduce' calltag counter bsym_table sr depth (termlist: (
       begin match bbdcl with
       | Flx_bbdcl.BBDCL_type_alias (bvs, alias) ->
        let salias = Flx_btype_subst.tsubst sr bvs ts alias in
-       type_apply beta_reduce' calltag counter bsym_table sr depth termlist alias arg
+       type_apply beta_reduce' calltag counter bsym_table sr depth termlist salias arg
       | _ ->  assert false
       end
     with Not_found -> 
@@ -80,14 +83,13 @@ let rec type_apply beta_reduce' calltag counter bsym_table sr depth (termlist: (
 
 (* TYPE LAMBDA *)
   | BTYP_type_function (ps,r,body) ->
+(* print_endline ("TYPE LAMBDA body " ^ Flx_btype.st body); *)
     (* Fixpoint handling here *)
     let appl = Flx_btype.btyp_type_apply (f, arg) in
     begin match Flx_type_list_index.type_list_index counter bsym_table termlist appl with
     | Some j -> 
       let t = btyp_fix (j-depth) r in
-(*
-print_endline ("Flx_type_fun: installing fixpoint " ^ Flx_btype.st t);
-*)
+(* print_endline ("Flx_type_fun: installing fixpoint " ^ Flx_btype.st t); *)
       t
     | None -> 
 (* NOTE: the typefun term MUST be alpha converted here so the substitution does not lead to false captures in NESTED
@@ -114,7 +116,8 @@ if not (Flx_btype.complete_type arg) then print_endline ("Type lambda argument i
         let params' =
           match ps with
           | [] -> []
-          | [i,_] -> [i,arg]
+          | [i,_] -> (* print_endline ("Variable " ^ string_of_int i ^ " to be replaced with arg= " ^ Flx_btype.st arg); *)
+             [i,arg]
           | _ ->
             match  arg with
             | BTYP_type_tuple ts ->
@@ -131,7 +134,10 @@ if not (Flx_btype.complete_type arg) then print_endline ("Type lambda argument i
         in
 if not (Flx_btype.complete_type body) then print_endline ("Type lambda body is not complete! \n" ^ Flx_btype.st body);
         let t' = list_subst counter params' body in
+(* print_endline ("** After Substitution = " ^ Flx_btype.st t'); *)
+(* NOTE: we didn't adjust the fixpoint if there is one, but we HAVE to do that after beta-reduction! *)
         let t' = beta_reduce' calltag counter bsym_table sr depth ((appl,depth)::termlist) t' in
+(* print_endline ("** FINAL RESULT = " ^ Flx_btype.st t'); *)
         t'
       | _ -> assert false (* alpha convert can't fail here *)
       end

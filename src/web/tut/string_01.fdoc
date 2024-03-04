@@ -4,7 +4,7 @@ See <a href="/share/lib/std/strings/string.fdoc">string</a> module.
 
 @h1 Concept.
 
-Felix uses a binding to the C++ string datatype {::std::basic_string&lt;char&gt;}.
+Felix uses a binding to the C++ string datatype @{::std::basic_string&lt;char&gt;}.
 
 
 

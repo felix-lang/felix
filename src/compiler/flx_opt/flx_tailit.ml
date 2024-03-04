@@ -492,8 +492,14 @@ print_endline ("tailit:asgn2 assign to projection");
         aux tail (x::res)
       end
 
-    | BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure (i,ts),_),a),_)) :: tail -> assert false
-
+    (* NOTE: this was previously considered a bug, probably because a general apply
+       of a closure should have reduced to a direct apply, 
+       but somehow the reduction has not occured with the fixpoint operator on functions
+       .. it's clearly a sequencing issue, the fixpoint operation is happening AFTER
+       the reduction step? In any case the case does occur and can be handled so
+       I'm re-enabling it
+     *)
+    | BEXE_fun_return (sr,(BEXPR_apply((BEXPR_closure (i,ts),_),a),_)) :: tail (* -> assert false *)
     | BEXE_fun_return (sr,(BEXPR_apply_direct(i,ts,a),_)) :: tail 
 
       when (i)=(this)

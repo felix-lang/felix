@@ -421,10 +421,19 @@ print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
      btyp_variant (List.combine ss (List.map br ls))
 
   | BTYP_polyvariant ts ->
+    let ctors = List.fold_left (fun acc term -> match term with
+      | `Ctor (s,t) -> (s,br t)::acc
+      | `Base t -> match br t with
+        | BTYP_variant ts -> ts @ acc
+        | _ -> print_endline ("Reduction of polyvariant failed"); assert false
+     ) [] ts
+    in btyp_variant ctors
+(*
     btyp_polyvariant (List.map (fun k -> match k with
       | `Ctor (s,t) -> `Ctor (s, br t)
       | `Base t -> `Base (br t)
     ) ts)
+*)
 
   | BTYP_type_set ls -> btyp_type_set (List.map br ls)
 

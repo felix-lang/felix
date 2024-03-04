@@ -1172,8 +1172,8 @@ let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) ?(f_kind=fun k->k) = funct
 
   | BTYP_fix (i,k) -> 
     let k' = f_kind k in
-    if k <> k' then print_endline ("Flx_btype.map changing metatype from " ^ Flx_kind.sk k ^ " to " ^ Flx_kind.sk k');
-    btyp_fix i (f_kind k')
+    (* if k <> k' then print_endline ("Flx_btype.map changing metatype from " ^ Flx_kind.sk k ^ " to " ^ Flx_kind.sk k'); *)
+    btyp_fix i k'
 
   | BTYP_tuple_cons (a,b) -> btyp_tuple_cons (f_btype a) (f_btype b)
   | BTYP_tuple_snoc (a,b) -> btyp_tuple_snoc (f_btype a) (f_btype b)
