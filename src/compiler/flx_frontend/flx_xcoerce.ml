@@ -98,6 +98,9 @@ and unique_check ls =
     ls
 
 and variant_coercion new_table bsym_table counter parent remap ((srcx,srct) as srce) dstt ls rs sr =
+    let e = remap parent srce in
+    bexpr_reinterpret_cast (e,dstt)
+(*
   let coerce parent e dstt = expand_coercion new_table bsym_table counter parent remap e dstt sr in
   if debug then 
   print_endline ("Variant coercion " ^ Flx_btype.st srct ^ " => " ^ Flx_btype.st dstt); 
@@ -254,7 +257,7 @@ print_endline ("MINIMISED dstt = " ^ Flx_btype.st dstt);
       remap parent result
     end
   end
-
+*)
 
 and record_coercion new_table bsym_table counter parent remap ((srcx,srct) as srce) dstt ls rs sr =
   let coerce parent e dstt = expand_coercion new_table bsym_table counter parent remap e dstt sr in
@@ -557,9 +560,7 @@ and process_expr new_table bsym_table counter parent sr expr =
   match e with
   (* coercion with argument free of reducible coercions *)
   | BEXPR_coerce ((srcx,srct) as srce,dstt),_ -> 
-    (*
-    print_endline ("Examining coercion " ^ Flx_print.sbe bsym_table e );
-    *)
+    (* print_endline ("Examining coercion " ^ Flx_print.sbe bsym_table e ); *)
     let e' = 
       try   
         expand_coercion new_table bsym_table counter parent remap srce dstt sr 
@@ -615,6 +616,9 @@ print_endline ("Processing function " ^ Flx_bsym.id bsym);
   not be used, but cannot be eliminated in case they're used.
 *)
 let expand_coercions syms bsym_table = 
+(*
+print_endline ("EXPAND COERCIONS: START");
+*)
   let new_table = Flx_bsym_table.create_fresh () in
   Flx_bsym_table.iter 
    (fun i parent bsym -> process_entry new_table bsym_table syms.Flx_mtypes2.counter parent i bsym)

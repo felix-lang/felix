@@ -73,6 +73,9 @@ print_endline ("Type apply " ^ Flx_btype.st f ^ " to " ^ Flx_btype.st arg);
       begin match bbdcl with
       | Flx_bbdcl.BBDCL_type_alias (bvs, alias) ->
        let salias = Flx_btype_subst.tsubst sr bvs ts alias in
+(*
+print_endline ("Alias " ^ bsym.id ^ "["^String.concat "," (List.map Flx_btype.st ts) ^"] after substitution " ^ Flx_btype.st salias);
+*)
        type_apply beta_reduce' calltag counter bsym_table sr depth termlist salias arg
       | _ ->  assert false
       end

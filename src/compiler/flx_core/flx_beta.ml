@@ -321,7 +321,13 @@ print_endline "Type list index returned None";
       begin match bbdcl with
       | Flx_bbdcl.BBDCL_type_alias (bvs, alias) ->
        let alias = Flx_btype_subst.tsubst sr bvs ts alias in
+(*
+print_endline ("Flx_beta: Alias " ^ bsym.id ^"<"^string_of_int index^">" ^ "["^String.concat "," (List.map Flx_btype.st ts) ^"] after substitution " ^ Flx_btype.st alias);
+*)
        let alias = beta_reduce' calltag counter bsym_table sr  depth ((t,depth)::termlist) alias in
+(*
+print_endline ("Flx_beta: Alias " ^ bsym.id ^"<"^string_of_int index^">" ^ "["^String.concat "," (List.map Flx_btype.st ts) ^"] after beta-reduction " ^ Flx_btype.st alias);
+*)
        (* NOTE: Alias viewification performed here .. not sure it would ever be used .. *)
        begin match m with 
        | `P
@@ -421,13 +427,19 @@ print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
      btyp_variant (List.combine ss (List.map br ls))
 
   | BTYP_polyvariant ts ->
+    (* NO DEPTH INCREASE FOR ALIAS EXPANSION *)
+    let br' t = beta_reduce' calltag counter bsym_table sr depth termlist t in
     let ctors = List.fold_left (fun acc term -> match term with
-      | `Ctor (s,t) -> (s,br t)::acc
-      | `Base t -> match br t with
+      | `Ctor (s,t) -> (s,br t)::acc (* depth expansion *)
+      | `Base t -> match br' t with (* No depth expansion *)
         | BTYP_variant ts -> ts @ acc
         | _ -> print_endline ("Reduction of polyvariant failed"); assert false
      ) [] ts
-    in btyp_variant ctors
+    in 
+    let t = btyp_variant ctors in
+    (* print_endline ("Reduced polyvariant type " ^ Flx_btype.st t); *)
+    t
+
 (*
     btyp_polyvariant (List.map (fun k -> match k with
       | `Ctor (s,t) -> `Ctor (s, br t)
