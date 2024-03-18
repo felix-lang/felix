@@ -427,12 +427,23 @@ print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
      btyp_variant (List.combine ss (List.map br ls))
 
   | BTYP_polyvariant ts ->
+    let rec merge_ctors a b = match b with 
+      | (s,t) :: tail ->
+        if not (List.mem_assoc s a) then merge_ctors ((s,t) :: a) tail
+        else let arg = List.assoc s a in
+        if arg = t then merge_ctors a tail
+        else Flx_exceptions.clierr sr (
+          "Merging alias in polyvariant duplicate constructors " ^ s ^ 
+          " of distinct types\n" ^ Flx_btype.st t ^ "\nand\n" ^ Flx_btype.st arg
+        )
+      | [] -> a
+    in
     (* NO DEPTH INCREASE FOR ALIAS EXPANSION *)
     let br' t = beta_reduce' calltag counter bsym_table sr depth termlist t in
     let ctors = List.fold_left (fun acc term -> match term with
-      | `Ctor (s,t) -> (s,br t)::acc (* depth expansion *)
+      | `Ctor (s,t) -> merge_ctors acc [(s,br t)] (* depth expansion *)
       | `Base t -> match br' t with (* No depth expansion *)
-        | BTYP_variant ts -> ts @ acc
+        | BTYP_variant ts -> merge_ctors acc ts
         | _ -> print_endline ("Reduction of polyvariant failed"); assert false
      ) [] ts
     in 

@@ -1527,7 +1527,7 @@ println$ "formatting fpc data";
 }
 }
 
-eprintln$ Version::felix_version+"Fpc2html initialisation";
+//eprintln$ Version::felix_version+"Fpc2html initialisation";
 
 fun setup(config_data:string) = {
   var config_lines = split(config_data, "\n");
@@ -1725,7 +1725,7 @@ fin:>
 }
 
 
-eprintln$ Version::felix_version+"ocaml2html initialisation";
+//eprintln$ Version::felix_version+"ocaml2html initialisation";
 
 fun setup(x:string) = {
   C_hack::ignore(x); // which means, don't ignore it!
@@ -1923,7 +1923,7 @@ fin:>
 }
 }
 
-eprintln$ Version::felix_version+"Py2html initialisation";
+//eprintln$ Version::felix_version+"Py2html initialisation";
 
 fun setup(x:string) = {
   C_hack::ignore(x); // which means, don't ignore it .. :)
@@ -2573,7 +2573,7 @@ fin:>
 }
 
 
-eprintln$ Version::felix_version+" flx2html initialisation";
+//eprintln$ Version::felix_version+" flx2html initialisation";
 
 fun setup(config_data:string) = {
   var config_lines = split(config_data, "\n");
@@ -2828,7 +2828,7 @@ fin:>
    return false, out;
 }
 }
-eprintln$ Version::felix_version+ " cpp2html initialisation";
+//eprintln$ Version::felix_version+ " cpp2html initialisation";
 
 fun setup(config_data:string) = {
   var config_lines = split(config_data, "\n");
@@ -3031,7 +3031,7 @@ object xlat_fdoc (t:string, filename:string) implements fdoc_t = {
     | Some _ =>
       println$ "Duplicate definition of tangler " + id;
     | #None =>
-      println$ "Add tangler id=" + id + " filename=" + filename;
+      //println$ "Add tangler id=" + id + " filename=" + filename;
       add tanglers id filename;
     endmatch;
   }
@@ -3270,23 +3270,23 @@ next:>
     | #None => 
       match Match (tangler_use_re2, b) with
       | Some s => 
-        println$ "Tangle id=" + s.1;
+        //println$ "Tangle id=" + s.1;
         match get tanglers s.1 with
         | Some x => 
-          println$ "Tangler filename=" + x;
+          //println$ "Tangler filename=" + x;
           var xtn = Filename::get_extension x;
-          println$ "Extension=" + xtn;
+          //println$ "Extension=" + xtn;
           if xtn in (".flx",".flxh",".fsyn") do 
             write_string("<pre class='inclusion'>\n"+x+"</pre>\n");
-            println$ "flx ....";
+            //println$ "flx ....";
             inline_felix (#get_text);
           elif xtn in (".cxx",".cpp",".hpp",".c",".cc",".h") do 
             write_string("<pre class='inclusion'>\n"+x+"</pre>\n");
-            println$ "cpp ....";
+            //println$ "cpp ....";
             inline_cpp (#get_text);
           else 
             write_string("<pre class='inclusion'>\n"+x+"</pre>\n");
-            println$ "pre ....";
+            //println$ "pre ....";
             inline_pre (#get_text);
           done
         | #None => 
@@ -3364,7 +3364,7 @@ next:>
   }
 }
 
-eprintln$ Version::felix_version +  " fdoc2html initialisation";
+//eprintln$ Version::felix_version +  " fdoc2html initialisation";
 
 fun setup(config_data:string) = {
   var config_lines = split(config_data, "\n");
@@ -3563,7 +3563,7 @@ interface slideshow_t {
 include "./button-interface";
 
 fun setup(config_data:string) = {
-  eprintln$ "Setup fdoc_button " + config_data;
+  //eprintln$ "Setup fdoc_button " + config_data;
   return 0;
 }
 
@@ -3660,7 +3660,7 @@ export fun fdoc_button of (unit) as "fdoc_button";
 include "./edit-interface";
 
 fun setup(config_data:string) = {
-  eprintln$ "Setup fdoc_edit " + config_data;
+  //eprintln$ "Setup fdoc_edit " + config_data;
   return 0;
 }
 
@@ -3740,7 +3740,7 @@ include "./button-interface";
 var button-factory : unit -> button-factory_t;
 
 fun setup(config_data:string) = {
-  eprintln$ "Setup fdoc_fileseq " + config_data;
+  //eprintln$ "Setup fdoc_fileseq " + config_data;
   button-factory = Dynlink::load-plugin-func0 [button-factory_t] (dll-name="fdoc_button");
   return 0;
 }
@@ -3819,7 +3819,7 @@ include "./fdoc-frame-interface";
 include "./toc_menu-interface";
 
 fun setup (config_data:string) = {
-  eprintln$ "Setup fdoc_frame v1.4 " + config_data;
+  //eprintln$ "Setup fdoc_frame v1.4 " + config_data;
   return 0;
 }
 
@@ -4148,7 +4148,7 @@ fun escape_sp(h: string) => map (fun (c: char) => if c == ' ' then '_'.char else
 
 fun setup(config_data:string) = {
   button-factory = Dynlink::load-plugin-func0 [button-factory_t] (dll-name="fdoc_button");
-  eprintln$ "Setup fdoc_heading " + config_data;
+  //eprintln$ "Setup fdoc_heading " + config_data;
   return 0;
 }
 
@@ -4226,7 +4226,7 @@ export fun fdoc_heading of (paragraph-control_t * (string->0)) as "fdoc_heading"
 include "./paragraph-interface";
 
 fun setup(config_data:string) = {
-  eprintln$ "Setup fdoc_paragraph" + config_data;
+  //eprintln$ "Setup fdoc_paragraph" + config_data;
   return 0;
 }
 
@@ -4253,7 +4253,7 @@ export fun fdoc_paragraph of (string->0) as "fdoc_paragraph";
 include "./scanner-interface";
 
 fun setup(config_data:string) = {
-  eprintln$ "Setup fdoc_scanner " + config_data;
+  //eprintln$ "Setup fdoc_scanner " + config_data;
   return 0;
 }
 
@@ -4418,7 +4418,7 @@ function reset_slides() {
 include "./slideshow-interface";
 
 fun setup(config_data:string) = {
-  eprintln$ "Setup fdoc_slideshow " + config_data;
+  //eprintln$ "Setup fdoc_slideshow " + config_data;
   return 0;
 }
 
@@ -4520,7 +4520,7 @@ open class WebserverPluginCommon
 include "./toc_menu-interface";
 
 fun setup (config_data:string) = {
-  eprintln$ "Setup toc_menu v1.1 " + config_data;
+  //eprintln$ "Setup toc_menu v1.1 " + config_data;
   return 0;
 }
 

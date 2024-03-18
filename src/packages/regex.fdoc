@@ -368,6 +368,17 @@ class Regdef {
   | Perl of string
   ;
 
+  instance Str[regex] {
+    fun str (x: regex) => match x with
+    | Alts ls => "(" + cat " | " (map str of regex ls)  + ")"
+    | Seqs ls => "(" + cat " " (map str of regex ls) + ")"
+    | Rpt (r,min,max) => "Rpt(" + r.str + ","  + min.str + "," + max.str + ")" 
+    | Group r => "Group(" + r.str + ")"
+    | String r => "String(" + r.repr + ")"
+    | Perl r => "Perl(" + r.repr + ")"
+    | Charset r => "Charset(" + r.repr + ")"
+    ;
+  }
   private fun prec: regex -> int =
   | Perl _ => 3
   | Alts _ => 3
