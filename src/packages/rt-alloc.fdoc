@@ -1,0 +1,722 @@
+@title Real Time Allocators
+@tangler allocator.hpp = share/lib/rtl/rt/allocator.hpp
+@tangler malloc_free.hpp = share/lib/rtl/rt/malloc_free.hpp
+@tangler bump.hpp = share/lib/rtl/rt/bump.hpp
+@tangler block.hpp = share/lib/rtl/rt/block.hpp
+@tangler ts_allocator.hpp = share/lib/rtl/rt/ts_allocator.hpp
+@tangler ring_allocator.hpp = share/lib/rtl/rt/ring_allocator.hpp
+@tangler test01.cxx = $PWD/test01.cxx
+@h1 Real Time Allocators
+In programming systems including C and C++, user space allocation is usually handled
+by a universal allocator such as @{malloc()}. The operation time and memory consumption
+of these systems may be very good but it is rarely subject to bounds required
+for real time performance assurances. In addition, such systems not only may but
+generally must occasionally request more memory from the operating system,
+and at unpredictable times.
+
+Our objective here is to produce a more manifestly performance bound allocation
+system by observing that all programs are finite state machines, and by
+calculating the memory required by a program we can allocate that memory
+once and for all at start up.
+
+We then provide a collection of sub-allocators which can dispense and
+retrieve some of this memory, which have predictable performance
+characteristics, and which can be chosen by the application developer
+to meet their needs in various circumstances.
+
+Before we start I will provide a single motivating use case where
+complex real time processing is required: real time audio signal processing.
+These systems can be required to do various tasks from the fairly simple,
+such as mixing, to very difficult, such as frequency shifting. 
+Irrespective of the task, blocks of data are delivered as inputs and
+synthesised blocks of data must be delivered as outputs with a bounded
+maximum lag; ideally less than 0.1 seconds. Otherwise a disc jockey, for
+example, would lose control of the sound.
+
+In such a system a lag due to, for example, memory allocation delays,
+would be catastrophic: first it would lead to a total loss of sound
+for a brief period, and then it would require discarding some input
+in order to catch up. Together this would cause a very signiciant
+glitch in the sound continuity which could actually damage not only
+equipment but human ears as well.
+
+There are of course numerous applications requiring real time signal
+processing including target acquisition and tracking in aviation,
+and safety monitoring in a nuclear power plant.
+
+@h2 What does an allocator look like?
+An allocator object in a C++ environment requires four core operations.
+<ol>
+<li> Construction</li>
+<li> Allocation method</li>
+<li> Deallocation method</li>
+<li> Destructor</li>
+</ol>
+
+As is usual in such systems the constructor chosen will determine the
+performance characteristics, whilst the other methods will be virtual
+functions so that the programmer can try different allocators 
+in different circumstances. In particular during development a developer
+might use a generic alloctor with no interest in performance,
+since it seems important to get the semantics of their application right first.
+
+Later, a generic allocator with profiling might be used to help decide
+which kinds of allocators to use where and with what bounds, 
+and then delegating allocators that monitor correctness at some
+expense, until the final performance allocators are used.
+
+@h2 What does suballocation imply?
+In our system, we have to get memory from somewhere and there are two case:
+<ol>
+<li> From outside our system</li>
+<li> From another allocator</li>
+</ol>
+
+An allocator of the first kind is known as a <em>root allocator</em>.
+We will later provide a root allocator called @{malloc_free} which use
+the @{malloc} and @{free} functions from the C standard library
+to obtain and release memory. Obviously in different application domains
+other roots may be provided.
+
+An allocator of the second kind is known as a @{suballocator}.
+
+There are two kinds of allocators.
+<ol> 
+<li>An <em>static</em> allocator is given a fixed amount of storage
+on construction and never requests any more.</li>
+<li>A <em>delegating</em> suballocator may request more memory
+during its lifetime.</em>
+</ol>
+
+In order to request more memory, a delegating allocator requires a set least
+of references to other allocators, its delegates.  Usually there will only
+be one delegate, however we will present a fairly generally allocator later
+which uses an array of delegates.
+
+@h2 Who allocates the allocator?
+Since an allocator is an object, its store was allocated by another allocator.
+There are three special case we need to think about: 
+<ol>
+<li>it was allocated in static storage,</li>
+<li>it was allocated on the machine stack, or, </li>
+<li>it was allocated by a foreign allocator.</li>
+</ol>
+Other than that, another of our allocators, possibly a root, allocated it,
+called the <em>parent</em>.
+
+Now whoever allocated it may chose to share it with other components,
+and may indeed disappear, in which case there is a danger that the parent allocator
+is forgotten, in which case the child cannot be deallocated.
+
+However if we're using a reference counting system to manage it,
+the allocator requires two things: 
+<ol>
+<li>a reference count</li>
+<li>a reference to the parent</li>
+</ol>
+
+In this case, the smart pointers managing it will do their usual thing,
+but when the last reference to it is about to be destroyed, it can
+delete the object using the parent allocator refered to in the object itself.
+Of course we could put that informating into the smart pointers instead
+but that seems wasteful.
+
+@h2 A smart pointer to allocators, part 1.
+We're now going to provide a reference counting smart pointer
+specialised to allocators. We have to split the code into two parts
+because there is a circular relation between the allocator reference
+type and the allocator it refers to.
+
+
+@tangle allocator.hpp
+#ifndef ALLOCATOR
+#define ALLOCATOR
+#include <memory>
+
+// forward decl
+struct allocator_t; 
+
+// smart pointer to allocators
+struct alloc_ref_t {
+  // Uninitialised references refer to nothing 
+  alloc_ref_t() : allocator(nullptr) {}    
+
+  // rvalue move, does not change reference counts
+  // ensures the source is nullified
+  alloc_ref_t(alloc_ref_t &&p) {
+    if(p.allocator) { 
+      allocator = p.allocator; 
+      p.allocator = nullptr; 
+    }
+    else allocator = nullptr;
+  } 
+
+  // lvalue copy has to be defered
+  // because it adds 1 to the reference count
+  alloc_ref_t(alloc_ref_t &p);
+
+  // rvalue assign
+  // PROOF of correctness:
+  //   If the source allocator and target allocator are the same
+  //   then the reference count must be at least 2
+  //   so destroying the target (reducing the ref count by 1) will not
+  //   destroy the allocator.
+  void operator= (alloc_ref_t &&p) {
+    if (&p!=this) { // ignore self assign
+      this->~alloc_ref_t(); // destroy target
+      new(this) alloc_ref_t(::std::move(p)); // move source to target
+    }
+  } // rass
+
+  // lvalue assign
+  void operator= (alloc_ref_t &p) { 
+    if(&p!=this) { // ignore self assign
+      this->~alloc_ref_t(); // destroy target
+      new(this) alloc_ref_t(p); // copy source to target
+    }
+  } // lass
+  void *allocate(size_t);
+  void deallocate(void *, size_t);
+ 
+  // destructor has to be defered
+  // uses parent allocator passed to allocator on construction to delete it
+  ~alloc_ref_t();
+
+private:
+  allocator_t *allocator;
+
+  // an reference is constructed from a pointer to an allocator
+  // the constructor of which is required to set the reference
+  // count to 1
+  alloc_ref_t(allocator_t *p) : allocator(p) {} 
+
+  // only an allocator_t can construct a populated reference
+  friend class allocator_t;
+};
+@
+
+@h2 The allocator abstraction 
+Now we will present the allocator abstraction. 
+There are two concrete data types required for all allocator in our
+design: a reference count, and a reference to the parent allocator.
+
+The parent may not exist, if the allocator had a foreign parent,
+or it was not heap allocated, in which case the parent variable
+will just be null.
+
+There is an onerous requirement here: when some code uses
+a parent allocator to allocate the store for this allocator,
+the parent must be passed to the allocator explicitly, so that the
+same parent can be used to dispose of the store on deletion.
+The pointer used for that has to be our reference counting
+smart pointer, and that will increment the reference count
+of the parent allocator to ensure it remains live whilst 
+its child does.
+
+In other words parents must always outlive their children.
+
+As a final note, there is an important method @{size()}
+which reports the size in bytes of the object. In our
+system this will be a universal requirement for all 
+polymorphic objects, and it's definition is boilerplate.
+It's very unfortunate that C++ @{type_info} is deficient
+and doesn't provide a way to obtain this information.
+
+Some allocator systems such as @{malloc_free} record
+the size of each allocation internally when @{malloc()} is called, 
+so that the size does not have to be provided when @{free()} is
+called. However most of our allocators do not store the size,
+and it must be provided to the @{deallocate()} method.
+
+As a final note which will alarm the astute 
+reader:  @{allocate()}, @{deallocate()}
+and the destructor do not have any specified semantics!
+
+You may think @{allocate()} should be required to return
+a pointer to some memory, but this is not so. The allocator
+may have run out of resources. It could return garbage
+or a @{nullptr.g}.
+
+Similarly @{deallocate} does not have to do anything
+in general. For example a <em>bump allocator</em> just
+bumps a pointer to perform an allocation and ignores
+any @{deallocate()} requests. Instead it may return
+a whole block of memory to its parent in the destructor.
+
+So, our objective is to provide a uniform interface,
+but the actual semantics depend on the concrete allocator
+actually constructed, and that includes data passed
+to the allocator, such the size of a block that it
+may be programmed to mahage.
+
+
+
+@tangle allocator.hpp
+struct allocator_t {
+  alloc_ref_t parent;
+
+  // these constructors can't be used directly by the public
+  // even though they're public, because this class is abstract
+
+  // parentless construction
+  allocator_t() : refcnt(1) {}
+
+  // construction by a parent
+  allocator_t(alloc_ref_t p) : parent(p), refcnt(1) {}
+
+  // destructor does nothing special but the parent will be destroyed
+  virtual ~allocator_t(){}
+
+  // must report the size in bytes of the object
+  virtual size_t size()const=0;
+
+protected:
+  // this is the only way to create a populated alloc_ref_t
+  // since it's protected, only classes derived from allocator_t can do it
+  static alloc_ref_t create(allocator_t *p) { return alloc_ref_t(p); }
+
+private:
+  friend class alloc_ref_t;
+
+  // these can only be accessed via an alloc_ref_t
+  ::std::atomic<size_t> refcnt;
+  
+  // self destruct
+  void suicide();
+
+  // memory management primitives
+  virtual void *allocate(size_t)=0;
+  virtual void deallocate(void *, size_t)=0;
+};
+@
+
+The parent of the allocator is publically available so that it can be
+used to create sibling objects; but it is immutable to ensure the correct
+allocator is used to recover the object's store.
+
+@h2 The smart pointer, part 2. 
+Now we have declared the reference count we can complete the
+smart pointer definition. The tricky bit is the destructor because
+it will decrement the reference count, and if the result is zero,
+it also has to delete the refered to allocator. We do that by asking
+the allocator to suicide. 
+
+@tangle allocator.hpp
+// lvalue copy 
+alloc_ref_t::alloc_ref_t(alloc_ref_t &p) {
+  if(p.allocator) ++p.allocator->refcnt;
+  allocator = p.allocator;
+}
+
+template<class T>
+void delete_csp_polymorphic_object (T *object, alloc_ref_t a) {
+  size_t n = object-> size();
+  object->~T(); 
+  a.deallocate(object, n); 
+}
+
+// NOTE: This method has the effect of saving the
+// parent during the allocator destructor execution
+void allocator_t::suicide() { 
+  delete_csp_polymorphic_object(this, parent); 
+}
+
+// destructor
+alloc_ref_t::~alloc_ref_t() {
+  if(allocator) {
+    if(allocator->refcnt.load() == 1) 
+      allocator->suicide();
+    else   
+      --allocator->refcnt;
+  }
+}
+
+void *alloc_ref_t::allocate(size_t n) { 
+  return allocator? allocator->allocate(n) : nullptr; 
+}
+void alloc_ref_t::deallocate(void *p, size_t n) { 
+  if(allocator) allocator->deallocate(p,n); 
+}
+@
+
+@h2 Concrete objects 
+The @{delete_csp_polymorphic_object()} function above will work
+for all our kind of polymorphic objects, but we need a method
+for non-polymorphic objects too.
+
+@tangle allocator.hpp
+template<class T>
+void delete_concrete_object (T *object, alloc_ref_t a) { 
+  object->~T(); 
+  a.deallocate(object, sizeof(T)); 
+};
+@
+
+@h2 Object Constructors
+Now we need the usual wrapper method for an allocator.
+
+@tangle allocator.hpp
+void *operator new(size_t amt, alloc_ref_t& a) { return a.allocate (amt); } 
+#endif
+@
+
+@h1 The malloc free allocators
+So here is our basic root alloctor:
+@tangle malloc_free.hpp
+#ifndef MALLOC_FREE
+#define MALLOC_FREE
+#include "allocator.hpp"
+struct malloc_free_allocator_t : public allocator_t {
+  size_t size()const override { return sizeof(*this); }
+  ~malloc_free_allocator_t() override { }
+
+  // factory function
+  static alloc_ref_t create() { 
+    return allocator_t::create( new malloc_free_allocator_t() ); 
+  }
+private:
+  malloc_free_allocator_t () : allocator_t() {} // no parent
+  void *allocate(size_t n) override { 
+    auto p = malloc(n); 
+    return p; 
+  }
+  void deallocate(void *p, size_t n) override { free(p); }
+};
+#endif
+@
+
+@h1 Bump allocators
+A bump allocator just bumps a pointer to some store on an allocation
+request. It ignores deallocations.
+
+There are several kinds of bump alloctor.
+
+@h2 Static bump allocator
+The static bump allocator is just passed a pointer to bump.
+There is no overrun check, deallocation requests are ignored,
+there is no parent, and the store is not freed
+
+@tangle bump.hpp
+#ifndef BUMP
+#define BUMP
+#include "allocator.hpp"
+struct static_bump_allocator_t : public allocator_t {
+  char *p;
+  static_bump_allocator_t (void *q) : allocator_t(), p((char *)q) {}
+  void *allocate(size_t n) override { void *q = p; p += n; return q; }
+  void deallocate(void *, size_t) override {}
+  size_t size()const override { return sizeof(*this); }
+
+  // factory function
+  static alloc_ref_t create(void *p) { 
+    return allocator_t::create (new static_bump_allocator_t (p)); 
+  }
+};
+@
+
+@h2 Dynamic bump allocator
+The dynamic bump allocator has a parent from which it requests a single
+store on construction, and never again.
+
+There is no overrun check, deallocation requests are ignored,
+but the destructor returns the store to the parent.
+
+@tangle bump.hpp
+struct dynamic_bump_allocator_t : public allocator_t {
+  void *base;
+  char *p;
+  size_t amt;
+  dynamic_bump_allocator_t (alloc_ref_t parent, size_t n) : 
+    allocator_t(parent), amt(n) {
+      base=parent.allocate(amt);
+      p = (char*)base;
+   }
+
+  void *allocate(size_t n) override { void *q = p; p += n; return q; }
+  void deallocate(void *, size_t) override {}
+  size_t size()const override { return sizeof(*this); } 
+  ~dynamic_bump_allocator_t() { parent.deallocate(base, amt); }
+
+  // factory function
+  static alloc_ref_t create(alloc_ref_t parent, size_t n) { 
+    return allocator_t::create( new dynamic_bump_allocator_t(parent, n) ); 
+  }
+};
+#endif
+@
+
+@h1 Block allocators
+A block allocator is one which can only supply a single block size,
+and so ignores the size parameter of an allocation requrest.
+However, deallocations put the argument block into a freelist
+which can be used to service a subsequent allocation request.
+
+The simplest variant is a bump allocator with an added freelist.
+
+@tangle block.hpp
+#ifndef BLOCK
+#define BLOCK
+#include "allocator.hpp"
+struct static_block_allocator_t : public allocator_t {
+  char *p;
+  void *freelist;
+  size_t block_size;
+
+  static_block_allocator_t (void *q, size_t n) : 
+    allocator_t(), p((char *)q), freelist(nullptr), block_size(n)
+  {}
+  void *allocate(size_t n) override { 
+    if(freelist) {
+      auto p = freelist;
+      freelist = *(void**)freelist;
+      return p;
+    }
+    else {
+      void *q = p;
+      p += block_size;
+      return q;
+    } 
+  }
+  void deallocate(void *q, size_t) override {
+    *(void**)q = freelist;
+    freelist = q;
+  }
+  size_t size()const override { return sizeof(*this); }
+
+  // factory function
+  static alloc_ref_t create(void *q, size_t n) { 
+    return allocator_t::create( new static_block_allocator_t(q, n)); 
+  }
+};
+#endif
+@
+
+@h1 Thread Safe allocator
+When we design allocators they're usually single thread only
+for performance reasons. Even in many multi-threaded applications 
+only a single thread can access a given allocator. But if we want
+to share an allocator, we can use a thread safety adaptor:
+
+@tangle ts_allocator.hpp
+#ifndef TS_ALLOCATOR
+#define TS_ALLOCATOR
+#include "allocator.hpp"
+struct ts_allocator_t : public allocator_t {
+  alloc_ref_t delegate;
+  ::std::atomic_flag lk;
+
+  ts_allocator_t (alloc_ref_t parent, alloc_ref_t d) : 
+     allocator_t(parent), delegate(d), lk(false) 
+  {}
+
+  void lock() { while(lk.test_and_set(::std::memory_order_acquire)); }
+  void unlock() { lk.clear(::std::memory_order_release); }
+
+  void *allocate(size_t n) override { 
+    lock(); 
+    void *result =  delegate.allocate(n); 
+    unlock(); 
+    return result; 
+  }
+  void deallocate(void *p, size_t n) override { 
+    lock(); 
+    delegate.deallocate(p,n); 
+    unlock(); 
+  }
+  size_t size()const override { return sizeof(*this); }
+
+  // factory function
+  static alloc_ref_t create(alloc_ref_t parent, alloc_ref_t delegate) { 
+    return allocator_t::create( new ts_allocator_t(parent, delegate)); 
+  }
+
+};
+#endif
+@
+This allocator simply delegates to a specified allocator, but does so inside
+the scope of a spinlock. Note that reference counts are already atomic.
+
+the destruction process is not protected because an allocator can only be
+destroyed when there is only a single reference left. Similarly,
+only a single thread can construct the allocator.
+
+@h1 Ring Buffers
+A ring buffer is an array with sequential indexing modulo the array size.
+An allocator can use an array of pointers to fixed sized blocks.
+The principal advantage of a ring buffer is that the allocation by 
+popping the tail and deallocation by pushing at the head can both
+be done without locks, by using the @{CAS} or @{compare_and_swap}
+operation.
+
+We have an array @{a} of size @{n} and
+two indices @{tail} and @{head}. The single threaded operation
+to allocate a block is
+@pre
+  void *pop() {
+    void *p = a[tail];
+    tail = (tail + 1) % n;
+    return p;
+  }
+@
+
+and to deallocate
+
+@pre
+  void push(void *p) {
+    a[head] = p;
+    head = (head + 1) % n;  
+  }
+@
+
+In general there is a danger the pop operation will advance past
+the head and fetch garbage, or that the push operation will advance
+past the tail, and overwrite a value leading to a leak.
+
+The first worry is dismissed by requiring the limit to the number
+of blocks that can be allocated at once be the array size n:
+the developer has to find a suitable bound for the code and ensure
+that n is big enough.
+
+The second worry can be dismissed by requiring only blocks
+allocated from this ring buffer can be deallocated.
+
+At worst, the head and tail can then be equal. If the buffer
+is full, the next operation must be an allocation, whereas
+if the buffer is empty, it must be a deallocation. Therefore
+we do not need to know if the buffer is full or empty.
+
+Now the operations we exhibited are not thread safe. So here is how
+we fix that. Consider @{pop} first. We first fetch the @{tail} variable
+to a local variable. Next, we fetch the array value at this location.
+Next, we create a new local variable, @{new_tail} which is the local
+copy of tail plus 1 modulo n.
+
+Now we do a compare and swap operation on tail, with the local copy
+of tail as the comparator, and the new tail as the value to be stored.
+The operation will store the new tail value into tail if and only if
+the current value is equal to the comparator and return true if it 
+succeeded or false otherwise.
+
+In the true case we're done and can return the fetched pointer,
+otherwise another thread got in there ahead of us, and we loop around
+and retry the whole operation.
+
+Although this is a spin loop, the critical difference is that the compare
+and store are uninterruptable, whereas a thread holding a lock can be
+pre-empted leaving the lock held, and preventing any progress until
+the lock holding thread is resumed.
+
+The @{push} operation is similar. We can observe that these operations
+are independent and could occur simultaneously.
+
+In general, ring buffer operations as described can fail, and obviously
+cannot be lock free: extra code is needed to prevent over or underflow.
+However by specification neither of these things can happen in our application.
+
+It should be noted that whilst our operations are lock free, this only means
+at least one thread is always making progress. A particular thread my spin 
+forever if it loses the race every time it tries. Therefore, the operations
+are not in fact real time, since all real time operations must be bounded.
+
+There is, however, a way to obtain real time behaviour, by introducing
+a delay in a thread after every success of sufficient length. In this
+case eventually all contenders but the last will be delayed and the last
+contender will then succeed. The delay can be simple counted spinloop.
+
+However in most applications, for most operations,
+there is no need for an artificial delay to be introduced,
+because most threads will have sufficient work to do before the
+next request anyhow. Care needs to be taken if threads are running
+very tight loops requiring lots of allocations and deallocations;
+in particular a loop which simply allocates a block and then 
+immediately deallocates it would cause a problem.
+
+Such cases probably won't occur in real programs, but almost
+certainly <em>will</em> occur in test cases!
+
+@tangle ring_allocator.hpp
+#ifndef RING_ALLOCATOR
+#define RING_ALLOCATOR
+
+#include "allocator.hpp"
+// client request entry: client needs n_blocks of size block_size
+struct mem_req_t {
+  size_t block_size;
+  size_t n_blocks;
+  size_t array_bytes () const { return n_blocks * sizeof(void*); }
+  size_t memory_bytes () const { return n_blocks * block_size; }
+};
+
+struct ring_buffer_t : public allocator_t {
+  void **buffer; // the array of pointers
+  ::std::atomic<size_t> head;
+  ::std::atomic<size_t> tail;
+  mem_req_t mreq;
+
+  // the constructor needs a parent to get memory arena from
+  // and a specification of the number and size of blocks
+  ring_buffer_t (alloc_ref_t parent, mem_req_t req) : mreq(req), head(0), tail(0) {
+    buffer = (void**) parent.allocate (req.array_bytes() + req.memory_bytes() );
+
+    // initialise buffer array with pointers to memory blocks
+    void *memory = (char*) buffer + req.array_bytes();
+    for(size_t n =  0; n < req.n_blocks; ++n) {
+      buffer[n] = memory;
+      memory = (char*)memory + req.block_size;
+    }
+  }
+
+  // the tail points at a populated spot
+  void *allocate(size_t) override {
+      size_t old_tail = tail.load(::std::memory_order_relaxed);
+    retry:
+      size_t new_tail = (old_tail + 1) % mreq.n_blocks;
+      if(!tail.compare_exchange_weak(old_tail, new_tail)) goto retry;
+      return buffer[old_tail];
+  }
+
+  // the head points at a free slot
+  void deallocate(void *p, size_t) override {
+      size_t old_head = head.load(::std::memory_order_relaxed);
+    retry:
+      size_t new_head= (old_head + 1) % mreq.n_blocks;
+      if(!head.compare_exchange_weak(old_head, new_head)) goto retry;
+      buffer[old_head] = p;
+  }
+
+  // destructor returns store to parent
+  ~ring_buffer_t() { parent.deallocate(buffer, mreq.array_bytes() + mreq.memory_bytes() ); } 
+
+  // our size in bytes
+  size_t size() const override { return sizeof(*this); }
+
+  // factory function
+  static alloc_ref_t create(alloc_ref_t parent, mem_req_t req) { 
+    return allocator_t::create (new ring_buffer_t (parent, req)); 
+  }
+
+};
+#endif
+@
+
+@h1 test
+@tangle test01.cxx
+#include <iostream>
+using namespace std;
+
+#include "allocator.hpp"
+#include "malloc_free.hpp"
+#include "bump.hpp"
+#include "block.hpp"
+#include "ts_allocator.hpp"
+#include "ring_allocator.hpp"
+
+int main () {
+ cout << "Hello World" << endl; 
+ auto a1 = malloc_free_allocator_t::create();
+ auto a2 = dynamic_bump_allocator_t::create(a1, 1000);
+ unsigned char block_buffer[1000];
+ auto a3 = static_block_allocator_t::create(block_buffer, 100);
+ auto a4 = ts_allocator_t::create(a3, a2);
+ auto a5 = ring_buffer_t::create( a1, mem_req_t { 100,100 });  
+}
