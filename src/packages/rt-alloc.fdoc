@@ -6,7 +6,12 @@
 @tangler ts_allocator.hpp = share/lib/rtl/rt/ts_allocator.hpp
 @tangler ring_allocator.hpp = share/lib/rtl/rt/ring_allocator.hpp
 @tangler system_allocator.hpp = share/lib/rtl/rt/system_allocator.hpp
+@tangler statistics_allocator.hpp = share/lib/rtl/rt/statistics_allocator.hpp
+
+
 @tangler test01.cxx = $PWD/test01.cxx
+
+
 @h1 Real Time Allocators
 In programming systems including C and C++, user space allocation is usually handled
 by a universal allocator such as @{malloc()}. The operation time and memory consumption
@@ -415,8 +420,8 @@ struct static_bump_allocator_t : public allocator_t {
   size_t size()const override { return sizeof(*this); }
 
   // factory function
-  static alloc_ref_t create(void *p) { 
-    return allocator_t::create (new static_bump_allocator_t (p)); 
+  static alloc_ref_t create(void *parent) { 
+    return allocator_t::create (new(parent) static_bump_allocator_t (parent)); 
   }
 };
 @
@@ -446,7 +451,7 @@ struct dynamic_bump_allocator_t : public allocator_t {
 
   // factory function
   static alloc_ref_t create(alloc_ref_t parent, size_t n) { 
-    return allocator_t::create( new dynamic_bump_allocator_t(parent, n) ); 
+    return allocator_t::create( new(parent) dynamic_bump_allocator_t(parent, n) ); 
   }
 };
 #endif
@@ -459,6 +464,8 @@ However, deallocations put the argument block into a freelist
 which can be used to service a subsequent allocation request.
 
 The simplest variant is a bump allocator with an added freelist.
+BUG: this won't compile because there's no parent.
+The current situation is that if there's no parent the C++ new is used.
 
 @tangle block.hpp
 #ifndef BLOCK
@@ -492,7 +499,7 @@ struct static_block_allocator_t : public allocator_t {
 
   // factory function
   static alloc_ref_t create(void *q, size_t n) { 
-    return allocator_t::create( new static_block_allocator_t(q, n)); 
+    return allocator_t::create( new(parent) static_block_allocator_t(q, n)); 
   }
 };
 #endif
@@ -534,7 +541,7 @@ struct ts_allocator_t : public allocator_t {
 
   // factory function
   static alloc_ref_t create(alloc_ref_t parent, alloc_ref_t delegate) { 
-    return allocator_t::create( new ts_allocator_t(parent, delegate)); 
+    return allocator_t::create( new(parent) ts_allocator_t(parent, delegate)); 
   }
 
 };
@@ -696,7 +703,7 @@ struct ring_buffer_t : public allocator_t {
 
   // factory function
   static alloc_ref_t create(alloc_ref_t parent, mem_req_t req) { 
-    return allocator_t::create (new ring_buffer_t (parent, req)); 
+    return allocator_t::create (new(parent) ring_buffer_t (parent, req)); 
   }
 };
 #endif
@@ -709,6 +716,8 @@ This is the main allocator.
 #ifndef SYSTEM_ALLOCATOR
 #define SYSTEM_ALLOCATOR
 #include <vector>
+#include <algorithm>
+
 #include "ring_allocator.hpp"
 
 // FIXME: WARNING: the system allocator MUST BE CONSTRUCTED AT STARTUP
@@ -744,7 +753,7 @@ struct system_allocator_t : public allocator_t {
  
   // factory function
   static alloc_ref_t create(alloc_ref_t parent, ::std::vector<mem_req_t> reqs) { 
-    return allocator_t::create (new system_allocator_t (parent, reqs)); 
+    return allocator_t::create (new(parent) system_allocator_t (parent, reqs)); 
   }
 };
 
@@ -753,9 +762,13 @@ struct system_allocator_t : public allocator_t {
 ::std::vector<mem_req_t> fixup (::std::vector<mem_req_t> input) {
   ::std::vector<mem_req_t> output;
   for (auto req : input) {
+//::std::cout << "Handling req " << req.block_size << ::std::endl;
     for( int idx = 0; idx <= output.size(); ++idx) {
       // past last element
-      if(idx == output.size()) output.push_back(req);
+      if(idx == output.size()) {
+        output.push_back(req);
+        break;
+      }
 
       // found equal so add to block count
       else if(req.block_size == output[idx].block_size) {
@@ -770,10 +783,87 @@ struct system_allocator_t : public allocator_t {
       }
     }
   }
+::std::cout << "DONE" << ::std::endl;
+  ::std::reverse(output.begin(), output.end());
   return output;
 }
 
 
+#endif
+@
+@h1 Statictics Allocator
+A delegating allocator that gathers statistics for the system allocator
+
+// saves statistics to a file
+// stats saved: max allocation at any one time for each block size
+
+
+@tangle statistics_allocator.hpp
+#ifndef STATISTICS_ALLOCATOR
+#define STATISTICS_ALLOCATOR
+
+#include <cstddef>
+#include <cstdio>
+#include <iostream>
+#include <map>
+#include "allocator.hpp"
+
+struct statistics_allocator_t : public allocator_t {
+  alloc_ref_t delegate;
+
+  char const *filename;
+  using stat_t = ::std::map<size_t, ::std::pair<size_t,size_t> >;
+  using stat_rec_t = stat_t::value_type;
+  stat_t stats;
+
+  statistics_allocator_t(alloc_ref_t parent, alloc_ref_t delegat, char const *tg ) : 
+    filename(tg), allocator_t(parent), delegate(delegat) 
+  { ::std::cout << "Statistics to " << tg << ::std::endl; }
+
+  virtual size_t size()const override { return sizeof(*this); }
+
+  void *allocate(size_t n) override { 
+    auto p = delegate.allocate(n);
+    auto loc = stats.find(n);
+    if(loc == stats.end()) {
+      stat_rec_t rec = {n, {1, 1}};
+      stats.insert(rec);
+    } 
+    else {
+      auto rec = *loc;
+      rec.second.first++;
+      if(rec.second.first> rec.second.second) rec.second.second = rec.second.first; // max allocated
+      stats[n] = rec.second;
+    }
+    return p;
+  }
+  void deallocate(void *p, size_t n) override { 
+    delegate.deallocate(p,n);
+    auto loc = stats.find(n);
+    if(loc == stats.end()) {
+      ::std::cerr << "Deallocate block of size " << n << " but that size block has never been allocated" << ::std::endl;
+      //::std::abort();
+      return;
+    }
+    auto rec = *loc;
+    rec.second.first--;
+    if(rec.second.first> rec.second.second) rec.second.second = rec.second.first; // max allocated
+    stats[n] = rec.second;
+  }
+
+  ~statistics_allocator_t() override {
+    auto outfile = ::std::fopen(filename,"w");
+    ::std::cerr << "Stats written to " << filename << ::std::endl;
+    for (auto rec : stats)
+      ::std::fprintf(outfile, "%8lu: %8lu\n",rec.first, rec.second.second);
+    ::std::fclose(outfile);
+  }
+
+  static alloc_ref_t create(alloc_ref_t parent, alloc_ref_t delegate, char const *filename) {
+    return allocator_t::create (new statistics_allocator_t (parent, delegate, filename));
+  }
+
+};
 #endif
 @
 
@@ -789,6 +879,7 @@ using namespace std;
 #include "ts_allocator.hpp"
 #include "ring_allocator.hpp"
 #include "system_allocator.hpp"
+#include "statistics_allocator.hpp"
 
 int main () {
   cout << "Hello World" << endl; 
@@ -805,11 +896,12 @@ int main () {
     mem_req_t{128, 10},
     mem_req_t{256, 10}
   };
-  auto a6 = system_allocator_t(a1, config);
+  auto a6 = system_allocator_t::create(a1, config);
+  auto a7 = statistics_allocator_t::create(a1,a6,"stats.txt");
   for (int z : { 18,  43, 75 }) {
     cout << "Request size " << z << endl;
     for(int i = 0; i < 6; ++i) {
-      void *p = a6.allocate (z);
+      void *p = a7.allocate (z);
       cout << "allocation " << i << " -> " << p << endl;
     }
   }

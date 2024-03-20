@@ -11,6 +11,8 @@
 @tangler fibre.hpp = share/lib/rtl/rt/fibre.hpp
 @tangler system.hpp = share/lib/rtl/rt/system.hpp
 
+@tangler csp_01.cxx = $PWD/csp_01.cxx
+
 @title Channel Abstraction
 
 @h1 Continuations
@@ -229,7 +231,7 @@ struct channel_t {
   ::std::atomic_size_t refcnt;
   fibre_t *top;
   
-  channel_t () : top (nullptr), refcnt(1) {}
+  channel_t () : top (nullptr), refcnt(0) {}
   virtual ~channel_t(){ 
     //::std::cerr << "channel " << this << " destructor" << ::std::endl; 
   }
@@ -240,20 +242,6 @@ struct channel_t {
 
   // required for the polymorphic deleter
   virtual size_t size() const = 0;
-
-  // push a fibre as a reader: precondition it must be a reader
-  // and, if the channel is non-empty it must contain only readers
-  virtual void push_reader(fibre_t *r)=0;
-
-  // push a fibre as a writer: precondition it must be a writer
-  // and, if the channel is non-empty it must contain only writers
-  virtual void push_writer(fibre_t *w)=0;
-
-  // pop a reader if there is one, otherwise nullptr
-  virtual fibre_t *pop_reader()=0;
-
-  // pop a writer if there is one, otherwise nullptr
-  virtual fibre_t *pop_writer()=0;
 
   virtual void signal()=0;
 
@@ -365,7 +353,7 @@ struct channel_endpoint_t {
   }
 
   ~channel_endpoint_t () {
-// ::std::cerr << "Channel endpoint " << this << " destructor, channel " <<  channel << ", refcnt " << channel->refcnt.load() << ::std::endl; 
+ //::std::cerr << "Channel endpoint " << this << " destructor, channel " <<  channel << ", refcnt " << channel->refcnt.load() << ::std::endl; 
     switch (channel->refcnt.load()) {
       case 0: break;
       case 1: delete_channel(); break;
@@ -374,7 +362,7 @@ struct channel_endpoint_t {
   }
 
   void delete_channel() {
- ::std::cerr << "Delete channel " << channel << ", refcnt " << channel->refcnt.load() << ::std::endl;
+ //::std::cerr << "Delete channel " << channel << ", refcnt " << channel->refcnt.load() << ::std::endl;
     fibre_t *top = channel->top;
     channel->top = nullptr;
     channel->refcnt.store(0);
@@ -490,11 +478,6 @@ struct sequential_channel_t : channel_t {
   sequential_channel_t () : channel_t() {}
 
   size_t size() const override { return sizeof(sequential_channel_t); }
-  void push_reader(fibre_t *r) override { st_push_reader(r); } 
-  void push_writer(fibre_t *w) override  { st_push_writer(w); }
-  fibre_t *pop_reader() override  { return st_pop_reader(); }
-  fibre_t *pop_writer() override  { return st_pop_writer(); }
-
   void signal() override  {} 
 
   void read(void **target, fibre_t **pcurrent) override  {
@@ -585,30 +568,8 @@ struct concurrent_channel_t : sequential_channel_t {
 
   size_t size() const override { return sizeof(concurrent_channel_t); }
 
-  void push_reader(fibre_t *r) override { 
-    lock();
-    st_push_reader(r); 
-    unlock();
-  } 
-  void push_writer(fibre_t *w) override { 
-    lock();
-    st_push_writer(w); 
-    unlock();
-  }
-  fibre_t *pop_reader() override {
-    lock();
-    auto r = st_pop_reader();
-    unlock(); 
-    return r;
-  }
-  fibre_t *pop_writer() override {
-    lock();
-    auto w = st_pop_writer();
-    unlock();
-    return w;
-  }
-
   void read(void **target, fibre_t **pcurrent) override {
+//::std::cout << "read on " << this << ::std::endl;
     fibre_t *current = *pcurrent;
     lock();
     fibre_t *w = st_pop_writer();
@@ -626,6 +587,7 @@ struct concurrent_channel_t : sequential_channel_t {
         delete_concrete_object(current,current->process->process_allocator);
       } else {
         --refcnt;
+   //::std::cout<< "do_read: fibre " << current << ", set channel "<< this <<" recnt to " << refcnt << ::std::endl;
         st_push_reader(current);
         unlock();
         *pcurrent = current->process->pop(); // active list
@@ -634,6 +596,7 @@ struct concurrent_channel_t : sequential_channel_t {
   }
 
   void write(void **source, fibre_t **pcurrent) override {
+//::std::cout << "write on " << this << ::std::endl;
     fibre_t *current = *pcurrent;
     lock();
     fibre_t *r = st_pop_reader();
@@ -657,7 +620,7 @@ struct concurrent_channel_t : sequential_channel_t {
         delete_concrete_object(current,current->process->process_allocator);
       } else {
         --refcnt;
-  // ::std::cout<< "do_write: fibre " << current << ", set channel "<< chan <<" recnt to " << chan->refcnt << ::std::endl;
+   //::std::cout<< "do_write: fibre " << current << ", set channel "<< this <<" recnt to " << refcnt << ::std::endl;
         st_push_writer(current); // i/o fail: push current onto channel
         unlock();
         *pcurrent = current->process->pop(); // reset current from active list
@@ -1188,4 +1151,300 @@ fibre_t::~fibre_t()
 #endif
 @
 
+@h1 Simple test case 1
+@tangle csp_01.cxx
+#include <iostream>
+#include <cassert>
+#include <list>
 
+
+#include "csp.hpp"
+#include "statistics_allocator.hpp"
+
+//#include "chips.hpp"
+
+// TEST CASE
+
+struct hello : coroutine_t {
+
+  CSP_RESUME_START
+    ::std::cerr << "Hello World" << ::std::endl;
+    CSP_COSUICIDE
+  CSP_RESUME_END
+  CSP_SIZE
+};
+
+
+struct producer : coroutine_t {
+  ::std::list<int> *plst;
+  ::std::list<int>::iterator it;
+  chan_epref_t out;
+  union {
+    void *iodata;
+    int value;
+  };
+  io_request_t w_req;
+
+  ~producer() { }
+
+  CSP_CODEF_START
+    ::std::list<int> *plst_a,
+    chan_epref_t outchan_a
+  CSP_CODEF_MID
+    plst = plst_a;
+    out = outchan_a;
+  CSP_CODEF_END
+
+  CSP_RESUME_START
+    it = plst->begin();
+    SVC_WRITE_REQ(&w_req,&out,&iodata);
+
+  case 1:
+    if(it == plst->end()) { 
+      CSP_COSUICIDE
+    }
+    value = *it++;
+    pc = 1;
+    SVC(&w_req)
+
+  CSP_RESUME_END
+  CSP_SIZE
+};
+
+struct consumer: coroutine_t {
+  ::std::list<int> *plst;
+  union {
+    void *iodata;
+    int value;
+  };
+  io_request_t r_req;
+  chan_epref_t inp;
+
+  ~consumer() {}
+
+  CSP_CODEF_START
+    ::std::list<int> *plst_a,
+    chan_epref_t inchan_a
+  CSP_CODEF_MID
+    plst = plst_a;
+    inp = inchan_a;
+  CSP_CODEF_END
+
+  CSP_RESUME_START  
+    SVC_READ_REQ(&r_req,&inp,&iodata)
+
+  case 1:
+    SVC(&r_req)
+
+  case 2:
+    ::std::cerr << "Consumer gets " << value << ::std::endl;
+    plst->push_back(value);
+    CSP_GOTO(1)
+
+  CSP_RESUME_END
+  CSP_SIZE
+};
+
+struct square : subroutine_t {
+  int inp;
+  int *pout;
+
+  square(fibre_t *f) : subroutine_t(f) {}
+ 
+  CSP_CALLDEF_START,
+    int *pout_a,
+    int inp_a
+  CSP_CALLDEF_MID
+    pout = pout_a;
+    inp = inp_a;
+  CSP_CALLDEF_END
+
+  CSP_RESUME_START
+    *pout = inp * inp;
+    {
+      con_t *tmp = caller;
+      delete_concrete_object(this, fibre->process->process_allocator);
+      return tmp;
+    }
+  CSP_RESUME_END
+  CSP_SIZE
+};
+
+
+struct transducer: coroutine_t {
+  union {
+    void *iodata;
+    int value;
+  };
+  io_request_t r_req;
+  io_request_t w_req;
+  chan_epref_t inp;
+  chan_epref_t out;
+
+  ~transducer() {}
+
+  CSP_CODEF_START
+    chan_epref_t inchan_a,
+    chan_epref_t outchan_a
+  CSP_CODEF_MID 
+    inp = inchan_a;
+    out = outchan_a;
+  CSP_CODEF_END
+  
+  CSP_RESUME_START
+    SVC_READ_REQ(&r_req,&inp,&iodata)
+    SVC_WRITE_REQ(&w_req,&out,&iodata)
+
+  case 1:
+    SVC(&r_req)
+
+  case 2:
+    //CSP_CALL_DIRECT2(square,&value,value)
+    return (new(fibre->process->process_allocator) square(fibre))->call(this,&value,value);
+
+  case 3:
+    pc = 1;
+    SVC(&w_req)
+
+  CSP_RESUME_END
+  CSP_SIZE
+};
+
+
+struct init: coroutine_t {
+  ::std::list<int> *inlst;
+  ::std::list<int> *outlst;
+  spawn_fibre_request_t spawn_req;
+  chan_epref_t ch1out;
+  chan_epref_t ch1inp;
+  chan_epref_t ch2out;
+  chan_epref_t ch2inp;
+  chan_epref_t clock_connection;
+  io_request_t clock_req;
+  double waituntil;
+  double *pwaituntil;
+  ::std::shared_ptr<csp_clock_t> clock;
+
+  ~init() {}
+
+  // store parameters in
+  CSP_CODEF_START
+    ::std::list<int> *lin,
+    ::std::list<int> *lout
+  CSP_CODEF_MID
+    inlst = lin;
+    outlst = lout;
+  CSP_CODEF_END
+
+  CSP_RESUME_START
+    ch1out = make_concurrent_channel(fibre->process->system->system_allocator);
+    ch1inp = ch1out->dup(); 
+    ch2out = make_concurrent_channel(fibre->process->system->system_allocator);
+    ch2inp = ch2out->dup();
+ 
+    SVC_SPAWN_FIBRE_DEFERRED_REQ(&spawn_req, (new(fibre->process->process_allocator) producer)->setup(inlst, ch1out))
+    SVC(&spawn_req)
+ 
+  case 1:
+    SVC_SPAWN_FIBRE_DEFERRED_REQ(&spawn_req, (new(fibre->process->process_allocator) transducer)->setup(ch1inp, ch2out))
+    SVC(&spawn_req)
+ 
+  case 2:
+    SVC_SPAWN_FIBRE_DEFERRED_REQ(&spawn_req, (new(fibre->process->process_allocator) consumer)->setup(outlst,ch2inp))
+    SVC(&spawn_req)
+ 
+  case 3:
+    SVC_SPAWN_FIBRE_DEFERRED_REQ(&spawn_req, (new(fibre->process->process_allocator) hello))
+    SVC(&spawn_req)
+  case 4:
+/*
+    { 
+      clock = make_clock(fibre->process->system);
+      clock->start();
+      //::std::cerr << "Clock started, time is " << clock->now() << ::std::endl;
+      clock_connection = clock->connect();
+      //::std::cerr << "Got connection" << ::std::endl;
+      {
+        double rightnow = clock->now();
+        waituntil = rightnow + 12.10;
+        //::std::cerr << ::std::fixed << "Wait until" << waituntil << " for " << waituntil - rightnow << " seconds" << ::std::endl;
+      }
+      //::std::cerr << "Alarm time " << waituntil << ", stored at " << &waituntil
+      //  << "=" << pwaituntil << " which is stored at " << &pwaituntil << ::std::endl;
+      pwaituntil = &waituntil;
+      SVC_WRITE_REQ(&clock_req,&clock_connection,&pwaituntil);
+      ::std::cerr<<"****** INIT Sleeping ********" << ::std::endl;
+    }
+// too early to signal
+// need different kind of channel w. cv
+    SVC(&clock_req)
+// too late to signal
+  case 5:
+    // if this doesn't print, we didn't resume after the sleep correctly
+*/
+    ::std::cerr<<"****** INIT Sleep Over ********" << ::std::endl;
+    CSP_COSUICIDE
+
+
+  CSP_RESUME_END
+  CSP_SIZE
+}; // init class
+
+#include <iostream>
+
+int main() {
+  // create the input list
+  ::std::list<int> inlst;
+  for (auto i = 0; i < 20; ++i) inlst.push_back(i);
+
+  // empty output list
+  ::std::list<int> outlst;
+
+  {
+    ::std::vector<mem_req_t> reqs;
+    reqs.push_back(mem_req_t {sizeof(hello),50});
+    reqs.push_back(mem_req_t {sizeof(producer),50});
+    reqs.push_back(mem_req_t {sizeof(transducer),50});
+    reqs.push_back(mem_req_t {sizeof(consumer),50});
+    reqs.push_back(mem_req_t {sizeof(init),50});
+    reqs.push_back(mem_req_t {sizeof(square),50});
+    reqs.push_back(mem_req_t {256,50});
+    reqs.push_back(mem_req_t {512,50});
+
+    ::std::cout << "N reqs = " << reqs.size() << ::std::endl;
+    auto fixed_reqs = fixup(reqs); 
+    ::std::cout << "fixed up N reqs = " << fixed_reqs.size() << ::std::endl;
+    for(auto req : fixed_reqs) ::std::cout << req.block_size << " x " << req.n_blocks << ::std::endl;
+    // bootstrap allocator
+    alloc_ref_t malloc_free = malloc_free_allocator_t::create(); // parent C++ allocator
+/*
+    //alloc_ref_t malloc_free_debugger = new(malloc_free) debugging_allocator_t(malloc_free, malloc_free, "Malloc");
+
+
+    // system allocator
+    alloc_ref_t system_allocator_delegate = new(malloc_free_debugger) system_allocator_t(malloc_free_debugger,malloc_free_debugger, reqs);
+    alloc_ref_t system_allocator_debugger = new(malloc_free_debugger) debugging_allocator_t(malloc_free_debugger, system_allocator_delegate, "Sys");
+    alloc_ref_t system_allocator = new(malloc_free_debugger) statistics_allocator_t( malloc_free_debugger, system_allocator_debugger, "Sysalloc.stats.txt");
+
+
+    // initial process will use the system allocator
+    alloc_ref_t process_allocator = system_allocator;
+*/
+    alloc_ref_t x = system_allocator_t::create(malloc_free, fixed_reqs);
+    alloc_ref_t system_allocator = statistics_allocator_t::create(malloc_free, x, "xstats.txt");
+    alloc_ref_t process_allocator = system_allocator;
+
+    // creates the clock too
+    system_t *system = new system_t(system_allocator);
+::std::cout << "STARTING" << ::std::endl;
+    csp_run(system, process_allocator, (new(process_allocator) init)->setup(&inlst, &outlst));
+::std::cerr << "RUN COMPLETE" << ::std::endl;
+    delete system;
+  }
+
+  // the result is now in the outlist so print it
+  ::std::cerr<< "main: +++++++++ List of squares:" << ::std::endl;
+  for(auto v : outlst) ::std::cerr << v << ::std::endl;
+  ::std::cerr<< "main: +++++++++ Done" << ::std::endl;
+} 
+@
