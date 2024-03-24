@@ -6,7 +6,9 @@
 @tangler ts_allocator.hpp = share/lib/rtl/rt/ts_allocator.hpp
 @tangler ring_allocator.hpp = share/lib/rtl/rt/ring_allocator.hpp
 @tangler system_allocator.hpp = share/lib/rtl/rt/system_allocator.hpp
+
 @tangler statistics_allocator.hpp = share/lib/rtl/rt/statistics_allocator.hpp
+@tangler counting_allocator.hpp = share/lib/rtl/rt/counting_allocator.hpp
 
 
 @tangler test01.cxx = $PWD/test01.cxx
@@ -464,8 +466,10 @@ However, deallocations put the argument block into a freelist
 which can be used to service a subsequent allocation request.
 
 The simplest variant is a bump allocator with an added freelist.
-BUG: this won't compile because there's no parent.
-The current situation is that if there's no parent the C++ new is used.
+
+Note, this is a root allocator. It is passed a pointer to a single 
+memory extent. The allocator itself is allocated at the start
+of this block.
 
 @tangle block.hpp
 #ifndef BLOCK
@@ -499,7 +503,8 @@ struct static_block_allocator_t : public allocator_t {
 
   // factory function
   static alloc_ref_t create(void *q, size_t n) { 
-    return allocator_t::create( new(parent) static_block_allocator_t(q, n)); 
+    void *data_block = (char*)q + sizeof(static_block_allocator_t);
+    return allocator_t::create( new(q) static_block_allocator_t(data_block, n)); 
   }
 };
 #endif
@@ -867,6 +872,52 @@ struct statistics_allocator_t : public allocator_t {
 #endif
 @
 
+@h1 Counting allocator
+Counts allocations and deallocations.
+
+@tangle counting_allocator.hpp
+#ifndef COUNTING_ALLOCATOR
+#define COUNTING_ALLOCATOR
+#include "allocator.hpp"
+
+struct counting_allocator_t : public allocator_t {
+  alloc_ref_t delegate;
+  size_t allocations;
+  size_t deallocations;
+
+  char const *filename;
+
+  counting_allocator_t(alloc_ref_t parent, alloc_ref_t delegat, char const *tg ) : 
+    filename(tg), allocator_t(parent), delegate(delegat), allocations(0), deallocations(0) 
+  { ::std::cout << "Counts to " << tg << ::std::endl; }
+
+  virtual size_t size()const override { return sizeof(*this); }
+
+  void *allocate(size_t n) override {
+    ++allocations; 
+    return delegate.allocate(n);
+  }
+  void deallocate(void *p, size_t n) override { 
+    ++deallocations;
+    delegate.deallocate(p,n);
+  }
+
+  ~counting_allocator_t() override {
+    auto outfile = ::std::fopen(filename,"w");
+    ::std::cerr << "Counts written to " << filename << ::std::endl;
+    ::std::fprintf(outfile, "Allocations: %8lu, Deallocations: %8lu\n",allocations, deallocations);
+    ::std::fclose(outfile);
+  }
+
+  static alloc_ref_t create(alloc_ref_t parent, alloc_ref_t delegate, char const *filename) {
+    return allocator_t::create (new counting_allocator_t (parent, delegate, filename));
+  }
+
+};
+#endif
+@
+
+
 @h1 test
 @tangle test01.cxx
 #include <iostream>
@@ -880,6 +931,7 @@ using namespace std;
 #include "ring_allocator.hpp"
 #include "system_allocator.hpp"
 #include "statistics_allocator.hpp"
+#include "counting_allocator.hpp"
 
 int main () {
   cout << "Hello World" << endl; 
@@ -898,10 +950,11 @@ int main () {
   };
   auto a6 = system_allocator_t::create(a1, config);
   auto a7 = statistics_allocator_t::create(a1,a6,"stats.txt");
+  auto a8 = counting_allocator_t::create(a1,a7,"counts.tst");
   for (int z : { 18,  43, 75 }) {
     cout << "Request size " << z << endl;
     for(int i = 0; i < 6; ++i) {
-      void *p = a7.allocate (z);
+      void *p = a8.allocate (z);
       cout << "allocation " << i << " -> " << p << endl;
     }
   }
