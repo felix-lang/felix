@@ -9,7 +9,8 @@
 
 @tangler statistics_allocator.hpp = share/lib/rtl/rt/statistics_allocator.hpp
 @tangler counting_allocator.hpp = share/lib/rtl/rt/counting_allocator.hpp
-
+@tangler rt-alloc.flx = share/lib/std/rt/allocators.flx 
+@tangler test02.flx = $PWD/test02.flx
 
 @tangler test01.cxx = $PWD/test01.cxx
 
@@ -423,7 +424,11 @@ struct static_bump_allocator_t : public allocator_t {
 
   // factory function
   static alloc_ref_t create(void *parent) { 
-    return allocator_t::create (new(parent) static_bump_allocator_t (parent)); 
+    return allocator_t::create (
+       new(parent) static_bump_allocator_t (
+         (char*)parent + sizeof(static_bump_allocator_t)
+       )
+    ); 
   }
 };
 @
@@ -717,6 +722,41 @@ struct ring_buffer_t : public allocator_t {
 @h1 SYSTEM ALLOCATOR
 This is the main allocator.
 
+@h2 Notes
+This version of the allocator has no provision for allocating store larger
+than the maximum allowed block size. A second delagate could be provided
+for this case.
+
+This version of the allocator is only suitable for construction at
+program startup on a hosted system because it uses a @{::std::vector}
+of @{mem_req_t} for the constructor. A C array should be used
+in an embedded environment.
+
+This version of the allocator uses a simple linear search to
+find the allocator of the smallest block size great than or
+equal to the request. A binary chop would be faster for a 
+medium number of sizes. A Judy array would be even faster.
+
+However, a crude trie would probably be a good compromise
+for which we split the search into blocks less than
+and greater than size 256 with a simple test on the second
+lowest byte. The reason is, the number of block sizes
+should almost always be kept small.
+
+The reason for that is that as blocks of various sizes get allocated
+and deallocated, sharing the blocks for close sizes is likely to yield
+much better memory utilisation. At this time I have no idea how to
+find an optimal set of block sizes, it is almost certainly application
+dependent.
+
+The sizes used can be initially guessed at using 
+the @{statistics_allocator} and @{malloc_free}.
+
+A large number of run time balancing operations could
+be considered if hard bounds are not required and memory
+use is critical.
+
+
 @tangle system_allocator.hpp
 #ifndef SYSTEM_ALLOCATOR
 #define SYSTEM_ALLOCATOR
@@ -724,13 +764,6 @@ This is the main allocator.
 #include <algorithm>
 
 #include "ring_allocator.hpp"
-
-// FIXME: WARNING: the system allocator MUST BE CONSTRUCTED AT STARTUP
-// BECAUSE it uses std::vector, which does dynamic allocation
-// using C++ standard allocator
-
-// We really should use a C array but this version will suffice
-// for testing
 
 struct system_allocator_t : public allocator_t {
   ::std::vector<mem_req_t> reqs;
@@ -959,3 +992,101 @@ int main () {
     }
   }
 }
+@
+@h1 Felix interface
+@tangle rt-alloc.flx
+type alloc_ref_t = "alloc_ref_t" requires header '#include "rt/allocator.hpp"';
+fun allocate: alloc_ref_t * size -> address = "$1.allocate($2)";
+proc deallocate: alloc_ref_t * address * size = "$1.deallocate($2, $3);";
+
+fun malloc_free_allocator: 1 -> alloc_ref_t = 
+  "malloc_free_allocator_t::create()"
+  requires header '#include "rt/malloc_free.hpp"'
+;
+fun static_bump_allocator: address -> alloc_ref_t = 
+  "static_bump_allocator_t::create($1)"
+  requires header '#include "rt/bump.hpp"'
+;
+fun dynamic_bump_allocator: alloc_ref_t * size -> alloc_ref_t = 
+  "dynamic_bump_allocator_t::create($1,$2)"
+  requires header '#include "rt/bump.hpp"'
+;
+fun static_block_allocator: address * size -> alloc_ref_t = 
+  "static_block_allocator_t::create($1,$2)"
+  requires header '#include "rt/block.hpp"'
+;
+fun ts_allocator: alloc_ref_t * alloc_ref_t -> alloc_ref_t =
+  "ts_allocaator_t::create($1, $2)"
+  requires header '#include "rt/ts_allocator.hpp"'
+;
+cstruct mem_req_t {
+  block_size: size;
+  n_blocks: size;
+};
+fun ring_buffer: alloc_ref_t * mem_req_t -> alloc_ref_t =
+  "ring_buffer_t::create($1, $2)"
+  requires header '#include "rt/ring_allocator.hpp"'
+;
+
+// std::vector of mem_req_t
+type mem_req_vect_t = "::std::vector<mem_req_t>"
+  requires Cxx_headers::vector
+;
+proc push_back: &mem_req_vect_t * mem_req_t = 
+  "$1->push_back($2);"
+;
+// construct std::vector from varray of mem_req_t
+ctor mem_req_vect_t (r: varray[mem_req_t]) {
+  var v: mem_req_vect_t; // init empty
+  for m in r perform push_back(&v,m);
+  return v;
+}
+fun fixup: mem_req_vect_t -> mem_req_vect_t;
+fun system_allocator: alloc_ref_t * mem_req_vect_t -> alloc_ref_t =
+  "system_allocator_t::create($1,$2)"
+  requires header '#include "rt/system_allocator.hpp"'
+;
+fun system_allocator (parent: alloc_ref_t, reqs: varray[mem_req_t]) =>
+  system_allocator (parent, reqs.mem_req_vect_t.fixup)
+;
+fun statistics_allocator: alloc_ref_t * alloc_ref_t * cstring -> alloc_ref_t =
+  "statistics_allocator_t::create($1, $2, $3)"
+  requires header '#include "rt/statistics_allocator.hpp"'
+;
+fun counting_allocator: alloc_ref_t * alloc_ref_t * cstring -> alloc_ref_t =
+  "counting_allocator_t::create($1, $2, $3)"
+  requires header '#include "rt/counting_allocator.hpp"'
+;
+@
+
+@h1 Felix test case
+@tangle test02.flx
+include "std/rt/allocators";
+println$ "Hello World";
+var a1 = malloc_free_allocator();
+var a2 = dynamic_bump_allocator(a1, 1000uz);
+var block_buffer : char^1000;
+var a3 = static_block_allocator((&block_buffer).address, 100uz);
+var a4 = ts_allocator(a3, a2);
+var a5 = ring_buffer( a1, mem_req_t(100uz,100uz));  
+var config = varray[mem_req_t] ( 
+    mem_req_t(16uz, 10uz),
+    mem_req_t(32uz, 10uz),
+    mem_req_t(64uz, 10uz),
+    mem_req_t(128uz, 10uz),
+    mem_req_t(256uz, 10uz)
+  );
+var a6 = system_allocator(a1, config);
+var a7 = statistics_allocator(a1,a6,c"stats.txt");
+var a8 = counting_allocator(a1,a7,c"counts.tst");
+
+for z in (18,  43, 75) do
+  println$ "Request size " + z.str; 
+  for(var i = 0; i < 6; ++i;) do
+    var p = allocate (a8,z.size);
+    println$ "allocation " + i.str + " -> " + p.str;
+  done 
+done
+@
+
+
