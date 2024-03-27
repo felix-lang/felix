@@ -23,41 +23,20 @@
 #include <cstddef>
 using size_t = ::std::size_t;
 
-struct fibre_t;
-struct con_t {
-  fibre_t *fibre;
+struct rt_fibre_t;
+struct rt_con_t {
+  rt_fibre_t *fibre;
+  rt_con_t *caller; // caller continuation, nullptr for coroutine
   int pc;        // program counter
-  con_t () : pc(0), fibre(nullptr) {}
-  virtual con_t *return_control()=0;
-  virtual con_t *resume()=0;
+  rt_con_t () : pc(0), fibre(nullptr), caller(nullptr) {}
+  rt_con_t(rt_fibre_t *f) : fibre(f), caller(nullptr) {}
+  rt_con_t(rt_fibre_t *f, rt_con_t *callr) : fibre(f), caller(callr) {}
+  virtual rt_con_t *resume()=0;
   virtual size_t size()const=0;
-  virtual ~con_t(){}
-};
+  virtual ~rt_con_t(){}
 
-// coroutine
-struct coroutine_t : con_t {
-  con_t *return_control(); // deletes object and returns nullptr
-};
- 
-// top level subroutine
-struct subroutine_t : con_t {
-  subroutine_t(fibre_t *f) { fibre = f; }
-  con_t *caller; // caller continuation
-  con_t *return_control(); // deletes object and returns caller
-};
-
-// NOTE: a subroutine must not delete itself if it returns
-// a nested procedure which binds to its local variable frame
-
-struct curry_subroutine_t : con_t {
-  con_t *caller; // caller continuation
-  curry_subroutine_t (fibre_t *f) { fibre = f; }
-
-  con_t *return_control() {
-    auto tmp = caller;
-    caller = nullptr;
-    return tmp;
-  }
+    
+  rt_con_t *return_control();
 };
 #endif
 @
@@ -68,32 +47,32 @@ struct curry_subroutine_t : con_t {
 #define FIBRE
 // fibre3.hpp
 // fibre
-#include "con.hpp"
-struct csp_process_t;
+#include "rt/con.hpp"
+struct rt_process_t;
 union svc_req_t;
 
-struct fibre_t {
-  con_t *cc;
-  fibre_t *next;
-  csp_process_t *process;
+struct rt_fibre_t {
+  rt_con_t *cc;
+  rt_fibre_t *next;
+  rt_process_t *process;
   svc_req_t *svc_req; // request
 
   // default DEAD
-  //fibre_t() : cc(nullptr), next(nullptr), process(nullptr) {}
+  //rt_fibre_t() : cc(nullptr), next(nullptr), process(nullptr) {}
 
   // construct from continuation
-  fibre_t(con_t *ccin, csp_process_t *owned_by) : 
+  rt_fibre_t(rt_con_t *ccin, rt_process_t *owned_by) : 
     cc(ccin), next (nullptr), process(owned_by), svc_req(nullptr)
   {
     ccin->fibre=this; 
   }
 
   // immobile
-  fibre_t(fibre_t const&)=delete;
-  fibre_t& operator=(fibre_t const&)=delete;
+  rt_fibre_t(rt_fibre_t const&)=delete;
+  rt_fibre_t& operator=(rt_fibre_t const&)=delete;
 
   // destructor deletes any remaining continuations in spaghetti stack
-  ~fibre_t(); // defined in csp.hpp to resolve circular reference
+  ~rt_fibre_t(); // defined in csp.hpp to resolve circular reference
   
   // run until either fibre issues a service request or dies
   svc_req_t *run_fibre() { 
@@ -208,10 +187,10 @@ A channel is, of course, doomed if there is only one subscriber.
 #include <cstdint>
 #include <iostream>
 using uintptr_t = ::std::uintptr_t;
-#include "fibre.hpp"
-#include "allocator.hpp"
+#include "rt/fibre.hpp"
+#include "rt/allocator.hpp"
 
-struct channel_endpoint_t;
+struct rt_channel_endpoint_t;
 
 // CHANNEL ABSTRACTION
 
@@ -227,18 +206,18 @@ inline static void *set_lowbit(void *p) {
 }
 
 // channel
-struct channel_t {
+struct rt_channel_t {
   ::std::atomic_size_t refcnt;
-  fibre_t *top;
+  rt_fibre_t *top;
   
-  channel_t () : top (nullptr), refcnt(0) {}
-  virtual ~channel_t(){ 
+  rt_channel_t () : top (nullptr), refcnt(0) {}
+  virtual ~rt_channel_t(){ 
     //::std::cerr << "channel " << this << " destructor" << ::std::endl; 
   }
 
   // immobile object
-  channel_t(channel_t const&)=delete;
-  channel_t& operator= (channel_t const&)=delete;
+  rt_channel_t(rt_channel_t const&)=delete;
+  rt_channel_t& operator= (rt_channel_t const&)=delete;
 
   // required for the polymorphic deleter
   virtual size_t size() const = 0;
@@ -246,52 +225,52 @@ struct channel_t {
   virtual void signal()=0;
 
   // channel read operation
-  virtual void read(void **target, fibre_t **pcurrent)=0;
+  virtual void read(void **target, rt_fibre_t **pcurrent)=0;
 
   // channel write operation
-  virtual void write(void **source, fibre_t **pcurrent)=0;
+  virtual void write(void **source, rt_fibre_t **pcurrent)=0;
 
 protected:
   // basic push and pop operations, not thread safe
 
-  void st_push_reader(fibre_t *r) { 
+  void st_push_reader(rt_fibre_t *r) { 
     r->next = top; 
     top = r; 
   }
 
-  void st_push_writer(fibre_t *w) { 
+  void st_push_writer(rt_fibre_t *w) { 
     w->next = top; 
-    top = (fibre_t*)set_lowbit(w);
+    top = (rt_fibre_t*)set_lowbit(w);
   }
 
-  fibre_t *st_pop_reader() { 
-    fibre_t *tmp = top; 
+  rt_fibre_t *st_pop_reader() { 
+    rt_fibre_t *tmp = top; 
     if(!tmp || get_lowbit(tmp))return nullptr;
     top = top -> next;
     return tmp; // lowbit is clear, its a reader 
   }
 
-  fibre_t *st_pop_writer() { 
-    fibre_t *tmp = top; 
+  rt_fibre_t *st_pop_writer() { 
+    rt_fibre_t *tmp = top; 
     if(!tmp || !get_lowbit(tmp)) return nullptr;
-    tmp = (fibre_t*)clear_lowbit(tmp); // lowbit is set for writer
+    tmp = (rt_fibre_t*)clear_lowbit(tmp); // lowbit is set for writer
     top = tmp -> next;
     return tmp;
   }
 
 };
 
-struct chan_epref_t {
-  channel_endpoint_t *endpoint;
-  chan_epref_t(channel_endpoint_t *p) : endpoint(p) {} // endpoint ctor sets refcnt to 1 initially
+struct rt_chan_epref_t {
+  rt_channel_endpoint_t *endpoint;
+  rt_chan_epref_t(rt_channel_endpoint_t *p) : endpoint(p) {} // endpoint ctor sets refcnt to 1 initially
 
-  channel_endpoint_t *operator->()const { return endpoint; }
-  channel_endpoint_t *get() const { return endpoint; }
+  rt_channel_endpoint_t *operator->()const { return endpoint; }
+  rt_channel_endpoint_t *get() const { return endpoint; }
 
-  chan_epref_t() : endpoint(nullptr) {}
+  rt_chan_epref_t() : endpoint(nullptr) {}
 
   // rvalue move
-  chan_epref_t(chan_epref_t &&p) {
+  rt_chan_epref_t(rt_chan_epref_t &&p) {
     if(p.endpoint) { 
       endpoint = p.endpoint; 
       p.endpoint = nullptr; 
@@ -300,28 +279,28 @@ struct chan_epref_t {
   } 
 
   // lvalue copy
-  chan_epref_t(chan_epref_t &p);
+  rt_chan_epref_t(rt_chan_epref_t &p);
 
   // rvalue assign
-  void operator= (chan_epref_t &&p) {
+  void operator= (rt_chan_epref_t &&p) {
     if (&p!=this) { // ignore self assign
-      this->~chan_epref_t(); // destroy target
-      new(this) chan_epref_t(::std::move(p)); // move source to target
+      this->~rt_chan_epref_t(); // destroy target
+      new(this) rt_chan_epref_t(::std::move(p)); // move source to target
     }
   } // rass
 
   // lvalue assign
-  void operator= (chan_epref_t &p) { 
+  void operator= (rt_chan_epref_t &p) { 
     if(&p!=this) { // ignore self assign
-      this->~chan_epref_t(); // destroy target
-      new(this) chan_epref_t(p); // copy source to target
+      this->~rt_chan_epref_t(); // destroy target
+      new(this) rt_chan_epref_t(p); // copy source to target
     }
   } // lass
  
  
   // destructor
   // uses allocator passed to endpoint on construction to delete it
-  ~chan_epref_t();
+  ~rt_chan_epref_t();
 };
 
 
@@ -331,28 +310,28 @@ struct chan_epref_t {
 // try to FIXME so it is .. this requires storing the allocator in
 // the channel OR ensuring all channels and endpoints are constructed
 // using the system allocator
-struct channel_endpoint_t {
+struct rt_channel_endpoint_t {
   size_t refcnt;
-  channel_t *channel;
+  rt_channel_t *channel;
   alloc_ref_t allocator;
-  channel_endpoint_t(channel_t *p, alloc_ref_t a) : allocator(a), channel(p), refcnt(1) { ++channel->refcnt; }
+  rt_channel_endpoint_t(rt_channel_t *p, alloc_ref_t a) : allocator(a), channel(p), refcnt(1) { ++channel->refcnt; }
 
   // immobile object
-  channel_endpoint_t(channel_endpoint_t const&)=delete;
-  channel_endpoint_t& operator= (channel_endpoint_t const&)=delete;
+  rt_channel_endpoint_t(rt_channel_endpoint_t const&)=delete;
+  rt_channel_endpoint_t& operator= (rt_channel_endpoint_t const&)=delete;
 
   // create a duplicate of the current endpoint refering
-  // to the same channel. Returns a chan_epref_t; a shared
+  // to the same channel. Returns a rt_chan_epref_t; a shared
   // pointer to the new endpoint. Incredrummoyne@corleonemarinas.comments the counter
   // of endpoints in the channel.
   // note, C++ must construct a single object containing
   // both the reference count and the channel endpoint.
 
-  chan_epref_t dup() { 
-    return chan_epref_t(new(allocator) channel_endpoint_t(channel, allocator));
+  rt_chan_epref_t dup() { 
+    return rt_chan_epref_t(new(allocator) rt_channel_endpoint_t(channel, allocator));
   }
 
-  ~channel_endpoint_t () {
+  ~rt_channel_endpoint_t () {
  //::std::cerr << "Channel endpoint " << this << " destructor, channel " <<  channel << ", refcnt " << channel->refcnt.load() << ::std::endl; 
     switch (channel->refcnt.load()) {
       case 0: break;
@@ -363,12 +342,12 @@ struct channel_endpoint_t {
 
   void delete_channel() {
  //::std::cerr << "Delete channel " << channel << ", refcnt " << channel->refcnt.load() << ::std::endl;
-    fibre_t *top = channel->top;
+    rt_fibre_t *top = channel->top;
     channel->top = nullptr;
     channel->refcnt.store(0);
     while (top) {
-      fibre_t *f = (fibre_t*)clear_lowbit(top);
-      fibre_t *tmp = f->next;
+      rt_fibre_t *f = (rt_fibre_t*)clear_lowbit(top);
+      rt_fibre_t *tmp = f->next;
 // ::std::cerr << "Channel " << channel << " Deletes fibre " << f << ", next=" << tmp << ::std::endl;
       delete_concrete_object(f, allocator);
       top = tmp;
@@ -381,7 +360,7 @@ struct channel_endpoint_t {
 
 
 // lvalue copy
-chan_epref_t::chan_epref_t(chan_epref_t &p) { 
+rt_chan_epref_t::rt_chan_epref_t(rt_chan_epref_t &p) { 
   if(p.endpoint) { 
     endpoint = p.endpoint; 
     p.endpoint->refcnt++; 
@@ -391,7 +370,7 @@ chan_epref_t::chan_epref_t(chan_epref_t &p) {
 
 // destructor
 // uses allocator passed to endpoint on construction to delete it
-chan_epref_t::~chan_epref_t() { 
+rt_chan_epref_t::~rt_chan_epref_t() { 
   if (endpoint) {
     if(endpoint->refcnt == 1) { 
 //::std::cerr << "Endpoint ref " << this << " deletes endpoint " << endpoint << ::std::endl;
@@ -402,8 +381,8 @@ chan_epref_t::~chan_epref_t() {
   }
 } // dtor
 
-chan_epref_t acquire_channel(alloc_ref_t a, channel_t *p) {
-  return chan_epref_t(new(a) channel_endpoint_t(p,a));
+rt_chan_epref_t acquire_channel(alloc_ref_t a, rt_channel_t *p) {
+  return rt_chan_epref_t(new(a) rt_channel_endpoint_t(p,a));
 }
 #endif
 @
@@ -413,15 +392,15 @@ chan_epref_t acquire_channel(alloc_ref_t a, channel_t *p) {
 @tangle svc.hpp
 #ifndef SVC_HPP
 #define SVC_HPP
-#include "allocator.hpp"
+#include "rt/allocator.hpp"
 
-struct chan_epref_t;
-struct con_t;
+struct rt_chan_epref_t;
+struct rt_con_t;
 
 // service requests
 //
 // Request codes
-enum svc_code_t {
+enum rt_svc_code_t {
   read_request_code_e,
   write_request_code_e,
   spawn_fibre_request_code_e,
@@ -431,32 +410,32 @@ enum svc_code_t {
 };
 
 // synchronous I/O requests
-struct io_request_t {
-  svc_code_t svc_code;
-  chan_epref_t *chan;
+struct rt_io_request_t {
+  rt_svc_code_t svc_code;
+  rt_chan_epref_t *chan;
   void **pdata;
 };
 
 // fibre and cothread spawn requests
-struct spawn_fibre_request_t {
-  svc_code_t svc_code;
-  con_t *tospawn;
+struct rt_spawn_fibre_request_t {
+  rt_svc_code_t svc_code;
+  rt_con_t *tospawn;
 };
 
 // fibre and cothread spawn requests
-struct spawn_process_request_t {
-  svc_code_t svc_code;
-  con_t *tospawn;
+struct rt_spawn_process_request_t {
+  rt_svc_code_t svc_code;
+  rt_con_t *tospawn;
   alloc_ref_t process_allocator;
 };
 
 
 // unified service request type (only used for casts)
 union svc_req_t {
-  io_request_t io_request;
-  spawn_fibre_request_t spawn_fibre_request;
-  spawn_process_request_t spawn_process_request;
-  svc_code_t get_code () const { return io_request.svc_code; }
+  rt_io_request_t io_request;
+  rt_spawn_fibre_request_t spawn_fibre_request;
+  rt_spawn_process_request_t spawn_process_request;
+  rt_svc_code_t get_code () const { return io_request.svc_code; }
 };
 #endif
 @
@@ -466,24 +445,24 @@ union svc_req_t {
 #ifndef SEQUENTIAL_CHANNEL
 #define SEQUENTIAL_CHANNEL
 
-#include "channel.hpp"
-#include "svc.hpp"
-#include "csp_process.hpp"
+#include "rt/channel.hpp"
+#include "rt/svc.hpp"
+#include "rt/csp_process.hpp"
 
 // SINGLE THREADED CHANNEL (no locking)
 
 // channel
-struct sequential_channel_t : channel_t {
+struct rt_sequential_channel_t : rt_channel_t {
   
-  sequential_channel_t () : channel_t() {}
+  rt_sequential_channel_t () : rt_channel_t() {}
 
-  size_t size() const override { return sizeof(sequential_channel_t); }
+  size_t size() const override { return sizeof(rt_sequential_channel_t); }
   void signal() override  {} 
 
-  void read(void **target, fibre_t **pcurrent) override  {
+  void read(void **target, rt_fibre_t **pcurrent) override  {
 //::std::cerr << *pcurrent << " Sequential Channel read begins " << ::std::endl;
-    fibre_t *current = *pcurrent;
-    fibre_t *w = st_pop_writer();
+    rt_fibre_t *current = *pcurrent;
+    rt_fibre_t *w = st_pop_writer();
 //::std::cerr << *pcurrent << " Sequential Channel read finds writer " << w << ::std::endl;
     if(w) {
       ++refcnt;
@@ -504,10 +483,10 @@ struct sequential_channel_t : channel_t {
     }
   }
 
-  void write(void **source, fibre_t **pcurrent) override  {
+  void write(void **source, rt_fibre_t **pcurrent) override  {
 //::std::cerr << *pcurrent << " Sequential Channel write begins " << ::std::endl;
-    fibre_t *current = *pcurrent;
-    fibre_t *r = st_pop_reader();
+    rt_fibre_t *current = *pcurrent;
+    rt_fibre_t *r = st_pop_reader();
 //::std::cerr << *pcurrent << " Sequential Channel write finds reader " << r << ::std::endl;
     if(r) {
       ++refcnt;
@@ -535,12 +514,12 @@ struct sequential_channel_t : channel_t {
   }
 };
 
-chan_epref_t make_sequential_channel(alloc_ref_t a) {
-  return acquire_channel(a, new(a) sequential_channel_t);
+rt_chan_epref_t make_sequential_channel(alloc_ref_t a) {
+  return acquire_channel(a, new(a) rt_sequential_channel_t);
 }
 
 
-void system_t::connect_sequential (chan_epref_t *left, chan_epref_t *right) {
+void rt_system_t::connect_sequential (rt_chan_epref_t *left, rt_chan_epref_t *right) {
   auto chleft= make_sequential_channel(system_allocator);
   auto chright= chleft ->dup(); 
   *left = chleft;
@@ -553,26 +532,26 @@ void system_t::connect_sequential (chan_epref_t *left, chan_epref_t *right) {
 @tangle concurrent_channel.hpp
 #ifndef CONCURRENT_CHANNEL
 #define CONCURRENT_CHANNEL
-#include "allocator.hpp"
-#include "system.hpp"
-#include "sequential_channel.hpp"
+#include "rt/allocator.hpp"
+#include "rt/system.hpp"
+#include "rt/sequential_channel.hpp"
 
 // CONCURRENT CHANNEL (operations are locked, but no async)
 
-struct concurrent_channel_t : sequential_channel_t {
+struct rt_concurrent_channel_t : rt_sequential_channel_t {
   ::std::atomic_flag lk;
   void lock() { while(lk.test_and_set(::std::memory_order_acquire)); }
   void unlock() { lk.clear(::std::memory_order_release); }
 
-  concurrent_channel_t () : lk(false) {}
+  rt_concurrent_channel_t () : lk(false) {}
 
-  size_t size() const override { return sizeof(concurrent_channel_t); }
+  size_t size() const override { return sizeof(rt_concurrent_channel_t); }
 
-  void read(void **target, fibre_t **pcurrent) override {
+  void read(void **target, rt_fibre_t **pcurrent) override {
 //::std::cout << "read on " << this << ::std::endl;
-    fibre_t *current = *pcurrent;
+    rt_fibre_t *current = *pcurrent;
     lock();
-    fibre_t *w = st_pop_writer();
+    rt_fibre_t *w = st_pop_writer();
     if(w) {
       ++refcnt;
       unlock();
@@ -595,11 +574,11 @@ struct concurrent_channel_t : sequential_channel_t {
     }
   }
 
-  void write(void **source, fibre_t **pcurrent) override {
+  void write(void **source, rt_fibre_t **pcurrent) override {
 //::std::cout << "write on " << this << ::std::endl;
-    fibre_t *current = *pcurrent;
+    rt_fibre_t *current = *pcurrent;
     lock();
-    fibre_t *r = st_pop_reader();
+    rt_fibre_t *r = st_pop_reader();
     if(r) {
       ++refcnt;
       unlock();
@@ -631,11 +610,11 @@ struct concurrent_channel_t : sequential_channel_t {
 
 };
 
-chan_epref_t make_concurrent_channel(alloc_ref_t a) {
-  return acquire_channel(a, new(a) concurrent_channel_t);
+rt_chan_epref_t make_concurrent_channel(alloc_ref_t a) {
+  return acquire_channel(a, new(a) rt_concurrent_channel_t);
 }
 
-void system_t::connect_concurrent (chan_epref_t *left, chan_epref_t *right) {
+void rt_system_t::connect_concurrent (rt_chan_epref_t *left, rt_chan_epref_t *right) {
   auto chleft= make_concurrent_channel(system_allocator);
   auto chright= chleft->dup(); 
   *left = chleft;
@@ -648,8 +627,8 @@ void system_t::connect_concurrent (chan_epref_t *left, chan_epref_t *right) {
 @tangle async_channel.hpp
 #ifndef ASYNC_CHANNEL
 #define ASYNC_CHANNEL
-#include "allocator.hpp"
-#include "concurrent_channel.hpp"
+#include "rt/allocator.hpp"
+#include "rt/concurrent_channel.hpp"
 
 // ASYNCHRONOUS CHANNEL
 //
@@ -684,21 +663,21 @@ void system_t::connect_concurrent (chan_epref_t *left, chan_epref_t *right) {
 // A clock holds a request channel endpoint, even when there are no
 // clients.
 
-struct async_channel_t : concurrent_channel_t {
+struct rt_async_channel_t : rt_concurrent_channel_t {
   ::std::condition_variable cv;
   ::std::mutex cv_lock;
 
   void signal() override { cv.notify_all(); }
 
-  size_t size() const override { return sizeof(async_channel_t); }
+  size_t size() const override { return sizeof(rt_async_channel_t); }
 
-  async_channel_t () {}
+  rt_async_channel_t () {}
 
-  void read(void **target, fibre_t **pcurrent)  override {
-    fibre_t *current = *pcurrent;
+  void read(void **target, rt_fibre_t **pcurrent)  override {
+    rt_fibre_t *current = *pcurrent;
     ++current->process->async_count;
     lock();
-    fibre_t *w = st_pop_writer();
+    rt_fibre_t *w = st_pop_writer();
     if(w) {
       ++refcnt;
       unlock();
@@ -722,11 +701,11 @@ struct async_channel_t : concurrent_channel_t {
     signal();
   }
 
-  void write(void **source, fibre_t **pcurrent) override  {
-    fibre_t *current = *pcurrent;
+  void write(void **source, rt_fibre_t **pcurrent) override  {
+    rt_fibre_t *current = *pcurrent;
     ++current->process->async_count;
     lock();
-    fibre_t *r = st_pop_reader();
+    rt_fibre_t *r = st_pop_reader();
     if(r) {
       ++refcnt;
       unlock();
@@ -759,8 +738,8 @@ struct async_channel_t : concurrent_channel_t {
 
 };
 
-chan_epref_t make_async_channel(alloc_ref_t a) {
-  return acquire_channel(a, new async_channel_t);
+rt_chan_epref_t make_async_channel(alloc_ref_t a) {
+  return acquire_channel(a, new rt_async_channel_t);
 }
 #endif
 @
@@ -769,17 +748,17 @@ chan_epref_t make_async_channel(alloc_ref_t a) {
 @tangle system.hpp
 #ifndef SYSTEM
 #define SYSTEM
-#include "allocator.hpp"
-#include "channel.hpp"
+#include "rt/allocator.hpp"
+#include "rt/channel.hpp"
 
 // For use by the kernel CSP system
-struct system_t {
+struct rt_system_t {
   alloc_ref_t system_allocator;
-  system_t (alloc_ref_t a) : system_allocator(a) {}
+  rt_system_t (alloc_ref_t a) : system_allocator(a) {}
 
-  void connect_sequential (chan_epref_t *left, chan_epref_t *right);
-  void connect_concurrent (chan_epref_t *left, chan_epref_t *right);
-  void connect_async(chan_epref_t *left, chan_epref_t *right);
+  void connect_sequential (rt_chan_epref_t *left, rt_chan_epref_t *right);
+  void connect_concurrent (rt_chan_epref_t *left, rt_chan_epref_t *right);
+  void connect_async(rt_chan_epref_t *left, rt_chan_epref_t *right);
 
 };
 #endif
@@ -790,15 +769,15 @@ struct system_t {
 @tangle csp_process.hpp
 #ifndef CSP_PROCESS
 #define CSP_PROCESS
-#include "system.hpp"
+#include "rt/system.hpp"
 
 // active set
-struct csp_process_t {
+struct rt_process_t {
   ::std::atomic_size_t refcnt;
-  system_t *system;
+  rt_system_t *system;
   alloc_ref_t process_allocator;
 
-  fibre_t *active;
+  rt_fibre_t *active;
   ::std::atomic_flag lock; // this one is a spin lock for sync ops
 
   // an async service which pushes a fibre onto the active
@@ -817,14 +796,14 @@ struct csp_process_t {
 
   ::std::atomic_size_t running_thread_count;
 
-  csp_process_t(system_t *s, alloc_ref_t a) : 
+  rt_process_t(rt_system_t *s, alloc_ref_t a) : 
     system(s), process_allocator(a),
     refcnt(1), active(nullptr), async_count(0), lock(false), running_thread_count(0) 
   { 
     // ::std::cerr << "New process" << ::std::endl;
   }
 
-  csp_process_t *share() { ++refcnt; return this; }
+  rt_process_t *share() { ++refcnt; return this; }
   void forget() { 
     --refcnt; 
     if(!atomic_load(&refcnt)) 
@@ -832,7 +811,7 @@ struct csp_process_t {
   }
 
   // push a new active fibre onto active list
-  void push(fibre_t *fresh) { 
+  void push(rt_fibre_t *fresh) { 
 // ::std::cerr << "Active set push " << fresh << ::std::endl;
     while(lock.test_and_set(::std::memory_order_acquire)); // spin
     fresh->next = active; 
@@ -840,10 +819,10 @@ struct csp_process_t {
     lock.clear(::std::memory_order_release); // release lock
   }
   // pop an active fibre off the active list
-  fibre_t *pop() {
+  rt_fibre_t *pop() {
 // ::std::cerr << "Active set pop .. " << ::std::endl;
     while(lock.test_and_set(::std::memory_order_acquire)); // spin
-    fibre_t *tmp = active;
+    rt_fibre_t *tmp = active;
     if(tmp)active = tmp->next;
     lock.clear(::std::memory_order_release); // release lock
 // ::std::cerr << "Active set popped .. " << tmp << ::std::endl;
@@ -858,38 +837,38 @@ struct csp_process_t {
 #ifndef CSP_THREAD
 #define CSP_THREAD
 #include <thread>
-// csp_thread_t4.hpp
-#include "system.hpp"
-#include "svc.hpp"
-#include "csp_process.hpp"
+// rt_thread_t4.hpp
+#include "rt/system.hpp"
+#include "rt/svc.hpp"
+#include "rt/csp_process.hpp"
 
 // scheduler
-struct csp_thread_t {
-  csp_process_t *process;  // chain of fibres ready to run
+struct rt_thread_t {
+  rt_process_t *process;  // chain of fibres ready to run
 
-  fibre_t *current; // currently running fibre, nullptr if none
-  ~csp_thread_t() { process->forget(); }
+  rt_fibre_t *current; // currently running fibre, nullptr if none
+  ~rt_thread_t() { process->forget(); }
 
-  csp_thread_t(csp_process_t *a) : current(nullptr), process(a) {}
+  rt_thread_t(rt_process_t *a) : current(nullptr), process(a) {}
 
-  void sync_run(con_t *);
-  void do_read(io_request_t *req);
-  void do_write(io_request_t *req);
-  void do_spawn_fibre(spawn_fibre_request_t *req);
-  void do_spawn_fibre_deferred(spawn_fibre_request_t *req);
-  void do_spawn_process(spawn_process_request_t *req);
-  void do_spawn_cothread(spawn_fibre_request_t *req);
+  void sync_run(rt_con_t *);
+  void do_read(rt_io_request_t *req);
+  void do_write(rt_io_request_t *req);
+  void do_spawn_fibre(rt_spawn_fibre_request_t *req);
+  void do_spawn_fibre_deferred(rt_spawn_fibre_request_t *req);
+  void do_spawn_process(rt_spawn_process_request_t *req);
+  void do_spawn_cothread(rt_spawn_fibre_request_t *req);
 };
 
-extern void csp_run(system_t *system, alloc_ref_t process_allocator, con_t *init) {
+extern void csp_run(rt_system_t *system, alloc_ref_t process_allocator, rt_con_t *init) {
 ::std::cerr << "csp_run start" << ::std::endl;
-  csp_thread_t (new(system->system_allocator) csp_process_t(system, process_allocator)).sync_run(init);
+  rt_thread_t (new(system->system_allocator) rt_process_t(system, process_allocator)).sync_run(init);
 ::std::cerr << "csp_run over " << ::std::endl;
 }
 
 // scheduler subroutine runs until there is no work to do
-void csp_thread_t::sync_run(con_t *cc) {
-  current = new(process->process_allocator) fibre_t(cc, process);
+void rt_thread_t::sync_run(rt_con_t *cc) {
+  current = new(process->process_allocator) rt_fibre_t(cc, process);
   cc->fibre = current;
   ++process->running_thread_count;
 retry:
@@ -960,46 +939,52 @@ rewait:
 }
 
 
-void csp_thread_t::do_read(io_request_t *req) {
+void rt_thread_t::do_read(rt_io_request_t *req) {
   req->chan->get()->channel->read(current->svc_req->io_request.pdata, &current);
 }
 
-void csp_thread_t::do_write(io_request_t *req) {
+void rt_thread_t::do_write(rt_io_request_t *req) {
  req->chan->get()->channel->write(current->svc_req->io_request.pdata, &current);
 }
 
 
-void csp_thread_t::do_spawn_fibre(spawn_fibre_request_t *req) {
+void rt_thread_t::do_spawn_fibre(rt_spawn_fibre_request_t *req) {
 // //::std::cerr << "do spawn" << ::std::endl;
   current->svc_req=nullptr;
   process->push(current);
-  con_t *cc= req->tospawn;
-  current = new(process->process_allocator) fibre_t(cc, process);
+  rt_con_t *cc= req->tospawn;
+  current = new(process->process_allocator) rt_fibre_t(cc, process);
   cc->fibre = current;
 // //::std::cerr << "spawned " << current << ::std::endl;
 }
 
-void csp_thread_t::do_spawn_fibre_deferred(spawn_fibre_request_t *req) {
+void rt_thread_t::do_spawn_fibre_deferred(rt_spawn_fibre_request_t *req) {
 // //::std::cerr << "do spawn deferred" << ::std::endl;
   current->svc_req=nullptr;
-  con_t *init = req->tospawn;
-  fibre_t *d = new(process->process_allocator) fibre_t(init, process);
+  rt_con_t *init = req->tospawn;
+  rt_fibre_t *d = new(process->process_allocator) rt_fibre_t(init, process);
   init->fibre = d;
   process->push(d);
 // //::std::cerr << "spawn deferred " << d << ::std::endl;
 }
 
-static void spawn(csp_process_t *pa, con_t *cc) {
-  csp_thread_t(pa).sync_run(cc);
+static void spawn(rt_process_t *pa, rt_con_t *cc) {
+  rt_thread_t(pa).sync_run(cc);
 }
-void csp_thread_t::do_spawn_process(spawn_process_request_t *req) {
-  csp_process_t *process = new(process->system->system_allocator) csp_process_t(process->system, req->process_allocator);
+void rt_thread_t::do_spawn_process(rt_spawn_process_request_t *req) {
+  rt_process_t *process = new(process->system->system_allocator) rt_process_t(process->system, req->process_allocator);
   ::std::thread(spawn,process,req->tospawn).detach();
 }
 
-void csp_thread_t::do_spawn_cothread(spawn_fibre_request_t *req) {
+void rt_thread_t::do_spawn_cothread(rt_spawn_fibre_request_t *req) {
   current->process->refcnt++;
   ::std::thread(spawn,current->process,req->tospawn).detach();
+}
+
+rt_con_t *rt_con_t::return_control() {
+  auto tmp = caller;
+  delete_csp_polymorphic_object(this,fibre->process->process_allocator);
+  return tmp;
 }
 #endif
 @
@@ -1012,63 +997,58 @@ void csp_thread_t::do_spawn_cothread(spawn_fibre_request_t *req) {
 
 // forward decls
 struct csp_clock_t;
-struct fibre_t;
-struct channel_t;
-struct csp_process_t;
-struct con_t;
+struct rt_fibre_t;
+struct rt_channel_t;
+struct rt_process_t;
+struct rt_con_t;
 struct allocator_t;
 struct alloc_ref_t;
-struct system_t;
-struct channel_endpoint_t;
-struct chan_epref_t;
+struct rt_system_t;
+struct rt_channel_endpoint_t;
+struct rt_chan_epref_t;
 
 // the csp system
-#include "allocator.hpp"
-#include "malloc_free.hpp"
-//#include "utility_allocators.hpp"
-//#include "freelist.hpp"
-#include "system_allocator.hpp"
-#include "system.hpp"
+#include "rt/allocator.hpp"
+#include "rt/malloc_free.hpp"
+//#include "rt/utility_allocators.hpp"
+//#include "rt/freelist.hpp"
+#include "rt/system_allocator.hpp"
+#include "rt/system.hpp"
 
-#include "con.hpp"
-#include "fibre.hpp"
+#include "rt/con.hpp"
+#include "rt/fibre.hpp"
 
-#include "csp_process.hpp"
-#include "svc.hpp"
-
-con_t *coroutine_t::return_control()
-{
-//::std::cerr << "Coroutine " << this << " returns control" << ::std::endl;
-  delete_csp_polymorphic_object(this,fibre->process->process_allocator);
-  return nullptr;
-}
-
-con_t *subroutine_t::return_control() {
-  auto tmp = caller;
-  delete_csp_polymorphic_object(this,fibre->process->process_allocator);
-  return tmp;
-}
+#include "rt/csp_process.hpp"
+#include "rt/svc.hpp"
 
 
 // resolve circular reference
-fibre_t::~fibre_t()
+rt_fibre_t::~rt_fibre_t()
 {
   //::std::cerr << "Fibre destructor " << this << ::std::endl;
   while(cc) cc= cc->return_control(); 
 }
 
-#include "channel.hpp"
-#include "csp_thread.hpp"
-#include "sequential_channel.hpp"
-#include "concurrent_channel.hpp"
-#include "async_channel.hpp"
-//#include "clock.hpp"
+#include "rt/channel.hpp"
+#include "rt/csp_thread.hpp"
+#include "rt/sequential_channel.hpp"
+#include "rt/concurrent_channel.hpp"
+#include "rt/async_channel.hpp"
+//#include "rt/clock.hpp"
 
-#define CSP_SUBRETURN return return_control();
-#define CSP_COSUICIDE return return_control();
+#define CSP_SUBRETURN \ 
+  { \
+    auto tmp = caller; \
+    delete_csp_polymorphic_object(this,fibre->process->process_allocator); \
+    return tmp; \
+  }
+
+#define CSP_COSUICIDE \
+  delete_csp_polymorphic_object(this,fibre->process->process_allocator); \
+  return nullptr;
 
 #define CSP_CALLDEF_START \
-  con_t *call(con_t *caller_a
+  rt_con_t *call(rt_con_t *caller_a
 
 #define CSP_CALLDEF_MID ){\
   caller = caller_a;\
@@ -1079,7 +1059,7 @@ fibre_t::~fibre_t()
 }
 
 #define CSP_CODEF_START \
-  con_t *setup(
+  rt_con_t *setup(
 
 #define CSP_CODEF_MID ){\
   pc = 0;
@@ -1088,7 +1068,7 @@ fibre_t::~fibre_t()
   return this;\
 }
 #define CSP_RESUME_START\
-  con_t *resume() override {\
+  rt_con_t *resume() override {\
   switch(pc++){\
   case 0:
 
@@ -1158,14 +1138,14 @@ fibre_t::~fibre_t()
 #include <list>
 
 
-#include "csp.hpp"
-#include "statistics_allocator.hpp"
+#include "rt/csp.hpp"
+#include "rt/statistics_allocator.hpp"
 
-//#include "chips.hpp"
+//#include "rt/chips.hpp"
 
 // TEST CASE
 
-struct hello : coroutine_t {
+struct hello : rt_con_t {
 
   CSP_RESUME_START
     ::std::cerr << "Hello World" << ::std::endl;
@@ -1175,21 +1155,21 @@ struct hello : coroutine_t {
 };
 
 
-struct producer : coroutine_t {
+struct producer : rt_con_t {
   ::std::list<int> *plst;
   ::std::list<int>::iterator it;
-  chan_epref_t out;
+  rt_chan_epref_t out;
   union {
     void *iodata;
     int value;
   };
-  io_request_t w_req;
+  rt_io_request_t w_req;
 
   ~producer() { }
 
   CSP_CODEF_START
     ::std::list<int> *plst_a,
-    chan_epref_t outchan_a
+    rt_chan_epref_t outchan_a
   CSP_CODEF_MID
     plst = plst_a;
     out = outchan_a;
@@ -1211,20 +1191,20 @@ struct producer : coroutine_t {
   CSP_SIZE
 };
 
-struct consumer: coroutine_t {
+struct consumer: rt_con_t {
   ::std::list<int> *plst;
   union {
     void *iodata;
     int value;
   };
-  io_request_t r_req;
-  chan_epref_t inp;
+  rt_io_request_t r_req;
+  rt_chan_epref_t inp;
 
   ~consumer() {}
 
   CSP_CODEF_START
     ::std::list<int> *plst_a,
-    chan_epref_t inchan_a
+    rt_chan_epref_t inchan_a
   CSP_CODEF_MID
     plst = plst_a;
     inp = inchan_a;
@@ -1245,11 +1225,11 @@ struct consumer: coroutine_t {
   CSP_SIZE
 };
 
-struct square : subroutine_t {
+struct square : rt_con_t {
   int inp;
   int *pout;
 
-  square(fibre_t *f) : subroutine_t(f) {}
+  square(rt_fibre_t *f) : rt_con_t(f) {}
  
   CSP_CALLDEF_START,
     int *pout_a,
@@ -1261,31 +1241,27 @@ struct square : subroutine_t {
 
   CSP_RESUME_START
     *pout = inp * inp;
-    {
-      con_t *tmp = caller;
-      delete_concrete_object(this, fibre->process->process_allocator);
-      return tmp;
-    }
+    CSP_SUBRETURN
   CSP_RESUME_END
   CSP_SIZE
 };
 
 
-struct transducer: coroutine_t {
+struct transducer: rt_con_t {
   union {
     void *iodata;
     int value;
   };
-  io_request_t r_req;
-  io_request_t w_req;
-  chan_epref_t inp;
-  chan_epref_t out;
+  rt_io_request_t r_req;
+  rt_io_request_t w_req;
+  rt_chan_epref_t inp;
+  rt_chan_epref_t out;
 
   ~transducer() {}
 
   CSP_CODEF_START
-    chan_epref_t inchan_a,
-    chan_epref_t outchan_a
+    rt_chan_epref_t inchan_a,
+    rt_chan_epref_t outchan_a
   CSP_CODEF_MID 
     inp = inchan_a;
     out = outchan_a;
@@ -1311,16 +1287,16 @@ struct transducer: coroutine_t {
 };
 
 
-struct init: coroutine_t {
+struct init: rt_con_t {
   ::std::list<int> *inlst;
   ::std::list<int> *outlst;
-  spawn_fibre_request_t spawn_req;
-  chan_epref_t ch1out;
-  chan_epref_t ch1inp;
-  chan_epref_t ch2out;
-  chan_epref_t ch2inp;
-  chan_epref_t clock_connection;
-  io_request_t clock_req;
+  rt_spawn_fibre_request_t spawn_req;
+  rt_chan_epref_t ch1out;
+  rt_chan_epref_t ch1inp;
+  rt_chan_epref_t ch2out;
+  rt_chan_epref_t ch2inp;
+  rt_chan_epref_t clock_connection;
+  rt_io_request_t clock_req;
   double waituntil;
   double *pwaituntil;
   ::std::shared_ptr<csp_clock_t> clock;
@@ -1435,7 +1411,7 @@ int main() {
     alloc_ref_t process_allocator = system_allocator;
 
     // creates the clock too
-    system_t *system = new system_t(system_allocator);
+    rt_system_t *system = new rt_system_t(system_allocator);
 ::std::cout << "STARTING" << ::std::endl;
     csp_run(system, process_allocator, (new(process_allocator) init)->setup(&inlst, &outlst));
 ::std::cerr << "RUN COMPLETE" << ::std::endl;
