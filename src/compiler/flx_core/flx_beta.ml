@@ -529,6 +529,7 @@ print_endline ("Beta-reducing typeop " ^ op ^ ", type=" ^ sbt bsym_table t);
   | BTYP_linearfunction (a,b) -> btyp_linearfunction (br a, br b)
   | BTYP_lineareffector (a,e,b) -> btyp_lineareffector (br a, br e, br b)
   | BTYP_cfunction (a,b) -> btyp_cfunction (br a, br b)
+  | BTYP_rtfunction (a,b) -> btyp_rtfunction (br a, br b)
 
   | BTYP_ptr (m,t,ts)  -> btyp_ptr m (br t) (List.map br ts)
 

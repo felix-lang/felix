@@ -139,7 +139,7 @@ let fix_param sr seq p =
   vs,(p,traint)           (* Reassemble *)
 
 
-let cal_props kind props = match kind with
+let cal_props (kind:funkind_t) props = match kind with
   | `CFunction -> `Cfun::props
   | `InlineFunction -> if not (List.mem `Inline props) then `Inline::props else props
   | `GeneratedInlineProcedure-> `GeneratedInline::props
@@ -154,6 +154,7 @@ let cal_props kind props = match kind with
   | `Function
   | `Object
   | `Method -> props
+  | `Csp -> `Csp::props 
 
 (** Currying, A.K.A. Shonfinkeling *)
 let mkcurry seq sr name vs args return_type effects kind body props =

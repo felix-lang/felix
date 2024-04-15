@@ -229,6 +229,7 @@ let rec get_offsets' syms bsym_table typ : offset_kind_t list =
   | BTYP_effector _ 
   | BTYP_function _ -> [`Ptr "0"]
   | BTYP_cfunction _ -> []
+  | BTYP_rtfunction _ -> []
 
   | BTYP_label -> [`Ptr "0"] (* see jump_address_t, target_frame at offset 0 *)
 

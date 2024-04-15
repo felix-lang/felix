@@ -358,6 +358,7 @@ and funkind_t = [
   | `GeneratorMethod
   | `Method
   | `Object
+  | `Csp
 ]
 
 and property_t = [
@@ -398,6 +399,7 @@ and property_t = [
   | `Service_call        (* does a svc instruction (directly or indirectly maybe*)
   | `NoService_call      (* does not do a svc instruction definitely *)
   | `LinearFunction
+  | `Csp
 ]
 
 and type_qual_t = [

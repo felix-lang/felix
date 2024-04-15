@@ -2213,6 +2213,8 @@ syntax functions {
   //$ Specifies a method, in an object definition only.
   sadjective := "method" =># "'Method";
 
+  sadjective := "csp" =># "'Csp";
+
   //$ Specifies function is to be exported under its Felix name.
   //$ Function must be top level and non-polymorphic.
   //$ Top level means the global space or a non-polymorphic class
@@ -2935,7 +2937,7 @@ SCHEME """
   (if (list-mem? 'Ctor adjs)'Ctor
   (if (list-mem? 'Virtual adjs)'Virtual
   'Function
-)))))))))
+))))))))))
 """;
 SCHEME """
 (define (tvfixup_folder vsct vtc)

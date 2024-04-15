@@ -10,6 +10,7 @@ let rec check_rec t = match t with
    | BTYP_linearfunction _
    | BTYP_lineareffector _
    | BTYP_cfunction _
+   | BTYP_rtfunction _
    | BTYP_variant _
      -> ()
 
@@ -55,6 +56,7 @@ let fix i t =
     | BTYP_linearfunction (a,b) -> btyp_linearfunction (aux a, aux b)
     | BTYP_lineareffector (a,e,b) -> btyp_lineareffector (aux a, aux e, aux b)
     | BTYP_cfunction (a,b) -> btyp_cfunction (aux a, aux b)
+    | BTYP_rtfunction (a,b) -> btyp_rtfunction (aux a, aux b)
 
     | BTYP_ptr (m,t,ts) -> btyp_ptr m (aux t) (List.map aux ts)
 

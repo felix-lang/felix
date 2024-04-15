@@ -424,6 +424,7 @@ print_endline ("STMT_curry " ^ name' ^ ", rettype=" ^ string_of_typecode ret);
       let qn = `AST_name (sr,name',[]) in
       let sname = `AST_suffix (sr,(qn,domain)) in
       match kind with
+      | `Csp
       | `Function
       | `LinearFunction
       | `GeneratedInlineProcedure

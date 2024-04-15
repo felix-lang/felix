@@ -131,6 +131,7 @@ print_endline ("Flx_btype_kind.metatype' case type_apply: " ^ Flx_btype.st typ);
   | BTYP_rptsum (rpt, base) -> kind_max [kind_type; (mt rpt); (mt base)]
 
   | BTYP_cfunction (d,c)
+  | BTYP_rtfunction (d,c)
   | BTYP_linearfunction (d,c)
   | BTYP_lineareffector (d,_,c)
   | BTYP_function (d,c) 

@@ -313,6 +313,7 @@ let gen_procedure_methods filename syms bsym_table
   let cxx_name = cid_of_flxid (Flx_bsym.id bsym) in
   match Flx_bsym.bbdcl bsym with
   | BBDCL_fun (props,vs,bps,BTYP_void,effects,exes) ->
+if List.mem `Csp props then print_endline ("Backend gen_procedure_methods finds csp proc " ^ bsym.id);
     if length ts <> length vs then
     failwith
     (
@@ -353,7 +354,7 @@ let gen_procedure_methods filename syms bsym_table
 *)
     in
 
-    let cont = "::flx::rtl::con_t *" in
+    let cont = if List.mem `Csp props then "rt_con_t *" else "::flx::rtl::con_t *" in
     let heap_call_arg_sig, heap_call_arg =
       match argtype with
       | BTYP_tuple [] -> cont ^ "_ptr_caller","0"

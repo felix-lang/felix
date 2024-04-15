@@ -111,6 +111,7 @@ and t =
   | BTYP_linearfunction of t * t
   | BTYP_lineareffector of t * t * t
   | BTYP_cfunction of t * t
+  | BTYP_rtfunction of t * t
   | BTYP_void
   | BTYP_label (* type of a label *)
   | BTYP_fix of int * kind (* meta type *)
@@ -193,6 +194,7 @@ let flat_iter
   | BTYP_linearfunction (a,b) -> f_btype a; f_btype b
   | BTYP_lineareffector (a,e,b) -> f_btype a; f_btype e; f_btype b
   | BTYP_cfunction (a,b) -> f_btype a; f_btype b
+  | BTYP_rtfunction (a,b) -> f_btype a; f_btype b
   | BTYP_rev t -> f_btype t
   | BTYP_uniq t -> f_btype t
   | BTYP_borrowed t -> f_btype t
@@ -353,6 +355,7 @@ and str_of_btype typ =
   | BTYP_effector (d,e,c) -> "BTYP_effector(" ^ s d ^ " ->["^s e^"] " ^ s c ^")"
   | BTYP_lineareffector (d,e,c) -> "BTYP_lineareffector(" ^ s d ^ " ->["^s e^"] " ^ s c ^")"
   | BTYP_cfunction (d,c) -> "BTYP_cfunction(" ^ s d ^ " --> " ^ s c ^")"
+  | BTYP_rtfunction (d,c) -> "BTYP_rtfunction(" ^ s d ^ " --> " ^ s c ^")"
 
   | BTYP_rev t -> "BTYP_rev("^ s t ^")" 
   | BTYP_uniq t -> "BTYP_uniq(" ^ s t ^ ")"
@@ -518,6 +521,7 @@ let complete_type t =
     | BTYP_linearfunction (a,b) -> uf a;uf b
     | BTYP_lineareffector (a,e,b) -> uf a; uf e; uf b
     | BTYP_cfunction (a,b) -> uf a;uf b
+    | BTYP_rtfunction (a,b) -> uf a;uf b
     | BTYP_ptr (_,a,_) -> uf a
     | BTYP_fix (i,_) when (-i) = depth -> ()
     | BTYP_fix (i,_) when (-i) > depth -> raise (Free_fixpoint t')
@@ -935,6 +939,10 @@ let btyp_lineareffector (args, effects, ret) =
 let btyp_cfunction (args, ret) =
   BTYP_cfunction (args, ret)
 
+(** Construct a BTYP_rtfunction type. *)
+let btyp_rtfunction (args, ret) =
+  BTYP_rtfunction (args, ret)
+
 (** Construct a BTYP_fix type. *)
 let btyp_fix i mt =
 (*
@@ -1163,6 +1171,7 @@ let rec map ?(f_bid=fun i -> i) ?(f_btype=fun t -> t) ?(f_kind=fun k->k) = funct
   | BTYP_linearfunction (a,b) -> btyp_linearfunction (f_btype a, f_btype b)
   | BTYP_lineareffector (a,e,b) -> btyp_lineareffector (f_btype a, f_btype e, f_btype b)
   | BTYP_cfunction (a,b) -> btyp_cfunction (f_btype a, f_btype b)
+  | BTYP_rtfunction (a,b) -> btyp_rtfunction (f_btype a, f_btype b)
 
   | BTYP_rev t -> btyp_rev (f_btype t)
   | BTYP_uniq t -> btyp_uniq (f_btype t)
@@ -1423,6 +1432,7 @@ and unfold msg t =
     | BTYP_function (a,b) -> btyp_function (uf a,uf b)
     | BTYP_effector (a,e, b) -> btyp_effector (uf a,uf e,uf b)
     | BTYP_cfunction (a,b) -> btyp_cfunction (uf a,uf b)
+    | BTYP_rtfunction (a,b) -> btyp_rtfunction (uf a,uf b)
     | BTYP_ptr (m,t,ts)  -> btyp_ptr m (uf t) (List.map uf ts)
     | BTYP_fix (i,_) when (-i) = depth -> t
     | BTYP_fix (i,_) when (-i) > depth -> 

@@ -11,7 +11,10 @@
 @tangler fibre.hpp = share/lib/rtl/rt/fibre.hpp
 @tangler system.hpp = share/lib/rtl/rt/system.hpp
 
+@tangler csp.flx = share/lib/std/rt/csp.flx
+
 @tangler csp_01.cxx = $PWD/csp_01.cxx
+@tangler csp_02.flx = $PWD/csp_02.flx
 
 @title Channel Abstraction
 
@@ -1424,3 +1427,50 @@ int main() {
   ::std::cerr<< "main: +++++++++ Done" << ::std::endl;
 } 
 @
+
+@h1 Felix interface
+@tangle csp.flx
+include "std/rt/allocators";
+
+type rt_con_t = "rt_con_t" requires header '#include "rt/csp.hpp"';
+type rt_system_t = "rt_system_t" requires header '#include "rt/csp.hpp"';
+type rt_fibre_t = "rt_fibre_t" requires header '#include "rt/csp.hpp"';
+type rt_process_t = "rt_process_t" requires header '#include "rt/csp.hpp"';
+type rt_thread_t = "rt_thread_t" requires header '#include "rt/csp.hpp"';
+type rt_chan_epref_t = "rt_chan_epref_t" requires header '#include "rt/csp.hpp"';
+
+fun fibre: &rt_con_t -> &rt_fibre_t = "$1->fibre";
+fun process: &rt_fibre_t -> &rt_process_t = "$1->process";
+fun system: &rt_process_t -> &rt_system_t = "$1->process";
+fun system_allocator: rt_system_t -> alloc_ref_t = "$1->system_allocator";
+
+gen make_sequential_channel: alloc_ref_t -> rt_chan_epref_t = "make_sequential_channel($1)";
+gen make_concurrent_channel: alloc_ref_t -> rt_chan_epref_t = "make_sequential_channel($1)";
+gen make_async_channel: alloc_ref_t -> rt_chan_epref_t = "make_sequential_channel($1)";
+gen dup: rt_chan_epref_t -> rt_chan_epref_t;
+
+gen create_system: alloc_ref_t -> &rt_system_t = "new rt_system_t($1)";
+proc delete_system: &rt_system_t = "delete $1;";
+
+fun create_rt_con_t  : (1 -> 0) -> &rt_con_t = "$1";
+
+proc csp_run : &rt_system_t * &rt_con_t;
+
+@
+
+@h1 Felix test
+
+@tangle csp_02.flx
+include "std/rt/csp";
+requires header '#include "rt/csp.hpp"';
+
+var mf = malloc_free_allocator();
+var sys =  create_system(mf);
+csp proc init () {}
+var init_con = create_rt_con_t (init of unit);
+csp_run (sys, init_con);
+
+delete_system sys;
+
+@
+ 

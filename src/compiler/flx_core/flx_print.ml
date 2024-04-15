@@ -909,6 +909,9 @@ and sb bsym_table depth fixlist counter prec tc =
     | BTYP_cfunction (args, result) ->
       6,(sbt 6 args) ^ " --> " ^ (sbt 6 result)
 
+    | BTYP_rtfunction (args, result) ->
+      6,(sbt 6 args) ^ " -rt-> " ^ (sbt 6 result)
+
     | BTYP_rptsum (t1,t2) ->
       begin match t1 with
       | BTYP_unitsum k -> 3, si k ^"*+"^sbt 3 t2
@@ -1247,6 +1250,7 @@ and string_of_lvalue (x,t) =
   end
 
 and string_of_property = function
+| `Csp -> "csp"
 | `Subtype -> "subtype"
 | `Recursive -> "recursive"
 | `Inline -> "inline"
@@ -1424,6 +1428,7 @@ and string_of_funkind kind =
     | `GeneratorMethod-> "method generator"
     | `Method-> "method"
     | `Object -> "object"
+    | `Csp -> "csp"
 
 and string_of_effects t =
   match t with

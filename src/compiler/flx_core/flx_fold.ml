@@ -36,6 +36,7 @@ let fold (bsym_table: Flx_bsym_table.t) counter t =
     | BTYP_linearfunction (a,b) -> ax a; ax b
     | BTYP_lineareffector (a,e, b) -> ax a; ax e; ax b
     | BTYP_cfunction (a,b) -> ax a; ax b
+    | BTYP_rtfunction (a,b) -> ax a; ax b
 
     | BTYP_rev a -> ax a
 

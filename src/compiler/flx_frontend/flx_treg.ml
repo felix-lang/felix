@@ -222,6 +222,12 @@ print_endline ("Flx_treg: attempt to register linear effector type, register equ
     rr ret;
     rnr t
 
+  | BTYP_rtfunction (ps,ret) ->
+print_endline ("Registration of real time function type " ^ Flx_btype.st t');
+    rr ps;
+    rr ret;
+    rnr t
+
   | BTYP_compactrptsum (n,b)
   | BTYP_rptsum (n,b) -> rr n; rr b; rnr t
 

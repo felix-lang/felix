@@ -878,6 +878,7 @@ and xfunkind_t sr x : funkind_t =
   | Id "GeneratorMethod" -> `GeneratorMethod
   | Id "Method" -> `Method
   | Id "Object" -> `Object
+  (* | Id "Csp" -> `Csp *)
   | x -> err x "funkind_t"
 
 and xadjective_t x : property_t =
@@ -895,6 +896,7 @@ and xadjective_t x : property_t =
   | Id "Total"  -> `Total
   | Id "Export" -> `Export
   | Id "Subtype" -> `Subtype
+  | Id "Csp" -> `Csp
   | Lst [Id "NamedExport"; Str name]  -> `NamedExport name
   | x -> err x "xadjective_t"
 

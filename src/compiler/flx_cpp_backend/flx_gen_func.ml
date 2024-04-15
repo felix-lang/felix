@@ -30,6 +30,7 @@ open Flx_btype_subst
 
 (* vs here is the (name,index) list of type variables *)
 let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =
+if List.mem `Csp props then print_endline ("Actually generating rt function " ^ id);
   let stackable = mem `Stack_closure props in
   let heapable = mem `Heap_closure props in
   let requires_ptf = mem `Requires_ptf props in
@@ -82,7 +83,11 @@ let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =
   let ret = rt' vs ret' in
   if ret = btyp_tuple [] then "// elided (returns unit)\n" else
 
-  let funtype = Flx_fold.fold bsym_table syms.counter (btyp_function (argtype, ret)) in
+  let funtype = 
+    if List.mem `Csp props then btyp_rtfunction (argtype, ret) 
+    else btyp_function (argtype, ret)
+  in
+  let funtype = Flx_fold.fold bsym_table syms.counter funtype  in
 
   let argtypename = cpp_typename syms bsym_table argtype in
   let funtypename =
@@ -147,12 +152,13 @@ let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =
   let members = find_members syms bsym_table index ts in
   match ret with
   | BTYP_void ->
+    let cont = if List.mem `Csp props then "rt_con_t" else "::flx::rtl::con_t" in
     let name = cpp_instance_name syms bsym_table index ts in
     let ctor = ctor_dcl name in
     "struct " ^ name ^
     (match funtypename with
     | Some x -> ": "^x
-    | None -> if not heapable then "" else ": ::flx::rtl::con_t"
+    | None -> if not heapable then "" else ": " ^ cont 
     )
     ^
     " {\n" ^
@@ -184,15 +190,15 @@ let gen_function syms bsym_table props index id sr vs bps ret' ts instance_no =
     (if argtype = btyp_tuple [] || argtype = btyp_void ()
     then
       (if stackable then "  void stack_call();\n" else "") ^
-      (if heapable then "  ::flx::rtl::con_t *call(::flx::rtl::con_t*);\n" else "")
+      (if heapable then "  " ^ cont ^ " *call(" ^ cont ^ " *);\n" else "")
     else
       (if stackable then "  void stack_call("^argtypename^" const &);\n" else "") ^
-      (if heapable then "  ::flx::rtl::con_t *call(::flx::rtl::con_t*,"^argtypename^" const &);\n" else "")
+      (if heapable then "  " ^ cont ^ " *call(" ^ cont ^ " *,"^argtypename^" const &);\n" else "")
     ) ^
     (*
     "  //resume\n" ^
     *)
-    (if heapable then "  ::flx::rtl::con_t *resume();\n" else "")
+    (if heapable then "  " ^ cont ^ " *resume();\n" else "")
     ^
     "};\n"
 

@@ -208,6 +208,13 @@ let rec gen_type_name syms bsym_table (index,typ) =
     let name = cn typ in
     "struct " ^ name ^ ";\n"
 
+  | BTYP_rtfunction _ ->
+    descr ^
+    let name = cn typ in
+    "struct " ^ name ^ ";\n"
+
+
+
   | BTYP_cfunction (d,c) -> descr ^ "\n"
 
   | BTYP_rptsum _ 
@@ -391,6 +398,7 @@ let rec gen_type syms bsym_table (index,typ) =
 
 
   | BTYP_linearfunction (a,BTYP_void) 
+
   | BTYP_function (a,BTYP_void) ->
     descr ^
     let name = cn typ
@@ -409,6 +417,27 @@ let rec gen_type syms bsym_table (index,typ) =
     ) ^
     "  virtual "^name^" *clone()=0;\n"  ^
     "  virtual ::flx::rtl::con_t *resume()=0;\n"  ^
+    "};\n"
+
+  | BTYP_rtfunction (a,BTYP_void) ->
+print_endline ("Generating rt function type " ^ Flx_btype.st t); 
+    descr ^
+    let name = cn typ
+    and argtype = tn a
+    and unitproc = a = btyp_tuple [] || a = btyp_void ()
+    in
+    "struct " ^ name ^
+    ": rt_con_t {\n" ^
+    "  typedef void rettype;\n" ^
+    "  typedef " ^ (if unitproc then "void" else argtype) ^ " argtype;\n" ^
+    (if unitproc
+    then
+    "  virtual rt_con_t *call(rt_con_t *)=0;\n"
+    else
+    "  virtual rt_con_t *call(rt_con_t *, "^argtype^" const &)=0;\n"
+    ) ^
+    "  virtual "^name^" *clone()=0;\n"  ^
+    "  virtual rt_con_t *resume()=0;\n"  ^
     "};\n"
 
   (* ESCAPE FUNCTION *)

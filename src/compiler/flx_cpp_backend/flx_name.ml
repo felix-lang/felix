@@ -282,6 +282,7 @@ print_endline ("Flx_tgen.cpp_type_classname " ^ sbt bsym_table t);
   | BTYP_linearfunction _ -> "_ft" ^ cid_of_bid (tix t)
 
   | BTYP_cfunction _ -> "_cft" ^ cid_of_bid (tix t)
+  | BTYP_rtfunction _ -> "_rtft" ^ cid_of_bid (tix t)
   | BTYP_array _ -> "_at" ^ cid_of_bid (tix t)
   | BTYP_tuple _ -> "_tt" ^ cid_of_bid (tix t)
   | BTYP_intersect _ -> "_intersection" ^ cid_of_bid (tix t)
@@ -456,6 +457,7 @@ and cpp_structure_name syms bsym_table t =
   | BTYP_linearfunction (d,c) -> "_ft<" ^ tn d ^ "," ^ tn c ^ ">" 
 
   | BTYP_cfunction (d,c) -> "_cft<" ^  tn d ^ "," ^ tn c ^">"
+  | BTYP_rtfunction (d,c) -> "_rtft<" ^  tn d ^ "," ^ tn c ^">"
 
   | BTYP_compactrptsum _
   | BTYP_compactsum _
@@ -561,6 +563,7 @@ and cpp_typename syms bsym_table t =
   | BTYP_lineareffector _ -> cpp_type_classname syms bsym_table t ^ "*"
   | BTYP_linearfunction _ -> cpp_type_classname syms bsym_table t ^ "*"
   | BTYP_cfunction _ -> cpp_type_classname syms bsym_table t ^ "*"
+  | BTYP_rtfunction _ -> cpp_type_classname syms bsym_table t ^ "*"
   | BTYP_ptr (`RW,t,[]) -> cpp_typename syms bsym_table t ^ "*"
   | BTYP_ptr (`R,t,[]) -> cpp_typename syms bsym_table t ^ " const*"
   | BTYP_ptr (`V,t,[]) -> cpp_typename syms bsym_table t ^ " const*"

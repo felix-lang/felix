@@ -112,9 +112,7 @@ assert false
 *)
 
   | SYMDEF_function ((ps,_),rt,effects,props,_) ->
-(*
 print_endline ("** BEGIN ** Calculating Function type for function " ^ sym.Flx_sym.id ^ " index "^si index);
-*)
       let ptyp = typeof_paramspec_t ps in
 
       (* Calculate the return type. *)
@@ -154,7 +152,13 @@ print_endline ("** END **** Abnormal Exit Function type for function " ^ sym.Flx
       let d = bt sym.Flx_sym.sr ptyp in
       let e = bt sym.Flx_sym.sr effects in
       let ft = 
-        if List.mem `Cfun props then btyp_cfunction (d, rt)
+        if List.mem `Csp props then 
+          let t = btyp_rtfunction (d, rt) in
+          begin 
+            print_endline ("CSP function detected in inner type of index " ^ Flx_btype.st t); 
+            t
+          end
+        else if List.mem `Cfun props then btyp_cfunction (d, rt) 
         else if List.mem `LinearFunction props then btyp_lineareffector (d, e, rt)
         else btyp_effector (d, e, rt)
       in
