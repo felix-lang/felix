@@ -1832,7 +1832,7 @@ Web Server Support Library
   
     publish """
     Simple log handler implementation. Creates log file give log_path and log_file
-    and returns clousre accepting log_message writeing to files specified
+    and returns clousre accepting log_message writing to files specified
     """
     gen simple_log_handler_fn (l:log):(log_message)->void = {
       var log_handle = open_log(l); //fopen_output (l.path+"/"+l.name);
